@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Editar plato — {{ restaurante.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor page-wrap" style="max-width:640px">
+
+  <div class="page-header">
+    <h1 class="page-titulo">Editar plato</h1>
+    <a href="/menu" class="btn-outline btn-sm">← Volver</a>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="card">
+    <form method="POST" action="/menu/editar/{{ producto.id }}" enctype="multipart/form-data">
+
+      <div class="campo">
+        <label>Foto del plato</label>
+        {% if producto.imagen_url %}
+          <img src="{{ producto.imagen_url }}" id="img-preview" class="upload-preview" style="display:block;margin-bottom:0.75rem" alt="{{ producto.nombre }}">
+        {% else %}
+          <img id="img-preview" class="upload-preview" alt="Preview">
+        {% endif %}
+        <div class="upload-area" onclick="document.getElementById('img-input').click()">
+          <div style="font-size:1.8rem;margin-bottom:0.25rem">📸</div>
+          <p style="font-size:0.85rem;color:#6B7280">Haz clic para cambiar la foto</p>
+          <input type="file" id="img-input" name="imagen" accept="image/*" style="display:none" data-preview="img-preview">
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>Nombre del plato *</label>
+        <input type="text" name="nombre" value="{{ producto.nombre }}" required>
+      </div>
+
+      <div class="campo">
+        <label>Descripción</label>
+        <textarea name="descripcion" rows="3">{{ producto.descripcion or '' }}</textarea>
+      </div>
+
+      <div class="campo-row">
+        <div class="campo" style="margin-bottom:0">
+          <label>Precio (USD) *</label>
+          <input type="number" name="precio" value="{{ producto.precio }}" step="0.01" min="0.01" required>
+        </div>
+        <div class="campo" style="margin-bottom:0">
+          <label>Categoría</label>
+          <select name="categoria">
+            {% for cat in ['Entradas','Principal','Sopas','Ensaladas','Postres','Bebidas','Extras'] %}
+              <option value="{{ cat }}" {% if producto.categoria == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="campo" style="margin-top:1rem">
+        <label style="display:flex;align-items:center;gap:0.6rem;cursor:pointer">
+          <input type="checkbox" name="disponible" {% if producto.disponible %}checked{% endif %} style="width:18px;height:18px;accent-color:var(--primario)">
+          Disponible en carta
+        </label>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;margin-top:1.5rem">
+        <button type="submit" class="btn-primario" style="flex:1;justify-content:center">Guardar cambios</button>
+        <a href="/menu" class="btn-outline" style="flex:1;text-align:center;padding:0.55rem">Cancelar</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+<script src="/static/js/main.js"></script>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Panel — {{ restaurante.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor page-wrap">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-titulo">{{ restaurante.nombre }}</h1>
+      <p class="page-sub">Panel de pedidos en tiempo real</p>
+    </div>
+    <a href="/menu/agregar" class="btn-primario">+ Agregar plato</a>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-numero">{{ ordenes_activas|length }}</span>
+      <span class="stat-label">Pedidos activos</span>
+    </div>
+    <div class="stat-card stat-naranja">
+      <span class="stat-numero">{{ total_hoy }}</span>
+      <span class="stat-label">Pedidos pagados hoy</span>
+    </div>
+    <div class="stat-card stat-verde">
+      <span class="stat-numero">${{ "%.2f"|format(ingresos_hoy) }}</span>
+      <span class="stat-label">Ingresos de hoy</span>
+    </div>
+    {% if cuentas_solicitadas > 0 %}
+    <div class="stat-card" style="border-color:#FDE68A;background:#FFFBEB">
+      <span class="stat-numero" style="color:#D97706">{{ cuentas_solicitadas }}</span>
+      <span class="stat-label">Solicitan la cuenta</span>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if ordenes_activas %}
+  <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem">
+    Pedidos activos
+    <span style="font-size:0.82rem;color:#94A3B8;font-weight:400;margin-left:0.5rem">Se actualiza al recargar</span>
+  </h2>
+
+  {% for orden in ordenes_activas %}
+  <div class="orden-card">
+    <div class="orden-header">
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+        <span class="orden-mesa">{{ orden.mesa.nombre }}</span>
+        {% if orden.estado == 'pendiente' %}
+          <span class="badge badge-amarillo">⏳ Nuevo pedido</span>
+        {% elif orden.estado == 'confirmada' %}
+          <span class="badge badge-naranja">🔥 En preparación</span>
+        {% elif orden.estado == 'lista' %}
+          <span class="badge badge-verde">✅ Listo para entregar</span>
+        {% endif %}
+        {% if orden.solicita_cuenta %}
+          <span class="cuenta-badge urgente">💳 Solicita la cuenta</span>
+        {% endif %}
+      </div>
+      <div style="font-size:0.82rem;color:#94A3B8">
+        {{ orden.fecha.strftime('%H:%M') }} — #{{ orden.id }}
+      </div>
+    </div>
+
+    <div class="orden-body">
+      <p style="font-size:0.85rem;color:#64748B;margin-bottom:0.5rem">
+        Cliente: <strong>{{ orden.nombre_cliente }}</strong>
+        {% if orden.notas %}
+          — <em>{{ orden.notas }}</em>
+        {% endif %}
+      </p>
+      <ul class="orden-items-lista">
+        {% for item in orden.items %}
+        <li>
+          <span>{{ item.cantidad }}× {{ item.producto.nombre if item.producto else '—' }}</span>
+          <span>${{ "%.2f"|format(item.subtotal) }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      <div style="text-align:right" class="orden-total">Total: ${{ "%.2f"|format(orden.total) }}</div>
+    </div>
+
+    <div class="orden-footer">
+      {% if orden.estado == 'pendiente' %}
+        <form method="POST" action="/dashboard/orden/{{ orden.id }}/confirmar">
+          <button class="btn-primario btn-sm">✓ Confirmar pedido</button>
+        </form>
+        <form method="POST" action="/dashboard/orden/{{ orden.id }}/cancelar"
+              onsubmit="return confirm('¿Cancelar este pedido?')">
+          <button class="btn-danger btn-sm">Cancelar</button>
+        </form>
+
+      {% elif orden.estado == 'confirmada' %}
+        <form method="POST" action="/dashboard/orden/{{ orden.id }}/lista">
+          <button class="btn-primario btn-sm">🍽️ Marcar como listo</button>
+        </form>
+
+      {% elif orden.estado == 'lista' %}
+        <form method="POST" action="/dashboard/orden/{{ orden.id }}/pagar"
+              style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+          <select name="metodo" style="padding:0.4rem 0.7rem;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.85rem">
+            <option value="efectivo">💵 Efectivo</option>
+            <option value="tarjeta">💳 Tarjeta</option>
+            <option value="transferencia">📲 Transferencia</option>
+          </select>
+          <button class="btn-primario btn-sm">✓ Cobrado</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div style="text-align:center;padding:4rem 1rem;color:#94A3B8">
+    <div style="font-size:3rem;margin-bottom:1rem">🍽️</div>
+    <p style="font-size:1rem;font-weight:600">Sin pedidos activos</p>
+    <p style="font-size:0.85rem;margin-top:0.35rem">Los pedidos de tus mesas aparecerán aquí en tiempo real.</p>
+    <div style="margin-top:1.5rem;display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="/mesas" class="btn-outline btn-sm">Ver mis mesas</a>
+      <a href="/menu" class="btn-outline btn-sm">Gestionar menú</a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

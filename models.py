@@ -1,0 +1,122 @@
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
+import re
+
+db = SQLAlchemy()
+
+
+def slugify(text):
+    text = text.lower().strip()
+    for a, b in [("á","a"),("à","a"),("ä","a"),("é","e"),("è","e"),("ë","e"),
+                 ("í","i"),("ì","i"),("ï","i"),("ó","o"),("ò","o"),("ö","o"),
+                 ("ú","u"),("ù","u"),("ü","u"),("ñ","n")]:
+        text = text.replace(a, b)
+    text = re.sub(r"[^a-z0-9\s-]", "", text)
+    text = re.sub(r"[\s-]+", "-", text)
+    return text.strip("-")
+
+
+class Restaurante(db.Model):
+    __tablename__ = "restaurantes"
+    id             = db.Column(db.Integer, primary_key=True)
+    nombre         = db.Column(db.String(100), nullable=False)
+    email          = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash  = db.Column(db.String(256), nullable=False)
+    whatsapp       = db.Column(db.String(20))
+    ciudad         = db.Column(db.String(80))
+    logo_url       = db.Column(db.String(300))
+    slug           = db.Column(db.String(100), unique=True, nullable=False)
+    descripcion    = db.Column(db.Text)
+    activo         = db.Column(db.Boolean, default=True)
+    fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
+
+    mesas    = db.relationship("Mesa",     backref="restaurante", lazy=True, cascade="all, delete-orphan")
+    productos = db.relationship("Producto", backref="restaurante", lazy=True, cascade="all, delete-orphan")
+    ordenes  = db.relationship("Orden",    backref="restaurante", lazy=True)
+
+    def set_password(self, pwd):
+        self.password_hash = generate_password_hash(pwd)
+
+    def check_password(self, pwd):
+        return check_password_hash(self.password_hash, pwd)
+
+
+class Mesa(db.Model):
+    __tablename__ = "mesas"
+    id             = db.Column(db.Integer, primary_key=True)
+    restaurante_id = db.Column(db.Integer, db.ForeignKey("restaurantes.id"), nullable=False)
+    numero         = db.Column(db.Integer, nullable=False)
+    nombre         = db.Column(db.String(50))
+    token          = db.Column(db.String(40), unique=True, nullable=False)
+    activa         = db.Column(db.Boolean, default=True)
+
+    ordenes = db.relationship("Orden", backref="mesa", lazy=True)
+
+    @staticmethod
+    def nuevo_token():
+        return secrets.token_urlsafe(20)
+
+
+class Producto(db.Model):
+    __tablename__ = "productos"
+    id             = db.Column(db.Integer, primary_key=True)
+    restaurante_id = db.Column(db.Integer, db.ForeignKey("restaurantes.id"), nullable=False)
+    nombre         = db.Column(db.String(100), nullable=False)
+    descripcion    = db.Column(db.Text)
+    precio         = db.Column(db.Float, nullable=False)
+    imagen_url     = db.Column(db.String(300))
+    categoria      = db.Column(db.String(50), default="Principal")
+    disponible     = db.Column(db.Boolean, default=True)
+    orden_display  = db.Column(db.Integer, default=0)
+
+    items = db.relationship("ItemOrden", backref="producto", lazy=True)
+
+
+class Orden(db.Model):
+    __tablename__ = "ordenes"
+    id              = db.Column(db.Integer, primary_key=True)
+    restaurante_id  = db.Column(db.Integer, db.ForeignKey("restaurantes.id"), nullable=False)
+    mesa_id         = db.Column(db.Integer, db.ForeignKey("mesas.id"), nullable=False)
+    token           = db.Column(db.String(40), unique=True, nullable=False)
+    nombre_cliente  = db.Column(db.String(100))
+    estado          = db.Column(db.String(20), default="pendiente")
+    # pendiente → confirmada → lista → pagada | cancelada
+    total           = db.Column(db.Float, default=0.0)
+    metodo_pago     = db.Column(db.String(30))
+    notas           = db.Column(db.Text)
+    solicita_cuenta = db.Column(db.Boolean, default=False)
+    fecha           = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_pago      = db.Column(db.DateTime)
+
+    items = db.relationship("ItemOrden", backref="orden", lazy=True, cascade="all, delete-orphan")
+
+    @staticmethod
+    def nuevo_token():
+        return secrets.token_urlsafe(20)
+
+    @property
+    def estado_label(self):
+        return {
+            "pendiente":  "Nuevo pedido",
+            "confirmada": "En preparación",
+            "lista":      "Listo para entregar",
+            "pagada":     "Pagado",
+            "cancelada":  "Cancelado",
+        }.get(self.estado, self.estado)
+
+    @property
+    def estado_paso(self):
+        return {"pendiente": 1, "confirmada": 2, "lista": 3, "pagada": 4}.get(self.estado, 0)
+
+
+class ItemOrden(db.Model):
+    __tablename__ = "items_orden"
+    id              = db.Column(db.Integer, primary_key=True)
+    orden_id        = db.Column(db.Integer, db.ForeignKey("ordenes.id"), nullable=False)
+    producto_id     = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
+    cantidad        = db.Column(db.Integer, nullable=False)
+    precio_unitario = db.Column(db.Float, nullable=False)
+    subtotal        = db.Column(db.Float, nullable=False)
+    notas_item      = db.Column(db.String(200))

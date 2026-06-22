@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Reportes — {{ restaurante.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor page-wrap">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-titulo">Reportes de ventas</h1>
+      <p class="page-sub">Descarga tus ventas en CSV para abrirlo en Excel</p>
+    </div>
+  </div>
+
+  <!-- Reporte diario -->
+  <div class="card" style="margin-bottom:1.25rem">
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:1rem">📅 Reporte diario</h2>
+    <form action="/reportes/descargar" method="GET" class="reporte-filtros">
+      <input type="hidden" name="tipo" value="diario">
+      <div class="campo" style="margin-bottom:0">
+        <label>Fecha</label>
+        <input type="date" name="fecha" value="{{ hoy }}" max="{{ hoy }}">
+      </div>
+      <button class="btn-primario" style="align-self:flex-end">⬇ Descargar CSV</button>
+    </form>
+  </div>
+
+  <!-- Reporte mensual -->
+  <div class="card" style="margin-bottom:2rem">
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:1rem">📆 Reporte mensual</h2>
+    <form action="/reportes/descargar" method="GET" class="reporte-filtros">
+      <input type="hidden" name="tipo" value="mensual">
+      <div class="campo" style="margin-bottom:0">
+        <label>Mes</label>
+        <input type="month" name="fecha" value="{{ hoy.strftime('%Y-%m') }}">
+      </div>
+      <button class="btn-primario" style="align-self:flex-end">⬇ Descargar CSV</button>
+    </form>
+  </div>
+
+  <!-- Resumen histórico -->
+  {% if resumen_mensual %}
+  <h2 style="font-size:1rem;font-weight:700;margin-bottom:1rem">Historial de ventas por mes</h2>
+  <div class="resumen-mes-grid">
+    {% for row in resumen_mensual %}
+    <div class="mes-card">
+      <div class="mes-titulo">
+        {% set meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'] %}
+        {{ meses[row.mes|int] }} {{ row.anio|int }}
+      </div>
+      <div class="mes-monto">${{ "%.2f"|format(row.total or 0) }}</div>
+      <div class="mes-count">{{ row.ordenes }} pedido{% if row.ordenes != 1 %}s{% endif %} pagados</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:2rem;color:#94A3B8;font-size:0.9rem">
+    Aún no tienes ventas registradas. El historial aparecerá aquí cuando marques pedidos como pagados.
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

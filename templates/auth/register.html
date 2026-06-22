@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registrar restaurante — Carta Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+<div class="auth-wrap" style="padding:2rem 1rem">
+  <div class="auth-card" style="max-width:520px">
+    <div class="auth-logo">
+      <div class="logo-icon">🍽️</div>
+      <h1>Registrar tu restaurante</h1>
+      <p>Crea tu carta digital en minutos</p>
+    </div>
+
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in msgs %}
+        <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="/register" enctype="multipart/form-data">
+      <div class="campo">
+        <label>Nombre del restaurante *</label>
+        <input type="text" name="nombre" placeholder="Ej: Restaurante El Sabor" required>
+      </div>
+
+      <div class="campo">
+        <label>Logo del restaurante</label>
+        <div class="upload-area" onclick="document.getElementById('logo-input').click()">
+          <div style="font-size:2rem;margin-bottom:0.5rem">🖼️</div>
+          <p style="font-size:0.85rem;color:#6B7280">Haz clic para subir tu logo (opcional)</p>
+          <input type="file" id="logo-input" name="logo" accept="image/*" style="display:none" data-preview="logo-preview">
+        </div>
+        <img id="logo-preview" class="upload-preview" alt="Preview logo">
+      </div>
+
+      <div class="campo">
+        <label>Descripción breve</label>
+        <textarea name="descripcion" rows="2" placeholder="Ej: Comida típica ecuatoriana, abierto de 8am a 10pm"></textarea>
+      </div>
+
+      <div class="campo-row">
+        <div class="campo" style="margin-bottom:0">
+          <label>WhatsApp</label>
+          <input type="tel" name="whatsapp" placeholder="0991234567">
+        </div>
+        <div class="campo" style="margin-bottom:0">
+          <label>Ciudad</label>
+          <input type="text" name="ciudad" placeholder="Quito">
+        </div>
+      </div>
+
+      <div class="campo" style="margin-top:1rem">
+        <label>Correo electrónico *</label>
+        <input type="email" name="email" placeholder="tu@restaurante.com" required>
+      </div>
+
+      <div class="campo-row">
+        <div class="campo" style="margin-bottom:0">
+          <label>Contraseña *</label>
+          <input type="password" name="password" placeholder="Mínimo 6 caracteres" required>
+        </div>
+        <div class="campo" style="margin-bottom:0">
+          <label>Repetir contraseña *</label>
+          <input type="password" name="password2" placeholder="••••••••" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primario" style="width:100%;padding:0.8rem;font-size:0.95rem;justify-content:center;margin-top:1.5rem">
+        Crear mi restaurante
+      </button>
+    </form>
+
+    <p class="auth-footer">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></p>
+  </div>
+</div>
+<script src="/static/js/main.js"></script>
+</body>
+</html>

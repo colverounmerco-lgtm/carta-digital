@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>{{ restaurante.nombre }} — Carta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/carta.css">
+</head>
+<body>
+
+<!-- Header fijo -->
+<header class="carta-header">
+  {% if restaurante.logo_url %}
+    <img src="{{ restaurante.logo_url }}" class="carta-logo" alt="{{ restaurante.nombre }}">
+  {% else %}
+    <div class="carta-logo-placeholder">🍽️</div>
+  {% endif %}
+  <div class="carta-header-info">
+    <div class="carta-header-nombre">{{ restaurante.nombre }}</div>
+    <div class="carta-header-mesa">📍 {{ mesa.nombre }}</div>
+  </div>
+</header>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+    <div class="carta-alerta carta-alerta-{{ cat }}">{{ msg }}</div>
+  {% endfor %}
+{% endwith %}
+
+<!-- Tabs de categorías -->
+{% if categorias %}
+<div class="categorias-wrap">
+  <nav class="categorias-nav">
+    {% for cat in categorias %}
+    <button class="cat-tab {% if loop.first %}activa{% endif %}" data-cat="{{ cat|replace(' ','_') }}">
+      {{ cat }}
+    </button>
+    {% endfor %}
+  </nav>
+</div>
+{% endif %}
+
+<!-- Contenido del menú -->
+<div class="menu-contenido">
+  {% if categorias %}
+    {% for cat in categorias %}
+    <div class="cat-seccion" id="cat-{{ cat|replace(' ','_') }}">
+      <div class="cat-titulo">{{ cat }}</div>
+
+      {% for p in cat_map[cat] %}
+      <div class="plato-card">
+        {% if p.imagen_url %}
+          <img src="{{ p.imagen_url }}" class="plato-foto" alt="{{ p.nombre }}" loading="lazy">
+        {% else %}
+          <div class="plato-foto-placeholder">🍽️</div>
+        {% endif %}
+
+        <div class="plato-info">
+          <div>
+            <div class="plato-nombre">{{ p.nombre }}</div>
+            {% if p.descripcion %}
+              <div class="plato-descripcion">{{ p.descripcion }}</div>
+            {% endif %}
+          </div>
+          <div class="plato-footer">
+            <span class="plato-precio">${{ "%.2f"|format(p.precio) }}</span>
+
+            {% set en_carrito = carrito.get(p.id|string, {}).get('cantidad', 0) %}
+            {% if en_carrito > 0 %}
+              <!-- Control de cantidad si ya está en carrito -->
+              <div style="display:flex;align-items:center;gap:0.5rem">
+                <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/cambiar/{{ p.id }}" style="display:inline">
+                  <input type="hidden" name="accion" value="menos">
+                  <button class="cant-btn" style="border:1.5px solid #E5E7EB;border-radius:50%;width:30px;height:30px;background:#fff;font-size:1.1rem;cursor:pointer;color:#F97316;font-weight:700">−</button>
+                </form>
+                <span class="cant-num" style="font-weight:700;color:#F97316">{{ en_carrito }}</span>
+                {% if en_carrito < max_cantidad %}
+                <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/agregar" style="display:inline">
+                  <input type="hidden" name="producto_id" value="{{ p.id }}">
+                  <input type="hidden" name="cantidad" value="1">
+                  <button class="btn-agregar">+</button>
+                </form>
+                {% else %}
+                <span style="font-size:0.75rem;color:#9CA3AF">máx</span>
+                {% endif %}
+              </div>
+            {% else %}
+              <!-- Botón agregar -->
+              <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/agregar">
+                <input type="hidden" name="producto_id" value="{{ p.id }}">
+                <input type="hidden" name="cantidad" value="1">
+                <button class="btn-agregar">+</button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+
+  {% else %}
+  <div class="menu-vacio">
+    <div class="emoji">🍴</div>
+    <p>Este restaurante aún no tiene platos en su carta.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Barra de carrito (sticky bottom) -->
+{% if items_carrito > 0 %}
+<div class="carrito-bar" id="carrito-bar">
+  <div class="carrito-bar-inner">
+    <div class="carrito-resumen">
+      <div class="carrito-count">{{ items_carrito }}</div>
+      <span class="carrito-label">en tu pedido</span>
+    </div>
+    <span class="carrito-total">${{ "%.2f"|format(total_carrito) }}</span>
+    <button class="btn-ver-carrito" id="btn-ver-carrito">Ver pedido →</button>
+  </div>
+</div>
+
+<!-- Drawer del carrito -->
+<div class="carrito-overlay" id="carrito-overlay">
+  <div class="carrito-drawer">
+    <div class="drawer-handle"></div>
+    <div class="drawer-titulo">Tu pedido — {{ mesa.nombre }}</div>
+
+    {% for pid, item in carrito.items() %}
+    <div class="carrito-item">
+      {% if item.imagen %}
+        <img src="{{ item.imagen }}" class="carrito-item-img" alt="{{ item.nombre }}">
+      {% else %}
+        <div class="carrito-item-img" style="background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:1.4rem">🍽️</div>
+      {% endif %}
+      <div class="carrito-item-info">
+        <div class="carrito-item-nombre">{{ item.nombre }}</div>
+        <div class="carrito-item-precio">${{ "%.2f"|format(item.precio) }} c/u</div>
+        <div style="display:flex;align-items:center;gap:0.4rem;margin-top:0.4rem">
+          <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/cambiar/{{ pid }}" style="display:inline">
+            <input type="hidden" name="accion" value="menos">
+            <button style="width:26px;height:26px;border:1.5px solid #E5E7EB;border-radius:50%;background:#fff;font-size:1rem;cursor:pointer;color:#F97316;font-weight:700;line-height:1">−</button>
+          </form>
+          <span style="font-weight:700;min-width:20px;text-align:center">{{ item.cantidad }}</span>
+          {% if item.cantidad < max_cantidad %}
+          <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/agregar" style="display:inline">
+            <input type="hidden" name="producto_id" value="{{ pid }}">
+            <input type="hidden" name="cantidad" value="1">
+            <button style="width:26px;height:26px;border:none;border-radius:50%;background:#F97316;color:#fff;font-size:1rem;cursor:pointer;font-weight:700;line-height:1">+</button>
+          </form>
+          {% endif %}
+          <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/cambiar/{{ pid }}" style="display:inline;margin-left:0.3rem">
+            <input type="hidden" name="accion" value="quitar">
+            <button style="background:none;border:none;color:#9CA3AF;font-size:0.78rem;cursor:pointer;text-decoration:underline">Quitar</button>
+          </form>
+        </div>
+      </div>
+      <span class="carrito-item-subtotal">${{ "%.2f"|format(item.precio * item.cantidad) }}</span>
+    </div>
+    {% endfor %}
+
+    <div class="carrito-total-row">
+      <span class="carrito-total-label">Total</span>
+      <span class="carrito-total-monto">${{ "%.2f"|format(total_carrito) }}</span>
+    </div>
+
+    <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/pedido" class="form-pedido">
+      <label>Tu nombre (opcional)</label>
+      <input type="text" name="nombre_cliente" placeholder="Ej: Juan">
+      <label>Notas para la cocina (opcional)</label>
+      <textarea name="notas" rows="2" placeholder="Ej: Sin cebolla, alergia a los mariscos..."></textarea>
+      <button type="submit" class="btn-pedir">
+        🍽️ Enviar pedido — ${{ "%.2f"|format(total_carrito) }}
+      </button>
+    </form>
+
+    <button id="btn-cerrar-carrito" style="width:100%;margin-top:0.75rem;padding:0.7rem;background:none;border:1.5px solid #E5E7EB;border-radius:12px;font-size:0.9rem;cursor:pointer;color:#6B7280">
+      Seguir viendo el menú
+    </button>
+  </div>
+</div>
+{% endif %}
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>

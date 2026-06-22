@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Carta Digital{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+
+  <header class="header">
+    <div class="contenedor header-inner">
+      <a href="/" class="logo">
+        <div class="logo-icon">🍽️</div>
+        Carta Digital
+      </a>
+      <nav class="nav">
+        {% if restaurante_session %}
+          <a href="/dashboard" class="nav-link">Panel</a>
+          <a href="/menu" class="nav-link">Menú</a>
+          <a href="/mesas" class="nav-link">Mesas</a>
+          <a href="/reportes" class="nav-link">Reportes</a>
+          <span class="nav-nombre">{{ restaurante_session.nombre }}</span>
+          <a href="/logout" class="btn-primario btn-sm">Salir</a>
+        {% else %}
+          <a href="/login" class="nav-link">Iniciar sesión</a>
+          <a href="/register" class="btn-primario btn-sm">Registrar restaurante</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  {% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% if mensajes %}
+      <div class="contenedor" style="padding-top:0.75rem">
+        {% for cat, msg in mensajes %}
+          <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <main>{% block contenido %}{% endblock %}</main>
+
+  <footer style="text-align:center;padding:1.5rem;font-size:0.8rem;color:#94A3B8;margin-top:2rem">
+    © 2026 Carta Digital
+  </footer>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>

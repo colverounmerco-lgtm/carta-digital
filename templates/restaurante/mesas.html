@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Mesas — {{ restaurante.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor page-wrap">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-titulo">Mesas</h1>
+      <p class="page-sub">Cada mesa tiene su propio QR — el cliente lo escanea para ver la carta</p>
+    </div>
+    <form method="POST" action="/mesas/agregar" style="display:flex;gap:0.5rem">
+      <input type="text" name="nombre" placeholder="Ej: Terraza 1" style="padding:0.5rem 0.8rem;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.88rem">
+      <button class="btn-primario btn-sm">+ Agregar mesa</button>
+    </form>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if mesas %}
+  <div class="mesa-grid">
+    {% for m in mesas %}
+    {% set carta_url = request.host_url + 'carta/' + restaurante.slug + '/' + m.token %}
+    <div class="mesa-card">
+      <div class="mesa-num">{{ m.numero }}</div>
+      <div class="mesa-name">{{ m.nombre }}</div>
+      <div class="mesa-url">{{ carta_url }}</div>
+      <div style="display:flex;flex-direction:column;gap:0.5rem">
+        <button class="btn-primario btn-sm" onclick="abrirQR('{{ m.nombre }}', '{{ carta_url }}')">
+          Ver QR
+        </button>
+        <button class="btn-outline btn-sm" onclick="copiar('{{ carta_url }}', this)">
+          Copiar enlace
+        </button>
+        <form method="POST" action="/mesas/eliminar/{{ m.id }}"
+              onsubmit="return confirm('¿Eliminar {{ m.nombre }}?')">
+          <button class="btn-danger btn-sm" style="width:100%">Eliminar</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div style="text-align:center;padding:4rem 1rem;color:#94A3B8">
+    <div style="font-size:3rem;margin-bottom:1rem">🪑</div>
+    <p style="font-size:1rem;font-weight:600">Sin mesas configuradas</p>
+    <p style="font-size:0.85rem;margin-top:0.35rem">Agrega tus mesas para generar los códigos QR que pondrás en cada mesa.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- Modal QR -->
+<div id="qr-modal">
+  <div class="qr-caja">
+    <h3 id="qr-nombre" style="font-weight:700;font-size:1rem;margin-bottom:0.5rem"></h3>
+    <div id="qr-canvas"></div>
+    <a id="qr-link" href="#" target="_blank" style="font-size:0.75rem;color:#64748B;word-break:break-all;display:block;margin-bottom:1rem"></a>
+    <button onclick="cerrarQR()" class="btn-outline" style="width:100%">Cerrar</button>
+  </div>
+</div>
+
+<!-- QRCode.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/static/js/main.js"></script>
+{% endblock %}

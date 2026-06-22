@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Mi Menú — {{ restaurante.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor page-wrap">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-titulo">Mi Menú</h1>
+      <p class="page-sub">{{ productos|length }} plato{% if productos|length != 1 %}s{% endif %} en tu carta</p>
+    </div>
+    <a href="/menu/agregar" class="btn-primario">+ Agregar plato</a>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if productos %}
+  {% set cat_actual = namespace(val='') %}
+  {% for p in productos %}
+    {% if p.categoria != cat_actual.val %}
+      {% set cat_actual.val = p.categoria %}
+      <h2 style="font-size:0.9rem;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.5px;margin:1.5rem 0 0.65rem">
+        {{ p.categoria }}
+      </h2>
+    {% endif %}
+
+    <div class="prod-card {% if not p.disponible %}opacity-50{% endif %}" style="{% if not p.disponible %}opacity:0.55{% endif %}">
+      {% if p.imagen_url %}
+        <img src="{{ p.imagen_url }}" class="prod-foto" alt="{{ p.nombre }}">
+      {% else %}
+        <div class="prod-foto-placeholder">🍽️</div>
+      {% endif %}
+
+      <div>
+        <div class="prod-nombre">{{ p.nombre }}</div>
+        {% if p.descripcion %}
+          <div class="prod-desc">{{ p.descripcion }}</div>
+        {% endif %}
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.4rem">
+          <span class="prod-precio">${{ "%.2f"|format(p.precio) }}</span>
+          {% if p.disponible %}
+            <span class="badge badge-verde" style="font-size:0.72rem">Disponible</span>
+          {% else %}
+            <span class="badge badge-gris" style="font-size:0.72rem">No disponible</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="prod-acciones">
+        <a href="/menu/editar/{{ p.id }}" class="btn-outline btn-xs">Editar</a>
+        <form method="POST" action="/menu/toggle/{{ p.id }}">
+          <button class="btn-outline btn-xs">
+            {% if p.disponible %}Pausar{% else %}Activar{% endif %}
+          </button>
+        </form>
+        <form method="POST" action="/menu/eliminar/{{ p.id }}"
+              onsubmit="return confirm('¿Eliminar {{ p.nombre }}?')">
+          <button class="btn-danger btn-xs">Eliminar</button>
+        </form>
+      </div>
+    </div>
+  {% endfor %}
+
+  {% else %}
+  <div style="text-align:center;padding:4rem 1rem;color:#94A3B8">
+    <div style="font-size:3.5rem;margin-bottom:1rem">🍴</div>
+    <p style="font-size:1rem;font-weight:600">Tu menú está vacío</p>
+    <p style="font-size:0.85rem;margin-top:0.35rem">Agrega tus platos con fotos reales para que los clientes puedan verlos y pedirlos.</p>
+    <a href="/menu/agregar" class="btn-primario" style="margin-top:1.25rem;display:inline-flex">+ Agregar primer plato</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Agregar plato — {{ restaurante.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor page-wrap" style="max-width:640px">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-titulo">Agregar plato al menú</h1>
+      <p class="page-sub">La foto es obligatoria — los clientes deciden con los ojos</p>
+    </div>
+    <a href="/menu" class="btn-outline btn-sm">← Volver</a>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="card">
+    <form method="POST" action="/menu/agregar" enctype="multipart/form-data">
+
+      <div class="campo">
+        <label>Foto real del plato *</label>
+        <div class="upload-area" onclick="document.getElementById('img-input').click()">
+          <div style="font-size:2.5rem;margin-bottom:0.5rem">📸</div>
+          <p style="font-size:0.88rem;color:#6B7280">Haz clic para subir la foto del plato</p>
+          <p style="font-size:0.78rem;color:#9CA3AF;margin-top:0.25rem">JPG, PNG — recomendado 800×600px</p>
+          <input type="file" id="img-input" name="imagen" accept="image/*" required style="display:none" data-preview="img-preview">
+        </div>
+        <img id="img-preview" class="upload-preview" alt="Preview">
+      </div>
+
+      <div class="campo">
+        <label>Nombre del plato *</label>
+        <input type="text" name="nombre" placeholder="Ej: Seco de pollo con arroz" required autofocus>
+      </div>
+
+      <div class="campo">
+        <label>Descripción</label>
+        <textarea name="descripcion" rows="3" placeholder="Ej: Pollo en salsa de cerveza, acompañado de arroz, papas fritas y ensalada"></textarea>
+        <small>Describe los ingredientes principales, el tamaño o lo que lo hace especial.</small>
+      </div>
+
+      <div class="campo-row">
+        <div class="campo" style="margin-bottom:0">
+          <label>Precio (USD) *</label>
+          <input type="number" name="precio" placeholder="0.00" step="0.01" min="0.01" required>
+        </div>
+        <div class="campo" style="margin-bottom:0">
+          <label>Categoría</label>
+          <select name="categoria">
+            <option value="Entradas">Entradas</option>
+            <option value="Principal" selected>Principal</option>
+            <option value="Sopas">Sopas</option>
+            <option value="Ensaladas">Ensaladas</option>
+            <option value="Postres">Postres</option>
+            <option value="Bebidas">Bebidas</option>
+            <option value="Extras">Extras</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;margin-top:1.5rem">
+        <button type="submit" class="btn-primario" style="flex:1;justify-content:center">Guardar plato</button>
+        <a href="/menu" class="btn-outline" style="flex:1;text-align:center;padding:0.55rem">Cancelar</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+<script src="/static/js/main.js"></script>
+{% endblock %}

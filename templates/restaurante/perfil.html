@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Perfil — {{ restaurante.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor page-wrap" style="max-width:580px">
+
+  <div class="page-header">
+    <h1 class="page-titulo">Perfil del restaurante</h1>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="card">
+    <form method="POST" action="/perfil" enctype="multipart/form-data">
+
+      <div class="campo" style="text-align:center;margin-bottom:1.5rem">
+        {% if restaurante.logo_url %}
+          <img src="{{ restaurante.logo_url }}" id="img-preview" style="width:90px;height:90px;border-radius:50%;object-fit:cover;margin:0 auto 0.75rem;display:block">
+        {% else %}
+          <div style="width:90px;height:90px;border-radius:50%;background:#F1F5F9;display:flex;align-items:center;justify-content:center;font-size:2.5rem;margin:0 auto 0.75rem">🍽️</div>
+          <img id="img-preview" class="upload-preview" style="width:90px;height:90px;border-radius:50%;object-fit:cover;margin:0 auto" alt="">
+        {% endif %}
+        <label style="cursor:pointer;color:var(--primario);font-size:0.85rem;font-weight:600">
+          Cambiar logo
+          <input type="file" name="logo" accept="image/*" style="display:none" data-preview="img-preview">
+        </label>
+      </div>
+
+      <div class="campo">
+        <label>Nombre del restaurante</label>
+        <input type="text" name="nombre" value="{{ restaurante.nombre }}" required>
+      </div>
+
+      <div class="campo">
+        <label>Descripción</label>
+        <textarea name="descripcion" rows="2">{{ restaurante.descripcion or '' }}</textarea>
+      </div>
+
+      <div class="campo-row">
+        <div class="campo" style="margin-bottom:0">
+          <label>WhatsApp</label>
+          <input type="tel" name="whatsapp" value="{{ restaurante.whatsapp or '' }}">
+        </div>
+        <div class="campo" style="margin-bottom:0">
+          <label>Ciudad</label>
+          <input type="text" name="ciudad" value="{{ restaurante.ciudad or '' }}">
+        </div>
+      </div>
+
+      <div class="campo" style="margin-top:1rem">
+        <label>Nueva contraseña <small style="font-weight:400;color:#94A3B8">(dejar vacío para no cambiar)</small></label>
+        <input type="password" name="password" placeholder="Mínimo 6 caracteres">
+      </div>
+
+      <div style="background:#F8FAFC;border-radius:8px;padding:0.85rem;margin-top:1rem;font-size:0.83rem;color:#64748B">
+        <strong>URL de tu carta:</strong><br>
+        <code style="font-size:0.8rem">{{ request.host_url }}carta/{{ restaurante.slug }}/[token-de-mesa]</code>
+      </div>
+
+      <button type="submit" class="btn-primario" style="width:100%;justify-content:center;margin-top:1.5rem">
+        Guardar cambios
+      </button>
+    </form>
+  </div>
+
+</div>
+<script src="/static/js/main.js"></script>
+{% endblock %}

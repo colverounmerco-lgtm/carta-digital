@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedido #{{ orden.id }} — {{ restaurante.nombre }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/carta.css">
+</head>
+<body id="orden-estado-page">
+
+<div class="orden-wrap">
+
+  <div class="orden-card-pub">
+
+    <!-- Header -->
+    <div class="orden-card-header">
+      {% if restaurante.logo_url %}
+        <img src="{{ restaurante.logo_url }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;margin:0 auto 0.75rem">
+      {% endif %}
+      <h2>{{ restaurante.nombre }}</h2>
+      <p>{{ orden.mesa.nombre }} — {{ orden.nombre_cliente }}</p>
+      <div class="orden-numero">#{{ orden.id }}</div>
+    </div>
+
+    <!-- Progreso -->
+    {% if orden.estado != 'cancelada' %}
+    <div class="progreso">
+      <div class="paso {% if orden.estado_paso >= 1 %}{% if orden.estado_paso > 1 %}hecho{% else %}activo{% endif %}{% endif %}">
+        <div class="paso-circulo">{% if orden.estado_paso > 1 %}✓{% else %}1{% endif %}</div>
+        <div class="paso-label">Recibido</div>
+      </div>
+      <div class="paso {% if orden.estado_paso >= 2 %}{% if orden.estado_paso > 2 %}hecho{% else %}activo{% endif %}{% endif %}">
+        <div class="paso-circulo">{% if orden.estado_paso > 2 %}✓{% else %}2{% endif %}</div>
+        <div class="paso-label">Preparando</div>
+      </div>
+      <div class="paso {% if orden.estado_paso >= 3 %}{% if orden.estado_paso > 3 %}hecho{% else %}activo{% endif %}{% endif %}">
+        <div class="paso-circulo">{% if orden.estado_paso > 3 %}✓{% else %}3{% endif %}</div>
+        <div class="paso-label">Listo</div>
+      </div>
+      <div class="paso {% if orden.estado_paso >= 4 %}hecho{% endif %}">
+        <div class="paso-circulo">{% if orden.estado_paso >= 4 %}✓{% else %}4{% endif %}</div>
+        <div class="paso-label">Pagado</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Estado actual -->
+    <div style="text-align:center;padding:1rem 1.25rem;border-bottom:1px solid #F3F4F6">
+      {% if orden.estado == 'pendiente' %}
+        <span style="font-size:1.8rem">⏳</span>
+        <p style="font-weight:700;margin-top:0.4rem">Tu pedido fue recibido</p>
+        <p style="font-size:0.83rem;color:#6B7280;margin-top:0.2rem">El restaurante lo confirmará en breve</p>
+        <div style="margin-top:0.5rem;font-size:0.78rem;color:#9CA3AF">
+          <span class="refresh-dot"></span> actualizando cada 30s
+        </div>
+      {% elif orden.estado == 'confirmada' %}
+        <span style="font-size:1.8rem">🔥</span>
+        <p style="font-weight:700;margin-top:0.4rem">¡Tu pedido está en preparación!</p>
+        <p style="font-size:0.83rem;color:#6B7280;margin-top:0.2rem">La cocina ya lo tiene</p>
+      {% elif orden.estado == 'lista' %}
+        <span style="font-size:1.8rem">✅</span>
+        <p style="font-weight:700;margin-top:0.4rem;color:#059669">¡Listo para entregar!</p>
+        <p style="font-size:0.83rem;color:#6B7280;margin-top:0.2rem">El mesero va en camino con tu pedido</p>
+      {% elif orden.estado == 'pagada' %}
+        <div class="pagado-msg">
+          <div class="check">✅</div>
+          <h3>¡Gracias por tu visita!</h3>
+          <p>Tu pedido fue pagado. ¡Hasta pronto!</p>
+        </div>
+      {% elif orden.estado == 'cancelada' %}
+        <span style="font-size:1.8rem">❌</span>
+        <p style="font-weight:700;margin-top:0.4rem;color:#DC2626">Pedido cancelado</p>
+        <p style="font-size:0.83rem;color:#6B7280;margin-top:0.2rem">Habla con el mesero si necesitas ayuda</p>
+      {% endif %}
+    </div>
+
+    <!-- Detalle de la orden -->
+    <div class="orden-detalle">
+      <p style="font-size:0.82rem;font-weight:600;color:#9CA3AF;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.4px">Detalle del pedido</p>
+      {% for item in orden.items %}
+      <div class="orden-det-item">
+        <span>{{ item.cantidad }}× {{ item.producto.nombre if item.producto else '—' }}</span>
+        <span>${{ "%.2f"|format(item.subtotal) }}</span>
+      </div>
+      {% endfor %}
+      {% if orden.notas %}
+      <p style="font-size:0.8rem;color:#9CA3AF;margin-top:0.5rem;font-style:italic">Nota: {{ orden.notas }}</p>
+      {% endif %}
+      <div class="orden-det-total">
+        <span>Total</span>
+        <span>${{ "%.2f"|format(orden.total) }}</span>
+      </div>
+    </div>
+
+    <!-- Acción: solicitar cuenta -->
+    {% if orden.estado == 'lista' %}
+    <div class="orden-acciones">
+      {% if orden.solicita_cuenta %}
+        <div class="cuenta-solicitada">✓ Solicitud de cuenta enviada — el mesero viene en camino</div>
+      {% else %}
+        <form method="POST" action="/orden/{{ orden.token }}/cuenta">
+          <button type="submit" class="btn-cuenta">
+            💳 Solicitar la cuenta
+          </button>
+        </form>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+
+  <p style="text-align:center;font-size:0.78rem;color:#9CA3AF;margin-top:1.5rem">
+    Pedido realizado el {{ orden.fecha.strftime('%d/%m/%Y a las %H:%M') }}
+  </p>
+
+</div>
+
+<script src="/static/js/main.js"></script>
+</body>
+</html>
