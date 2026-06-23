@@ -20,7 +20,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "carta-dev-secret")
 
 # ── Base de datos ──
-_db_url = os.getenv("DATABASE_URL", "sqlite:///carta_local.db")
+_db_url = os.getenv("DATABASE_URL", "sqlite:///carta_local.db").strip()
 if _db_url.startswith("postgres://"):
     _db_url = _db_url.replace("postgres://", "postgresql+pg8000://", 1)
 elif _db_url.startswith("postgresql://") and "+pg8000" not in _db_url:
