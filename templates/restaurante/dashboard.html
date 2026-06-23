@@ -1,14 +1,53 @@
 {% extends "base.html" %}
 {% block title %}Panel — {{ restaurante.nombre }}{% endblock %}
 {% block contenido %}
+
+{% if restaurante.email == 'demo@cartadigital.app' %}
+<div style="background:#F97316;color:#fff;text-align:center;padding:0.6rem 1rem;font-size:0.85rem;font-weight:700">
+  ✨ PANEL DE DEMOSTRACIÓN — explora libremente &nbsp;·&nbsp;
+  <a href="/register" style="color:#fff;text-decoration:underline">Crear mi restaurante gratis →</a>
+</div>
+{% elif restaurante.plan == 'trial' and dias_plan is not none %}
+  {% if dias_plan <= 0 %}
+  {# plan_requerido ya bloquea, pero por si acaso #}
+  {% elif dias_plan <= 7 %}
+  <div style="background:#FEF3C7;border-bottom:1px solid #FDE68A;text-align:center;padding:0.6rem 1rem;font-size:0.85rem;font-weight:700;color:#92400E">
+    ⚠️ Tu período de prueba vence en {{ dias_plan }} día{{ 's' if dias_plan != 1 else '' }} &nbsp;·&nbsp;
+    <a href="/planes" style="color:#92400E;text-decoration:underline">Ver planes →</a>
+  </div>
+  {% endif %}
+{% elif restaurante.plan in ('mensual','anual') and dias_plan is not none and dias_plan <= 7 %}
+<div style="background:#FEF3C7;border-bottom:1px solid #FDE68A;text-align:center;padding:0.6rem 1rem;font-size:0.85rem;font-weight:700;color:#92400E">
+  ⚠️ Tu plan vence en {{ dias_plan }} día{{ 's' if dias_plan != 1 else '' }} &nbsp;·&nbsp;
+  <a href="/planes" style="color:#92400E;text-decoration:underline">Ver planes →</a>
+</div>
+{% endif %}
+
 <div class="contenedor page-wrap">
 
   <div class="page-header">
-    <div>
-      <h1 class="page-titulo">{{ restaurante.nombre }}</h1>
-      <p class="page-sub">Panel de pedidos en tiempo real</p>
+    <div style="display:flex;align-items:center;gap:1rem">
+      {% if restaurante.logo_url %}
+        <img src="{{ restaurante.logo_url }}"
+             style="width:56px;height:56px;border-radius:14px;object-fit:cover;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,0.12)">
+      {% endif %}
+      <div>
+        <h1 class="page-titulo">{{ restaurante.nombre }}</h1>
+        <p class="page-sub">
+        Panel de pedidos en tiempo real
+        <span id="poll-dot" style="display:inline-flex;align-items:center;gap:0.3rem;margin-left:0.5rem;font-size:0.78rem;color:#9CA3AF">
+          <span style="width:7px;height:7px;border-radius:50%;background:#10B981;display:inline-block;animation:blink-dot 2s infinite"></span>
+          actualizando
+        </span>
+      </p>
+      </div><!-- /texto -->
+    </div><!-- /logo+texto -->
+    <div style="display:flex;gap:0.6rem;align-items:center">
+      <button id="btn-sonido" class="btn-outline btn-sm" title="Haz clic para activar o desactivar el sonido">
+        🔕 Activar sonido
+      </button>
+      <a href="/menu/agregar" class="btn-primario">+ Agregar plato</a>
     </div>
-    <a href="/menu/agregar" class="btn-primario">+ Agregar plato</a>
   </div>
 
   <div class="stats-grid">
@@ -51,11 +90,20 @@
           <span class="badge badge-verde">✅ Listo para entregar</span>
         {% endif %}
         {% if orden.solicita_cuenta %}
-          <span class="cuenta-badge urgente">💳 Solicita la cuenta</span>
+          <span class="cuenta-badge urgente">
+            💳 Solicita la cuenta
+            {% if orden.metodo_preferido %}
+              {% for mp in metodos_pago %}{% if mp.nombre == orden.metodo_preferido %} · {{ mp.icono }}{% endif %}{% endfor %}
+              {{ orden.metodo_preferido }}
+            {% endif %}
+          </span>
         {% endif %}
       </div>
-      <div style="font-size:0.82rem;color:#94A3B8">
-        {{ orden.fecha.strftime('%H:%M') }} — #{{ orden.id }}
+      <div style="display:flex;align-items:center;gap:0.75rem">
+        <span style="font-size:0.82rem;color:#94A3B8">{{ orden.fecha|ec_time("%H:%M") }} — #{{ orden.id }}</span>
+        <a href="/orden/{{ orden.token }}/recibo" target="_blank"
+           style="font-size:0.78rem;color:#6B7280;text-decoration:none;border:1px solid #E5E7EB;border-radius:6px;padding:2px 8px;white-space:nowrap"
+           title="Imprimir recibo">🖨 Imprimir</a>
       </div>
     </div>
 
@@ -96,11 +144,20 @@
         <form method="POST" action="/dashboard/orden/{{ orden.id }}/pagar"
               style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
           <select name="metodo" style="padding:0.4rem 0.7rem;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.85rem">
-            <option value="efectivo">💵 Efectivo</option>
-            <option value="tarjeta">💳 Tarjeta</option>
-            <option value="transferencia">📲 Transferencia</option>
+            {% for mp in metodos_pago %}
+            <option value="{{ mp.nombre }}" {% if orden.metodo_preferido == mp.nombre %}selected{% endif %}>
+              {{ mp.icono }} {{ mp.nombre }}
+            </option>
+            {% endfor %}
           </select>
           <button class="btn-primario btn-sm">✓ Cobrado</button>
+        </form>
+        <form method="POST" action="/mesas/{{ orden.mesa_id }}/toggle-sesion" style="margin:0">
+          <button class="btn-sm" type="submit"
+                  style="background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA;border-radius:8px;padding:0.4rem 0.75rem;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.8rem"
+                  onclick="return confirm('¿Cerrar {{ orden.mesa.nombre }} para nuevos pedidos?')">
+            🔒 Cerrar mesa
+          </button>
         </form>
       {% endif %}
     </div>
@@ -120,4 +177,123 @@
   {% endif %}
 
 </div>
+
+<style>
+@keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:0.25} }
+#notif-banner {
+  display: none; position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+  background: #F97316; color: #fff; padding: 0.9rem 1.5rem;
+  border-radius: 999px; font-weight: 700; font-size: 0.95rem;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3); z-index: 200;
+  animation: slide-down 0.4s cubic-bezier(0.16,1,0.3,1);
+  white-space: nowrap; transition: background 0.2s;
+}
+@keyframes slide-down { from{transform:translateX(-50%) translateY(-20px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
+</style>
+
+<div id="notif-banner">🔔 ¡Nuevo pedido recibido!</div>
+
+<script>
+let audioCtx    = null;
+let sonidoOn    = false;
+let prevCount   = {{ ordenes_activas|length }};
+let prevPend    = {{ ordenes_activas | selectattr('estado','equalto','pendiente') | list | length }};
+let prevCuentas = {{ ordenes_activas | selectattr('solicita_cuenta') | list | length }};
+
+function actualizarBoton() {
+  const btn = document.getElementById('btn-sonido');
+  if (sonidoOn) {
+    btn.textContent = '🔔 Sonido activo';
+    btn.style.background   = '#ECFDF5';
+    btn.style.borderColor  = '#6EE7B7';
+    btn.style.color        = '#065F46';
+  } else {
+    btn.textContent = '🔕 Activar sonido';
+    btn.style.background   = '';
+    btn.style.borderColor  = '';
+    btn.style.color        = '';
+  }
+}
+
+function iniciarAudio() {
+  if (audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    sonidoOn = true;
+    actualizarBoton();
+    // Confirmación silenciosa (volumen muy bajo)
+    tocarChime([880, 1047], 0.1);
+  } catch (e) {}
+}
+
+function toggleSonido() {
+  if (!sonidoOn) {
+    iniciarAudio();
+  } else {
+    sonidoOn = false;
+    actualizarBoton();
+  }
+}
+
+// Activar audio en la primera interacción del usuario con la página
+['click','keydown','touchstart','scroll'].forEach(ev =>
+  document.addEventListener(ev, iniciarAudio, { once: true })
+);
+
+document.getElementById('btn-sonido').onclick = toggleSonido;
+
+function tocarChime(freqs, vol) {
+  if (!audioCtx || !sonidoOn) return;
+  freqs.forEach((f, i) => {
+    const osc  = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = f;
+    const t = audioCtx.currentTime + i * 0.18;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(vol, t + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+    osc.start(t);
+    osc.stop(t + 0.5);
+  });
+}
+
+function tocarAlerta() { tocarChime([880, 1047, 880, 1175], 0.45); }
+function tocarCuenta()  { tocarChime([523, 440, 392, 523],  0.5);  }
+
+function mostrarBanner(texto, color) {
+  const b = document.getElementById('notif-banner');
+  b.textContent = texto;
+  b.style.background = color || '#F97316';
+  b.style.display = 'block';
+  setTimeout(() => { b.style.display = 'none'; }, 5000);
+}
+
+async function pollOrdenes() {
+  try {
+    const res  = await fetch('/api/ordenes-activas');
+    const data = await res.json();
+
+    if (data.pendientes > prevPend) {
+      tocarAlerta();
+      mostrarBanner('🔔 ¡Nuevo pedido recibido!', '#F97316');
+      setTimeout(() => location.reload(), 1800);
+    } else if (data.cuentas > prevCuentas) {
+      tocarCuenta();
+      mostrarBanner('💳 ¡Un cliente solicita la cuenta!', '#7C3AED');
+      setTimeout(() => location.reload(), 1800);
+    } else if (data.count !== prevCount) {
+      location.reload();
+    }
+
+    prevCount   = data.count;
+    prevPend    = data.pendientes;
+    prevCuentas = data.cuentas;
+  } catch (e) {}
+}
+
+setInterval(pollOrdenes, 10000);
+</script>
 {% endblock %}

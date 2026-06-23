@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recibo #{{ orden.id }}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      background: #f5f5f5;
+      color: #000;
+    }
+
+    .recibo-wrapper {
+      max-width: 340px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px 16px 24px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    }
+
+    .center { text-align: center; }
+    .right  { text-align: right; }
+    .bold   { font-weight: bold; }
+
+    hr.sep  { border: none; border-top: 1px dashed #000; margin: 10px 0; }
+    hr.sep2 { border: none; border-top: 2px solid  #000; margin: 10px 0; }
+
+    .nombre-restaurante {
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 4px 0;
+    }
+    .items-table td { padding: 3px 0; vertical-align: top; }
+    .col-qty   { width: 30px; }
+    .col-name  { }
+    .col-price { text-align: right; white-space: nowrap; min-width: 52px; }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      font-size: 16px;
+      margin-top: 2px;
+    }
+
+    .metodo-pago {
+      font-size: 12px;
+      margin-top: 5px;
+    }
+
+    .pie {
+      text-align: center;
+      font-size: 12px;
+      margin-top: 14px;
+      line-height: 1.6;
+    }
+
+    .corte {
+      border-top: 2px dashed #888;
+      margin-top: 18px;
+    }
+
+    /* Botones — solo pantalla */
+    .acciones {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 18px auto 0;
+      max-width: 340px;
+    }
+    .btn-print {
+      flex: 1;
+      background: #1C1C1E;
+      color: #fff;
+      border: none;
+      padding: 10px 0;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 8px;
+      font-family: inherit;
+    }
+    .btn-print:hover { background: #333; }
+    .btn-volver {
+      flex: 1;
+      background: #fff;
+      color: #1C1C1E;
+      border: 1.5px solid #D1D5DB;
+      padding: 10px 0;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 8px;
+      text-align: center;
+      font-family: inherit;
+      text-decoration: none;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .acciones { display: none !important; }
+      .recibo-wrapper {
+        margin: 0;
+        padding: 4px 6px 12px;
+        box-shadow: none;
+        max-width: 100%;
+      }
+      .corte { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Botones (solo en pantalla) -->
+<div class="acciones">
+  <button class="btn-print" onclick="window.print()">🖨 Imprimir recibo</button>
+  <a href="javascript:history.back()" class="btn-volver">← Volver</a>
+</div>
+
+<div class="recibo-wrapper">
+
+  <!-- Encabezado -->
+  <div class="nombre-restaurante">{{ restaurante.nombre }}</div>
+  {% if restaurante.ciudad %}
+  <div class="center" style="font-size:12px">{{ restaurante.ciudad }}</div>
+  {% endif %}
+  {% if restaurante.whatsapp %}
+  <div class="center" style="font-size:11px">Tel: {{ restaurante.whatsapp }}</div>
+  {% endif %}
+
+  <hr class="sep2">
+
+  <div><span class="bold">Orden N°:</span> #{{ orden.id }}</div>
+  <div><span class="bold">Fecha:</span>    {{ orden.fecha|ec_time("%d/%m/%Y %H:%M") }}</div>
+  <div><span class="bold">Mesa:</span>     {{ orden.mesa.nombre }}</div>
+  <div><span class="bold">Cliente:</span>  {{ orden.nombre_cliente }}</div>
+
+  <hr class="sep">
+
+  <!-- Productos -->
+  <table class="items-table">
+    <thead>
+      <tr>
+        <td class="col-qty  bold">Cant</td>
+        <td class="col-name bold">Producto</td>
+        <td class="col-price bold">Total</td>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in orden.items %}
+      <tr>
+        <td class="col-qty">{{ item.cantidad }}x</td>
+        <td class="col-name">
+          {{ item.producto.nombre if item.producto else '—' }}
+          <div style="font-size:11px;color:#555">${{ "%.2f"|format(item.precio_unitario) }} c/u</div>
+        </td>
+        <td class="col-price">${{ "%.2f"|format(item.subtotal) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if orden.notas %}
+  <div style="font-size:11px;font-style:italic;border-left:2px solid #000;padding-left:6px;margin:6px 0">
+    Nota: {{ orden.notas }}
+  </div>
+  {% endif %}
+
+  <hr class="sep2">
+
+  <!-- Total -->
+  <div class="total-row">
+    <span>TOTAL</span>
+    <span>${{ "%.2f"|format(orden.total) }}</span>
+  </div>
+
+  {% set metodo = orden.metodo_pago or orden.metodo_preferido %}
+  {% if metodo %}
+  <div class="metodo-pago">
+    Método de pago: {{ metodo|capitalize }}
+  </div>
+  {% endif %}
+
+  <hr class="sep">
+
+  <!-- Pie -->
+  <div class="pie">
+    <div>*** ¡Gracias por su visita! ***</div>
+    <div style="margin-top:4px">{{ restaurante.nombre }}</div>
+    {% if restaurante.descripcion %}
+    <div style="font-size:11px;margin-top:2px">{{ restaurante.descripcion }}</div>
+    {% endif %}
+  </div>
+
+  <div class="corte"></div>
+
+</div>
+
+<script>
+  if (new URLSearchParams(location.search).get('auto') === '1') {
+    window.addEventListener('load', () => setTimeout(() => window.print(), 500));
+  }
+</script>
+</body>
+</html>

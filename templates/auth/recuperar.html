@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Iniciar sesión — Carta Digital</title>
+  <title>Recuperar contraseña — Carta Digital</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/styles.css">
@@ -12,9 +12,9 @@
 <div class="auth-wrap">
   <div class="auth-card">
     <div class="auth-logo">
-      <div class="logo-icon">🍽️</div>
-      <h1>Carta Digital</h1>
-      <p>Ingresa a tu panel de restaurante</p>
+      <div class="logo-icon" style="font-size:1.6rem">🔑</div>
+      <h1>Recuperar contraseña</h1>
+      <p>Te enviamos un código de 6 dígitos a tu correo</p>
     </div>
 
     {% with msgs = get_flashed_messages(with_categories=true) %}
@@ -23,24 +23,18 @@
       {% endfor %}
     {% endwith %}
 
-    <form method="POST" action="/login">
+    <form method="POST" action="/recuperar">
       <div class="campo">
-        <label>Correo electrónico</label>
+        <label>Correo electrónico de tu cuenta</label>
         <input type="email" name="email" placeholder="tu@restaurante.com" required autofocus>
       </div>
-      <div class="campo">
-        <label>Contraseña</label>
-        <input type="password" name="password" placeholder="••••••••" required>
-      </div>
-      <button type="submit" class="btn-primario" style="width:100%;padding:0.75rem;font-size:0.95rem;justify-content:center">
-        Entrar
+      <button type="submit" class="btn-primario"
+              style="width:100%;padding:0.8rem;font-size:0.95rem;justify-content:center">
+        Enviar código
       </button>
     </form>
 
-    <p class="auth-footer" style="margin-bottom:0.5rem">
-      <a href="/recuperar" style="color:#9CA3AF;font-size:0.83rem">¿Olvidaste tu contraseña?</a>
-    </p>
-    <p class="auth-footer">¿No tienes cuenta? <a href="/register">Registrar restaurante</a></p>
+    <p class="auth-footer"><a href="/login">← Volver al inicio de sesión</a></p>
   </div>
 </div>
 </body>

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Métodos de pago — {{ restaurante.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor page-wrap">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-titulo">Métodos de pago</h1>
+      <p class="page-sub">Los clientes verán estas opciones al solicitar la cuenta</p>
+    </div>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Agregar nuevo método -->
+  <div class="card" style="margin-bottom:1.5rem">
+    <h2 style="font-size:0.95rem;font-weight:700;margin-bottom:1rem">Agregar método</h2>
+    <form method="POST" action="/metodos-pago/agregar"
+          style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end">
+      <div class="campo" style="margin-bottom:0;flex:0 0 90px">
+        <label>Ícono</label>
+        <input type="text" name="icono" placeholder="💳" maxlength="4"
+               style="text-align:center;font-size:1.3rem" value="💳">
+      </div>
+      <div class="campo" style="margin-bottom:0;flex:1;min-width:180px">
+        <label>Nombre del método</label>
+        <input type="text" name="nombre" placeholder="Ej: Depósito bancario" required>
+      </div>
+      <button type="submit" class="btn-primario btn-sm" style="align-self:flex-end;padding:0.6rem 1.25rem">
+        + Agregar
+      </button>
+    </form>
+  </div>
+
+  <!-- Lista de métodos -->
+  {% if metodos %}
+  <div style="display:flex;flex-direction:column;gap:0.75rem">
+    {% for m in metodos %}
+    <div style="background:#fff;border:1.5px solid {% if m.activo %}#E5E7EB{% else %}#FEE2E2{% endif %};
+                border-radius:14px;padding:1rem 1.25rem;
+                display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+
+      <div style="font-size:1.8rem;width:44px;height:44px;background:#F9FAFB;border-radius:10px;
+                  display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        {{ m.icono }}
+      </div>
+
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:0.95rem;color:{% if m.activo %}#1C1C1E{% else %}#9CA3AF{% endif %}">
+          {{ m.nombre }}
+        </div>
+        <div style="font-size:0.78rem;margin-top:2px">
+          {% if m.activo %}
+            <span style="color:#059669;font-weight:600">● Activo</span>
+          {% else %}
+            <span style="color:#DC2626;font-weight:600">● Inactivo</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0.5rem">
+        <form method="POST" action="/metodos-pago/{{ m.id }}/toggle">
+          <button type="submit" class="btn-outline btn-sm">
+            {% if m.activo %}Desactivar{% else %}Activar{% endif %}
+          </button>
+        </form>
+        <form method="POST" action="/metodos-pago/{{ m.id }}/eliminar"
+              onsubmit="return confirm('¿Eliminar {{ m.nombre }}?')">
+          <button type="submit" class="btn-danger btn-sm">Eliminar</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div style="text-align:center;padding:3rem 1rem;color:#94A3B8">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem">💳</div>
+    <p style="font-weight:600">Sin métodos configurados</p>
+    <p style="font-size:0.85rem;margin-top:0.35rem">Agrega al menos un método para que los clientes puedan solicitar la cuenta.</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verificar correo — Carta Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-icon" style="font-size:1.6rem">📧</div>
+      <h1>Verifica tu correo</h1>
+      <p>Ingresa el código de 6 dígitos que enviamos a<br><strong>{{ email }}</strong></p>
+    </div>
+
+    {% with msgs = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in msgs %}
+        <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="/verificar-email">
+      <div class="campo">
+        <label>Código de verificación</label>
+        <input type="text" name="codigo" inputmode="numeric" maxlength="6"
+               placeholder="000000" required autofocus
+               style="font-size:1.8rem;font-weight:800;letter-spacing:0.5rem;text-align:center">
+      </div>
+      <button type="submit" class="btn-primario"
+              style="width:100%;padding:0.8rem;font-size:0.95rem;justify-content:center">
+        Verificar cuenta
+      </button>
+    </form>
+
+    <div style="text-align:center;margin-top:1.25rem">
+      <p style="font-size:0.83rem;color:#9CA3AF;margin-bottom:0.6rem">¿No recibiste el correo?</p>
+      <form method="POST" action="/verificar-email/reenviar" style="display:inline">
+        <button type="submit" style="background:none;border:none;color:#F97316;font-weight:700;
+                font-size:0.88rem;cursor:pointer;font-family:inherit;padding:0">
+          Reenviar código
+        </button>
+      </form>
+    </div>
+
+    <p class="auth-footer"><a href="/login">← Volver al inicio de sesión</a></p>
+  </div>
+</div>
+</body>
+</html>

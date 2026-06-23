@@ -20,17 +20,21 @@ def slugify(text):
 
 class Restaurante(db.Model):
     __tablename__ = "restaurantes"
-    id             = db.Column(db.Integer, primary_key=True)
-    nombre         = db.Column(db.String(100), nullable=False)
-    email          = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash  = db.Column(db.String(256), nullable=False)
-    whatsapp       = db.Column(db.String(20))
-    ciudad         = db.Column(db.String(80))
-    logo_url       = db.Column(db.String(300))
-    slug           = db.Column(db.String(100), unique=True, nullable=False)
-    descripcion    = db.Column(db.Text)
-    activo         = db.Column(db.Boolean, default=True)
-    fecha_registro = db.Column(db.DateTime, default=datetime.utcnow)
+    id               = db.Column(db.Integer, primary_key=True)
+    nombre           = db.Column(db.String(100), nullable=False)
+    email            = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash    = db.Column(db.String(256), nullable=False)
+    whatsapp         = db.Column(db.String(20))
+    ciudad           = db.Column(db.String(80))
+    logo_url         = db.Column(db.String(300))
+    slug             = db.Column(db.String(100), unique=True, nullable=False)
+    descripcion      = db.Column(db.Text)
+    activo           = db.Column(db.Boolean, default=True)
+    email_verificado = db.Column(db.Boolean, default=False)
+    fecha_registro   = db.Column(db.DateTime, default=datetime.utcnow)
+    plan             = db.Column(db.String(20), default='trial')  # trial | mensual | anual
+    plan_inicio      = db.Column(db.DateTime)
+    plan_vence       = db.Column(db.DateTime)
 
     mesas    = db.relationship("Mesa",     backref="restaurante", lazy=True, cascade="all, delete-orphan")
     productos = db.relationship("Producto", backref="restaurante", lazy=True, cascade="all, delete-orphan")
@@ -51,6 +55,7 @@ class Mesa(db.Model):
     nombre         = db.Column(db.String(50))
     token          = db.Column(db.String(40), unique=True, nullable=False)
     activa         = db.Column(db.Boolean, default=True)
+    abierta        = db.Column(db.Boolean, default=True)  # False = bloqueada para pedidos
 
     ordenes = db.relationship("Orden", backref="mesa", lazy=True)
 
@@ -86,9 +91,10 @@ class Orden(db.Model):
     total           = db.Column(db.Float, default=0.0)
     metodo_pago     = db.Column(db.String(30))
     notas           = db.Column(db.Text)
-    solicita_cuenta = db.Column(db.Boolean, default=False)
-    fecha           = db.Column(db.DateTime, default=datetime.utcnow)
-    fecha_pago      = db.Column(db.DateTime)
+    solicita_cuenta  = db.Column(db.Boolean, default=False)
+    metodo_preferido = db.Column(db.String(30))   # método elegido por el cliente
+    fecha            = db.Column(db.DateTime, default=datetime.utcnow)
+    fecha_pago       = db.Column(db.DateTime)
 
     items = db.relationship("ItemOrden", backref="orden", lazy=True, cascade="all, delete-orphan")
 
@@ -109,6 +115,36 @@ class Orden(db.Model):
     @property
     def estado_paso(self):
         return {"pendiente": 1, "confirmada": 2, "lista": 3, "pagada": 4}.get(self.estado, 0)
+
+
+class CodigoVerificacion(db.Model):
+    __tablename__ = "codigos_verificacion"
+    id     = db.Column(db.Integer, primary_key=True)
+    email  = db.Column(db.String(120), nullable=False)
+    codigo = db.Column(db.String(6), nullable=False)
+    tipo   = db.Column(db.String(20), nullable=False)  # 'registro' | 'reset'
+    expira = db.Column(db.DateTime, nullable=False)
+    usado  = db.Column(db.Boolean, default=False)
+
+
+class MetodoPago(db.Model):
+    __tablename__ = "metodos_pago"
+    id             = db.Column(db.Integer, primary_key=True)
+    restaurante_id = db.Column(db.Integer, db.ForeignKey("restaurantes.id"), nullable=False)
+    nombre         = db.Column(db.String(50), nullable=False)
+    icono          = db.Column(db.String(10), default="💳")
+    activo         = db.Column(db.Boolean, default=True)
+    orden_display  = db.Column(db.Integer, default=0)
+
+
+class MensajeSoporte(db.Model):
+    __tablename__ = "mensajes_soporte"
+    id      = db.Column(db.Integer, primary_key=True)
+    nombre  = db.Column(db.String(100))
+    email   = db.Column(db.String(120))
+    mensaje = db.Column(db.Text, nullable=False)
+    leido   = db.Column(db.Boolean, default=False)
+    fecha   = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 class ItemOrden(db.Model):

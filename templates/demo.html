@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo — Carta Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #0F172A; color: #fff; min-height: 100vh; }
+    a { text-decoration: none; }
+
+    /* Hero */
+    .hero {
+      text-align: center; padding: 4rem 1.5rem 2rem;
+      max-width: 680px; margin: 0 auto;
+    }
+    .demo-badge {
+      display: inline-block; background: rgba(249,115,22,0.15);
+      color: #FB923C; border: 1px solid rgba(249,115,22,0.3);
+      padding: 0.35rem 1rem; border-radius: 999px;
+      font-size: 0.82rem; font-weight: 700;
+      letter-spacing: 0.5px; margin-bottom: 1.5rem;
+    }
+    .hero h1 { font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 800; line-height: 1.15; margin-bottom: 0.85rem; }
+    .hero h1 span { color: #F97316; }
+    .hero p { color: #94A3B8; font-size: 1rem; line-height: 1.6; max-width: 520px; margin: 0 auto 2.5rem; }
+
+    /* Tarjetas de rol */
+    .roles { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; max-width: 680px; margin: 0 auto 3rem; padding: 0 1.5rem; }
+    @media(max-width: 520px) { .roles { grid-template-columns: 1fr; } }
+
+    .rol-card {
+      border-radius: 20px; padding: 2rem 1.5rem;
+      display: flex; flex-direction: column; gap: 1rem;
+      transition: transform 0.15s;
+    }
+    .rol-card:hover { transform: translateY(-3px); }
+    .rol-card.cliente { background: linear-gradient(135deg, #1E3A5F, #1E293B); border: 1px solid #334155; }
+    .rol-card.admin   { background: linear-gradient(135deg, #431407, #1C0A00); border: 1px solid #7C2D12; }
+
+    .rol-emoji { font-size: 2.5rem; }
+    .rol-titulo { font-size: 1.1rem; font-weight: 800; }
+    .rol-desc   { font-size: 0.85rem; color: #94A3B8; line-height: 1.55; flex: 1; }
+
+    .btn-demo-cliente {
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      background: #1E40AF; color: #fff; padding: 0.8rem 1.25rem;
+      border-radius: 12px; font-weight: 700; font-size: 0.9rem;
+      transition: background 0.15s;
+    }
+    .btn-demo-cliente:hover { background: #1D4ED8; }
+
+    .btn-demo-admin {
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      background: #F97316; color: #fff; padding: 0.8rem 1.25rem;
+      border-radius: 12px; font-weight: 700; font-size: 0.9rem;
+      transition: background 0.15s;
+    }
+    .btn-demo-admin:hover { background: #EA580C; }
+
+    /* Features checklist */
+    .features { max-width: 680px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+    .features h2 { font-size: 1rem; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; }
+    .feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    @media(max-width: 520px) { .feat-grid { grid-template-columns: 1fr; } }
+    .feat-item { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; color: #CBD5E1; }
+    .feat-check { color: #10B981; font-weight: 700; flex-shrink: 0; }
+
+    /* Credentials box */
+    .creds {
+      max-width: 680px; margin: 0 auto 2rem; padding: 0 1.5rem;
+    }
+    .creds-box {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px; padding: 1rem 1.25rem;
+      font-size: 0.82rem; color: #94A3B8;
+      display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
+    }
+    .creds-box strong { color: #CBD5E1; }
+    code { background: rgba(255,255,255,0.08); padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.82rem; }
+
+    /* Footer */
+    footer { text-align: center; padding: 1.5rem; font-size: 0.78rem; color: #475569; border-top: 1px solid #1E293B; }
+    footer a { color: #F97316; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="demo-badge">✨ DEMO INTERACTIVA</div>
+    <h1>Prueba <span>Carta Digital</span><br>sin registrarte</h1>
+    <p>Experimenta el flujo completo: escanea la carta como cliente y gestiona pedidos como dueño del restaurante.</p>
+  </div>
+
+  <div class="roles">
+    <!-- Cliente -->
+    <div class="rol-card cliente">
+      <div class="rol-emoji">📱</div>
+      <div class="rol-titulo">Vista del cliente</div>
+      <div class="rol-desc">
+        Explora el menú de <strong>El Rincón Criollo</strong>, agrega platos al carrito y realiza un pedido — exactamente como lo haría tu cliente desde la mesa.
+      </div>
+      <a href="{{ carta_url }}" class="btn-demo-cliente">
+        Solo la carta →
+      </a>
+    </div>
+
+    <!-- Admin -->
+    <div class="rol-card admin">
+      <div class="rol-emoji">🍽️</div>
+      <div class="rol-titulo">Panel del restaurante</div>
+      <div class="rol-desc">
+        Accede al panel de administración: gestiona el menú, las mesas, confirma pedidos y descarga reportes de ventas.
+      </div>
+      <a href="/demo/admin" class="btn-demo-admin">
+        Solo el panel →
+      </a>
+    </div>
+  </div>
+
+  <!-- CTA principal: demo split -->
+  <div style="max-width:680px;margin:-0.5rem auto 2.5rem;padding:0 1.5rem">
+    <a href="/demo/prueba" style="display:flex;align-items:center;justify-content:center;gap:0.75rem;background:linear-gradient(135deg,#F97316,#EA580C);color:#fff;padding:1.1rem 2rem;border-radius:16px;font-weight:800;font-size:1rem;text-decoration:none;box-shadow:0 8px 30px rgba(249,115,22,0.4);transition:transform 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      ⚡ Probar cliente + restaurante al mismo tiempo
+    </a>
+    <p style="text-align:center;font-size:0.78rem;color:#475569;margin-top:0.6rem">Vista dividida: haz un pedido y míralo aparecer en el panel</p>
+  </div>
+
+  <!-- Credenciales -->
+  <div class="creds">
+    <div class="creds-box">
+      <span>🔑 Acceso manual al panel:</span>
+      <span><strong>Correo:</strong> <code>demo@cartadigital.app</code></span>
+      <span><strong>Contraseña:</strong> <code>demo1234</code></span>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="features">
+    <h2>Qué puedes probar</h2>
+    <div class="feat-grid">
+      <div class="feat-item"><span class="feat-check">✓</span> Ver carta con fotos por categoría</div>
+      <div class="feat-item"><span class="feat-check">✓</span> Agregar platos al carrito</div>
+      <div class="feat-item"><span class="feat-check">✓</span> Realizar un pedido completo</div>
+      <div class="feat-item"><span class="feat-check">✓</span> Ver seguimiento del pedido</div>
+      <div class="feat-item"><span class="feat-check">✓</span> Confirmar pedidos como restaurante</div>
+      <div class="feat-item"><span class="feat-check">✓</span> Imprimir código QR de mesa</div>
+      <div class="feat-item"><span class="feat-check">✓</span> Agregar y editar platos del menú</div>
+      <div class="feat-item"><span class="feat-check">✓</span> Descargar reporte de ventas CSV</div>
+    </div>
+  </div>
+
+  <footer>
+    ¿Listo para tu propio restaurante? <a href="/register">Regístrate gratis →</a>
+  </footer>
+
+</body>
+</html>

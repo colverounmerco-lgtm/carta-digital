@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin — Carta Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0F172A;
+      color: #F1F5F9;
+      min-height: 100vh;
+    }
+
+    /* Top bar */
+    .topbar {
+      background: #1E293B;
+      border-bottom: 1px solid #334155;
+      padding: 0 1.5rem;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .topbar-logo {
+      display: flex; align-items: center; gap: 0.6rem;
+      font-weight: 800; font-size: 1rem;
+    }
+    .topbar-logo span { color: #F97316; }
+    .badge-admin {
+      background: rgba(249,115,22,0.15);
+      color: #FB923C;
+      border: 1px solid rgba(249,115,22,0.3);
+      font-size: 0.72rem; font-weight: 700;
+      padding: 0.2rem 0.6rem; border-radius: 999px;
+    }
+    .btn-logout {
+      font-size: 0.82rem; color: #64748B;
+      background: none; border: 1px solid #334155;
+      padding: 0.4rem 0.9rem; border-radius: 8px;
+      cursor: pointer; font-family: inherit;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .btn-logout:hover { color: #F1F5F9; border-color: #64748B; }
+
+    /* Contenido */
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .page-header {
+      display: flex; align-items: flex-end;
+      justify-content: space-between; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;
+    }
+    h1 { font-size: 1.5rem; font-weight: 800; }
+    .sub { font-size: 0.85rem; color: #64748B; margin-top: 0.25rem; }
+
+    /* Stats globales */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem; margin-bottom: 2rem;
+    }
+    .stat {
+      background: #1E293B; border: 1px solid #334155;
+      border-radius: 14px; padding: 1.1rem 1.25rem;
+    }
+    .stat-n { font-size: 1.8rem; font-weight: 800; color: #F97316; }
+    .stat-l { font-size: 0.78rem; color: #64748B; margin-top: 0.15rem; }
+
+    /* Tabla */
+    .tabla-wrap {
+      background: #1E293B; border: 1px solid #334155;
+      border-radius: 16px; overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: #0F172A; }
+    th {
+      text-align: left; padding: 0.75rem 1rem;
+      font-size: 0.75rem; font-weight: 700;
+      color: #64748B; text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    td {
+      padding: 0.9rem 1rem; font-size: 0.86rem;
+      border-top: 1px solid #334155; vertical-align: middle;
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .badge-activo {
+      background: rgba(16,185,129,0.15); color: #34D399;
+      border: 1px solid rgba(16,185,129,0.3);
+      font-size: 0.72rem; font-weight: 700;
+      padding: 0.2rem 0.6rem; border-radius: 999px;
+    }
+    .badge-inactivo {
+      background: rgba(239,68,68,0.15); color: #F87171;
+      border: 1px solid rgba(239,68,68,0.3);
+      font-size: 0.72rem; font-weight: 700;
+      padding: 0.2rem 0.6rem; border-radius: 999px;
+    }
+    .badge-demo {
+      background: rgba(249,115,22,0.15); color: #FB923C;
+      border: 1px solid rgba(249,115,22,0.3);
+      font-size: 0.72rem; font-weight: 700;
+      padding: 0.2rem 0.6rem; border-radius: 999px;
+    }
+
+    .acciones { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+    .btn-sm {
+      font-size: 0.78rem; font-weight: 600;
+      padding: 0.3rem 0.75rem; border-radius: 7px;
+      cursor: pointer; font-family: inherit; border: none;
+      transition: opacity 0.15s;
+    }
+    .btn-sm:hover { opacity: 0.8; }
+    .btn-toggle-on  { background: #FEF3C7; color: #92400E; }
+    .btn-toggle-off { background: #ECFDF5; color: #065F46; }
+    .btn-panel      { background: #EEF2FF; color: #3730A3; text-decoration: none; display: inline-flex; align-items: center; }
+    .btn-del        { background: #FEE2E2; color: #991B1B; }
+
+    .empty {
+      text-align: center; padding: 3rem; color: #475569;
+      font-size: 0.9rem;
+    }
+
+    /* Modal plan */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.6); align-items: center; justify-content: center;
+    }
+    .modal-box {
+      background: #1E293B; border: 1px solid #334155; border-radius: 16px;
+      padding: 1.75rem; width: 100%; max-width: 380px; margin: 1rem;
+    }
+    .modal-box h3 { font-size: 1rem; font-weight: 800; margin-bottom: 0.25rem; }
+    .modal-box p  { font-size: 0.82rem; color: #64748B; margin-bottom: 1.25rem; }
+    .form-group   { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.78rem; font-weight: 600; color: #94A3B8; margin-bottom: 0.4rem; }
+    .form-group select, .form-group input {
+      width: 100%; background: #0F172A; border: 1px solid #334155;
+      border-radius: 8px; padding: 0.55rem 0.75rem;
+      color: #F1F5F9; font-family: inherit; font-size: 0.88rem; outline: none;
+    }
+    .badge-trial  { background: rgba(234,179,8,0.15);  color: #FCD34D; border: 1px solid rgba(234,179,8,0.3);  font-size: 0.7rem; font-weight: 700; padding: 0.18rem 0.55rem; border-radius: 999px; }
+    .badge-mensual{ background: rgba(99,102,241,0.15); color: #A5B4FC; border: 1px solid rgba(99,102,241,0.3); font-size: 0.7rem; font-weight: 700; padding: 0.18rem 0.55rem; border-radius: 999px; }
+    .badge-anual  { background: rgba(249,115,22,0.15); color: #FB923C; border: 1px solid rgba(249,115,22,0.3); font-size: 0.7rem; font-weight: 700; padding: 0.18rem 0.55rem; border-radius: 999px; }
+    .badge-vencido{ background: rgba(239,68,68,0.15);  color: #F87171; border: 1px solid rgba(239,68,68,0.3);  font-size: 0.7rem; font-weight: 700; padding: 0.18rem 0.55rem; border-radius: 999px; }
+    .btn-plan { background: #1E3A5F; color: #93C5FD; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid #1D4ED8; cursor: pointer; font-family: inherit; }
+    .btn-plan:hover { background: #1D4ED8; color: #fff; }
+
+    @media (max-width: 700px) {
+      th:nth-child(3), td:nth-child(3),
+      th:nth-child(5), td:nth-child(5) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">
+    <span>Carta Digital</span>
+    <div class="badge-admin">SUPER ADMIN</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:0.75rem">
+    <a href="/admin/mensajes" style="position:relative;text-decoration:none;
+       background:#1E293B;border:1px solid #334155;color:#94A3B8;
+       padding:0.4rem 0.9rem;border-radius:8px;font-size:0.82rem;
+       display:flex;align-items:center;gap:0.4rem;transition:color 0.15s"
+       onmouseover="this.style.color='#F1F5F9'" onmouseout="this.style.color='#94A3B8'">
+      💬 Mensajes
+      {% if msgs_no_leidos > 0 %}
+      <span style="background:#F97316;color:#fff;font-size:0.68rem;font-weight:800;
+                   padding:1px 6px;border-radius:999px;line-height:1.4">
+        {{ msgs_no_leidos }}
+      </span>
+      {% endif %}
+    </a>
+    <form method="POST" action="/admin/logout" style="margin:0">
+      <button class="btn-logout" type="submit">Cerrar sesión</button>
+    </form>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="page-header">
+    <div>
+      <h1>Panel de administración</h1>
+      <p class="sub">Gestión de todos los restaurantes registrados</p>
+    </div>
+  </div>
+
+  <!-- Stats globales -->
+  {% set total_activos   = restaurantes | selectattr('activo') | list | length %}
+  {% set total_inactivos = restaurantes | rejectattr('activo') | list | length %}
+  {% set total_ordenes   = stats.values() | sum(attribute='total_ordenes') %}
+  {% set total_ingresos  = stats.values() | sum(attribute='ingresos_total') %}
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-n">{{ restaurantes | length }}</div>
+      <div class="stat-l">Restaurantes totales</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n">{{ total_activos }}</div>
+      <div class="stat-l">Activos</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n">{{ total_ordenes }}</div>
+      <div class="stat-l">Órdenes totales</div>
+    </div>
+    <div class="stat">
+      <div class="stat-n">${{ "%.2f"|format(total_ingresos) }}</div>
+      <div class="stat-l">Ingresos totales procesados</div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="tabla-wrap">
+    {% if restaurantes %}
+    <table>
+      <thead>
+        <tr>
+          <th>Restaurante</th>
+          <th>Correo</th>
+          <th>Ciudad</th>
+          <th>Órdenes</th>
+          <th>Ingresos</th>
+          <th>Plan</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in restaurantes %}
+        <tr>
+          <td>
+            <div style="font-weight:700">{{ r.nombre }}</div>
+            <div style="font-size:0.75rem;color:#64748B;margin-top:1px">
+              Registro: {{ r.fecha_registro|ec_time("%d/%m/%Y") }}
+            </div>
+          </td>
+          <td style="color:#94A3B8">{{ r.email }}</td>
+          <td style="color:#94A3B8">{{ r.ciudad or '—' }}</td>
+          <td>
+            <span style="font-weight:700">{{ stats[r.id].total_ordenes }}</span>
+            {% if stats[r.id].ordenes_hoy > 0 %}
+            <span style="font-size:0.75rem;color:#F97316;margin-left:4px">+{{ stats[r.id].ordenes_hoy }} hoy</span>
+            {% endif %}
+          </td>
+          <td style="font-weight:600">${{ "%.2f"|format(stats[r.id].ingresos_total) }}</td>
+          <td>
+            {% set ahora = now() %}
+            {% if r.email == 'demo@cartadigital.app' %}
+              <span class="badge-demo">DEMO</span>
+            {% elif not r.plan_vence or r.plan_vence > ahora %}
+              {% if r.plan == 'mensual' %}
+                <span class="badge-mensual">Mensual</span>
+              {% elif r.plan == 'anual' %}
+                <span class="badge-anual">Anual</span>
+              {% else %}
+                <span class="badge-trial">Trial</span>
+              {% endif %}
+              {% if r.plan_vence %}
+              <div style="font-size:0.7rem;color:#64748B;margin-top:2px">
+                Vence {{ r.plan_vence.strftime('%d/%m/%Y') }}
+              </div>
+              {% endif %}
+            {% else %}
+              <span class="badge-vencido">Vencido</span>
+            {% endif %}
+            {% if r.email != 'demo@cartadigital.app' %}
+            <button class="btn-plan" style="margin-top:4px"
+              onclick="abrirModalPlan({{ r.id }}, '{{ r.nombre }}', '{{ r.plan or 'trial' }}')">
+              🔄 Plan
+            </button>
+            {% endif %}
+          </td>
+          <td>
+            {% if r.email == 'demo@cartadigital.app' %}
+              <span class="badge-demo">DEMO</span>
+            {% elif r.activo %}
+              <span class="badge-activo">Activo</span>
+            {% else %}
+              <span class="badge-inactivo">Inactivo</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="acciones">
+              <!-- Ver panel del restaurante -->
+              <a href="/admin/restaurante/{{ r.id }}/panel"
+                 class="btn-sm btn-panel" title="Ver panel como este restaurante">🔍 Ver panel</a>
+
+              {% if r.email != 'demo@cartadigital.app' %}
+              <!-- Activar / Desactivar -->
+              <form method="POST" action="/admin/restaurante/{{ r.id }}/toggle" style="margin:0">
+                {% if r.activo %}
+                  <button class="btn-sm btn-toggle-on" type="submit"
+                          onclick="return confirm('¿Desactivar {{ r.nombre }}?')">
+                    Desactivar
+                  </button>
+                {% else %}
+                  <button class="btn-sm btn-toggle-off" type="submit">
+                    Activar
+                  </button>
+                {% endif %}
+              </form>
+
+              <!-- Eliminar -->
+              <form method="POST" action="/admin/restaurante/{{ r.id }}/eliminar" style="margin:0">
+                <button class="btn-sm btn-del" type="submit"
+                        onclick="return confirm('¿Eliminar permanentemente {{ r.nombre }}? Esta acción no se puede deshacer.')">
+                  Eliminar
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty">No hay restaurantes registrados todavía.</div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Modal asignar plan -->
+<div class="modal-overlay" id="modal-plan" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal-box">
+    <h3>Asignar plan</h3>
+    <p id="modal-nombre-rest"></p>
+    <form method="POST" id="form-plan">
+      <div class="form-group">
+        <label>Tipo de plan</label>
+        <select name="plan" id="modal-select-plan">
+          <option value="trial">Trial (30 días gratis)</option>
+          <option value="mensual">Mensual — $46.00/mes (IVA incl.)</option>
+          <option value="anual">Anual — $419.75/año (IVA incl.)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Fecha de inicio</label>
+        <input type="date" name="fecha_inicio" id="modal-fecha">
+      </div>
+      <div style="display:flex;gap:0.75rem;margin-top:1.25rem">
+        <button type="submit"
+          style="flex:1;padding:0.65rem;background:#F97316;color:#fff;border:none;border-radius:8px;font-weight:700;font-family:inherit;cursor:pointer;font-size:0.9rem">
+          Confirmar
+        </button>
+        <button type="button" onclick="cerrarModal()"
+          style="padding:0.65rem 1rem;background:#334155;color:#94A3B8;border:none;border-radius:8px;font-weight:600;font-family:inherit;cursor:pointer;font-size:0.9rem">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const modalPlan = document.getElementById('modal-plan');
+
+  function abrirModalPlan(rid, nombre, planActual) {
+    document.getElementById('modal-nombre-rest').textContent = nombre;
+    document.getElementById('form-plan').action = `/admin/restaurante/${rid}/plan`;
+    document.getElementById('modal-select-plan').value = planActual;
+    // Fecha de hoy en formato yyyy-mm-dd
+    const hoy = new Date().toISOString().slice(0, 10);
+    document.getElementById('modal-fecha').value = hoy;
+    modalPlan.style.display = 'flex';
+  }
+
+  function cerrarModal() {
+    modalPlan.style.display = 'none';
+  }
+</script>
+</body>
+</html>

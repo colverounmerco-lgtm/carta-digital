@@ -10,6 +10,13 @@
 </head>
 <body>
 
+{% if restaurante.email == 'demo@cartadigital.app' %}
+<div style="background:#F97316;color:#fff;text-align:center;padding:0.5rem 1rem;font-size:0.82rem;font-weight:700;letter-spacing:0.3px">
+  ✨ MODO DEMO — <a href="/demo" style="color:#fff;text-decoration:underline">volver a la demo</a>
+  &nbsp;·&nbsp; <a href="/register" style="color:#fff;text-decoration:underline">Crear mi restaurante gratis →</a>
+</div>
+{% endif %}
+
 <!-- Header fijo -->
 <header class="carta-header">
   {% if restaurante.logo_url %}
@@ -28,6 +35,13 @@
     <div class="carta-alerta carta-alerta-{{ cat }}">{{ msg }}</div>
   {% endfor %}
 {% endwith %}
+
+{% if not mesa_abierta %}
+<div style="background:#1C1C1E;color:#fff;text-align:center;padding:1rem 1.5rem;
+            font-size:0.88rem;font-weight:600;position:sticky;top:64px;z-index:50">
+  🔒 Esta mesa no está disponible en este momento — consulta con el mesero
+</div>
+{% endif %}
 
 <!-- Tabs de categorías -->
 {% if categorias %}
@@ -110,7 +124,7 @@
 </div>
 
 <!-- Barra de carrito (sticky bottom) -->
-{% if items_carrito > 0 %}
+{% if items_carrito > 0 and mesa_abierta %}
 <div class="carrito-bar" id="carrito-bar">
   <div class="carrito-bar-inner">
     <div class="carrito-resumen">

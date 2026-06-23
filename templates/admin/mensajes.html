@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mensajes — Admin Carta Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #0F172A; color: #F1F5F9; min-height: 100vh; }
+
+    .topbar {
+      background: #1E293B; border-bottom: 1px solid #334155;
+      padding: 0 1.5rem; height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar-logo { display: flex; align-items: center; gap: 0.6rem; font-weight: 800; font-size: 1rem; }
+    .topbar-logo span { color: #F97316; }
+    .badge-admin {
+      background: rgba(249,115,22,0.15); color: #FB923C;
+      border: 1px solid rgba(249,115,22,0.3);
+      font-size: 0.72rem; font-weight: 700;
+      padding: 0.2rem 0.6rem; border-radius: 999px;
+    }
+    .btn-back {
+      font-size: 0.82rem; color: #64748B;
+      background: none; border: 1px solid #334155;
+      padding: 0.4rem 0.9rem; border-radius: 8px;
+      cursor: pointer; font-family: inherit; text-decoration: none;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .btn-back:hover { color: #F1F5F9; border-color: #64748B; }
+
+    .wrap { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem; }
+    h1 { font-size: 1.4rem; font-weight: 800; margin-bottom: 0.35rem; }
+    .sub { font-size: 0.85rem; color: #64748B; margin-bottom: 1.75rem; }
+
+    .mensaje-card {
+      background: #1E293B; border: 1px solid #334155;
+      border-radius: 14px; padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .mensaje-meta {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;
+    }
+    .mensaje-quien { font-weight: 700; font-size: 0.95rem; }
+    .mensaje-email { font-size: 0.8rem; color: #64748B; margin-top: 2px; }
+    .mensaje-fecha { font-size: 0.78rem; color: #475569; white-space: nowrap; }
+    .mensaje-texto {
+      font-size: 0.9rem; color: #CBD5E1; line-height: 1.65;
+      background: #0F172A; border-radius: 8px;
+      padding: 0.75rem 1rem; margin-bottom: 0.75rem;
+    }
+    .btn-del {
+      background: none; border: 1px solid #334155;
+      color: #64748B; font-size: 0.78rem;
+      padding: 0.3rem 0.75rem; border-radius: 7px;
+      cursor: pointer; font-family: inherit;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .btn-del:hover { color: #F87171; border-color: #F87171; }
+
+    .empty {
+      text-align: center; padding: 4rem 1rem; color: #475569;
+    }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">
+    <span>Carta Digital</span>
+    <div class="badge-admin">SUPER ADMIN</div>
+  </div>
+  <a href="/admin" class="btn-back">← Volver al panel</a>
+</div>
+
+<div class="wrap">
+  <h1>💬 Mensajes de soporte</h1>
+  <p class="sub">Mensajes enviados desde el botón de ayuda de la plataforma</p>
+
+  {% if mensajes %}
+    {% for m in mensajes %}
+    <div class="mensaje-card">
+      <div class="mensaje-meta">
+        <div>
+          <div class="mensaje-quien">{{ m.nombre or 'Anónimo' }}</div>
+          {% if m.email %}
+          <div class="mensaje-email">{{ m.email }}</div>
+          {% endif %}
+        </div>
+        <div class="mensaje-fecha">{{ m.fecha|ec_time }}</div>
+      </div>
+      <div class="mensaje-texto">{{ m.mensaje }}</div>
+      <form method="POST" action="/admin/mensajes/{{ m.id }}/eliminar" style="margin:0">
+        <button class="btn-del" type="submit"
+                onclick="return confirm('¿Eliminar este mensaje?')">
+          Eliminar
+        </button>
+      </form>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty">
+      <div class="empty-icon">📭</div>
+      <p>No hay mensajes todavía</p>
+    </div>
+  {% endif %}
+</div>
+
+</body>
+</html>

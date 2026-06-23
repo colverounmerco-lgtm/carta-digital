@@ -6,3 +6,6 @@ __pycache__/
 venv/
 *.log
 .DS_Store
+instance/
+static/uploads/
+logs/

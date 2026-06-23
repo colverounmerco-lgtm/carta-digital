@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo interactiva — Carta Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Inter', sans-serif; background: #0F172A; overflow: hidden; }
+
+    /* ── Barra superior ── */
+    .topbar {
+      height: 50px; background: #1E293B;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.25rem; border-bottom: 1px solid #334155;
+      flex-shrink: 0;
+    }
+    .topbar-logo { display: flex; align-items: center; gap: 0.5rem; color: #fff; font-weight: 800; font-size: 0.95rem; }
+    .demo-chip   { background: #F97316; color: #fff; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; }
+    .topbar-tip  { font-size: 0.8rem; color: #64748B; }
+    .topbar-tip strong { color: #94A3B8; }
+    .btn-registrar {
+      background: #F97316; color: #fff; padding: 0.4rem 1rem;
+      border-radius: 8px; font-weight: 700; font-size: 0.82rem;
+      text-decoration: none; white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-registrar:hover { background: #EA580C; }
+
+    /* ── Layout principal ── */
+    .layout {
+      display: flex; flex-direction: column;
+      height: calc(100vh - 50px);
+    }
+
+    /* Tabs (mobile) */
+    .tabs {
+      display: none; background: #1E293B;
+      border-bottom: 1px solid #334155;
+    }
+    .tab-btn {
+      flex: 1; padding: 0.7rem; background: none; border: none;
+      color: #64748B; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      border-bottom: 2.5px solid transparent; transition: color 0.15s, border-color 0.15s;
+    }
+    .tab-btn.activa { color: #F97316; border-bottom-color: #F97316; }
+
+    /* Panel split (desktop) */
+    .split {
+      display: flex; flex: 1; overflow: hidden;
+    }
+    .panel {
+      flex: 1; display: flex; flex-direction: column; min-width: 0;
+    }
+    .panel + .panel { border-left: 3px solid #0F172A; }
+
+    .panel-label {
+      padding: 0.55rem 1rem; font-size: 0.78rem; font-weight: 700;
+      display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;
+    }
+    .panel-label.cliente { background: #1E3A5F; color: #93C5FD; }
+    .panel-label.admin   { background: #431407; color: #FCA5A5; }
+    .panel-label .dot    { width: 8px; height: 8px; border-radius: 50%; animation: blink 2s infinite; }
+    .panel-label.cliente .dot { background: #60A5FA; }
+    .panel-label.admin   .dot { background: #F87171; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    iframe {
+      flex: 1; border: none; width: 100%; height: 100%;
+    }
+
+    /* ── Flecha indicadora ── */
+    .flecha-msg {
+      position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+      background: rgba(249,115,22,0.95); color: #fff;
+      padding: 0.65rem 1.25rem; border-radius: 999px;
+      font-size: 0.82rem; font-weight: 700;
+      box-shadow: 0 4px 20px rgba(249,115,22,0.4);
+      pointer-events: none; z-index: 50;
+      animation: flecha-fade 0.5s ease 3s forwards;
+    }
+    @keyframes flecha-fade { to { opacity: 0; } }
+
+    /* ── Mobile: una vista a la vez ── */
+    @media (max-width: 768px) {
+      body { overflow: auto; }
+      html, body { height: auto; }
+      .layout { height: auto; overflow: visible; }
+      .tabs  { display: flex; }
+      .split { flex-direction: column; }
+      .panel { height: 85vh; }
+      .panel + .panel { border-left: none; border-top: 3px solid #0F172A; }
+      .panel.oculto { display: none; }
+      .topbar-tip { display: none; }
+      .flecha-msg { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra top -->
+  <div class="topbar">
+    <div class="topbar-logo">
+      🍽️ Carta Digital <span class="demo-chip">DEMO</span>
+    </div>
+    <span class="topbar-tip">
+      <strong>Haz un pedido</strong> a la izquierda · Aparece en el panel a la derecha
+    </span>
+    <a href="/register" class="btn-registrar">Crear mi restaurante →</a>
+  </div>
+
+  <div class="layout">
+
+    <!-- Tabs mobile -->
+    <div class="tabs">
+      <button class="tab-btn activa" onclick="cambiarTab('cliente', this)">📱 Cliente</button>
+      <button class="tab-btn"        onclick="cambiarTab('admin',   this)">🖥️ Restaurante</button>
+    </div>
+
+    <!-- Split desktop -->
+    <div class="split">
+
+      <!-- Panel cliente -->
+      <div class="panel" id="panel-cliente">
+        <div class="panel-label cliente">
+          <span class="dot"></span>
+          📱 Vista del cliente — Mesa 1
+          <span style="margin-left:auto;opacity:0.7;font-weight:400">Agrega platos y haz tu pedido</span>
+        </div>
+        <iframe src="{{ carta_url }}" id="frame-cliente" title="Vista del cliente"></iframe>
+      </div>
+
+      <!-- Panel restaurante -->
+      <div class="panel" id="panel-admin">
+        <div class="panel-label admin">
+          <span class="dot"></span>
+          🖥️ Panel del restaurante — El Rincón Criollo
+          <span style="margin-left:auto;opacity:0.7;font-weight:400">Los pedidos aparecen aquí</span>
+        </div>
+        <iframe src="{{ dashboard_url }}" id="frame-admin" title="Panel del restaurante"></iframe>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mensaje guía (desaparece solo) -->
+  <div class="flecha-msg">
+    👈 Haz un pedido aquí · El panel se actualiza automáticamente 👉
+  </div>
+
+  <script>
+    function cambiarTab(tab, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('activa'));
+      btn.classList.add('activa');
+      document.getElementById('panel-cliente').classList.toggle('oculto', tab !== 'cliente');
+      document.getElementById('panel-admin').classList.toggle('oculto', tab !== 'admin');
+    }
+  </script>
+</body>
+</html>

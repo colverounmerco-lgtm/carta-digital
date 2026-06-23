@@ -1,7 +1,11 @@
-import os, csv, io
-from datetime import datetime, date
+import os, csv, io, random, smtplib
+from datetime import datetime, date, time, timedelta
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from functools import wraps
 from pathlib import Path
+
+EC_OFFSET = timedelta(hours=-5)   # Ecuador UTC-5, sin horario de verano
 
 from flask import (Flask, render_template, request, redirect, url_for,
                    session, flash, make_response)
@@ -10,13 +14,13 @@ from dotenv import load_dotenv
 import cloudinary, cloudinary.uploader
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
-from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, slugify
+from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, slugify
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "carta-dev-secret")
 
 # ── Base de datos ──
-_db_url = os.getenv("DATABASE_URL", "")
+_db_url = os.getenv("DATABASE_URL", "sqlite:///carta_local.db")
 if _db_url.startswith("postgres://"):
     _db_url = _db_url.replace("postgres://", "postgresql+pg8000://", 1)
 elif _db_url.startswith("postgresql://") and "+pg8000" not in _db_url:
@@ -34,6 +38,114 @@ cloudinary.config(
 )
 
 MAX_CANTIDAD = 10
+CODIGO_TTL   = 15  # minutos
+TRIAL_DIAS   = 30
+
+PLANES = {
+    "mensual": {
+        "nombre": "Mensual",
+        "base":   40.00,
+        "iva":     6.00,
+        "total":  46.00,
+        "dias":   30,
+        "desc":   "Facturado cada mes",
+    },
+    "anual": {
+        "nombre": "Anual",
+        "base":   365.00,
+        "iva":    54.75,
+        "total":  419.75,
+        "dias":   365,
+        "desc":   "Pagas solo $35.41/mes",
+    },
+}
+
+
+def plan_vigente(r):
+    """True si el restaurante tiene acceso activo."""
+    if not r:
+        return False
+    if not r.plan_vence:
+        return True
+    return datetime.utcnow() <= r.plan_vence
+
+
+def dias_plan(r):
+    """Días restantes del plan (None si no hay fecha de vencimiento)."""
+    if not r or not r.plan_vence:
+        return None
+    delta = r.plan_vence - datetime.utcnow()
+    return max(0, delta.days)
+
+
+def _crear_metodos_default(restaurante_id):
+    defaults = [("💵", "Efectivo", 0), ("💳", "Tarjeta", 1), ("📲", "Transferencia", 2)]
+    for icono, nombre, orden in defaults:
+        db.session.add(MetodoPago(
+            restaurante_id=restaurante_id, nombre=nombre,
+            icono=icono, orden_display=orden
+        ))
+
+
+def inicio_fin_dia_ec():
+    """Devuelve (inicio, fin) del día actual en Ecuador como datetimes UTC."""
+    ec_hoy = (datetime.utcnow() + EC_OFFSET).date()
+    inicio = datetime.combine(ec_hoy, time.min) - EC_OFFSET
+    fin    = datetime.combine(ec_hoy, time.max) - EC_OFFSET
+    return inicio, fin
+
+
+# ── Email ──
+def enviar_email(destinatario, asunto, cuerpo_html):
+    host = os.getenv("SMTP_HOST", "")
+    user = os.getenv("SMTP_USER", "")
+    pwd  = os.getenv("SMTP_PASS", "")
+    port = int(os.getenv("SMTP_PORT", "587"))
+
+    if not all([host, user, pwd]):
+        # Sin SMTP configurado: imprime en consola para desarrollo local
+        print(f"\n[EMAIL → {destinatario}] {asunto}\n{cuerpo_html}\n")
+        return
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = asunto
+    msg["From"]    = f"Carta Digital <{user}>"
+    msg["To"]      = destinatario
+    msg.attach(MIMEText(cuerpo_html, "html", "utf-8"))
+
+    with smtplib.SMTP(host, port, timeout=15) as srv:
+        srv.ehlo()
+        srv.starttls()
+        srv.login(user, pwd)
+        srv.sendmail(user, destinatario, msg.as_string())
+        print(f"[EMAIL OK → {destinatario}] {asunto}")
+
+
+def generar_codigo():
+    return str(random.randint(100000, 999999))
+
+
+def crear_codigo(email, tipo):
+    # Invalida códigos anteriores del mismo tipo
+    CodigoVerificacion.query.filter_by(email=email, tipo=tipo, usado=False).update({"usado": True})
+    codigo = generar_codigo()
+    db.session.add(CodigoVerificacion(
+        email=email, codigo=codigo, tipo=tipo,
+        expira=datetime.utcnow() + timedelta(minutes=CODIGO_TTL)
+    ))
+    db.session.commit()
+    return codigo
+
+
+def validar_codigo(email, codigo, tipo):
+    c = CodigoVerificacion.query.filter_by(
+        email=email, codigo=codigo, tipo=tipo, usado=False
+    ).first()
+    if not c or datetime.utcnow() > c.expira:
+        return False
+    c.usado = True
+    db.session.commit()
+    return True
 
 
 # ── Helpers ──
@@ -43,6 +155,17 @@ def restaurante_session():
 
 
 def subir_imagen(file_storage, folder="carta_digital"):
+    # Fallback local cuando Cloudinary no está configurado
+    if os.getenv("CLOUDINARY_CLOUD_NAME", "") in ("", "placeholder"):
+        import uuid
+        from werkzeug.utils import secure_filename
+        ext      = Path(file_storage.filename).suffix.lower() or ".jpg"
+        filename = f"{uuid.uuid4().hex}{ext}"
+        upload_dir = Path(__file__).parent / "static" / "uploads"
+        upload_dir.mkdir(exist_ok=True)
+        file_storage.save(upload_dir / filename)
+        return f"/static/uploads/{filename}"
+
     result = cloudinary.uploader.upload(
         file_storage,
         folder=folder,
@@ -61,9 +184,31 @@ def login_required(f):
     return decorated
 
 
+def plan_requerido(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        r = restaurante_session()
+        if r and not plan_vigente(r):
+            vencido_hace = (datetime.utcnow() - r.plan_vence).days if r.plan_vence else 0
+            return render_template("auth/plan_vencido.html",
+                                   restaurante=r, vencido_hace=vencido_hace)
+        return f(*args, **kwargs)
+    return decorated
+
+
 @app.context_processor
 def ctx():
-    return {"restaurante_session": restaurante_session()}
+    return {
+        "restaurante_session": restaurante_session(),
+        "now": datetime.utcnow,
+    }
+
+
+@app.template_filter("ec_time")
+def ec_time_filter(dt, fmt="%d/%m/%Y %H:%M"):
+    if not dt:
+        return ""
+    return (dt + EC_OFFSET).strftime(fmt)
 
 
 # ── Migraciones runtime ──
@@ -78,16 +223,36 @@ def run_migrations():
             db.session.commit()
 
     if "ordenes" in tables:
-        add_col("ordenes", "metodo_pago",     "VARCHAR(30)")
-        add_col("ordenes", "notas",           "TEXT")
-        add_col("ordenes", "solicita_cuenta", "BOOLEAN DEFAULT FALSE")
-        add_col("ordenes", "fecha_pago",      "TIMESTAMP")
+        add_col("ordenes", "metodo_pago",      "VARCHAR(30)")
+        add_col("ordenes", "notas",            "TEXT")
+        add_col("ordenes", "solicita_cuenta",  "BOOLEAN DEFAULT FALSE")
+        add_col("ordenes", "metodo_preferido", "VARCHAR(30)")
+        add_col("ordenes", "fecha_pago",       "TIMESTAMP")
+
+    if "mesas" in tables:
+        add_col("mesas", "abierta", "BOOLEAN DEFAULT TRUE")
 
     if "productos" in tables:
         add_col("productos", "orden_display", "INTEGER DEFAULT 0")
 
     if "restaurantes" in tables:
-        add_col("restaurantes", "descripcion", "TEXT")
+        add_col("restaurantes", "descripcion",      "TEXT")
+        add_col("restaurantes", "email_verificado", "BOOLEAN DEFAULT FALSE")
+        add_col("restaurantes", "plan",             "VARCHAR(20) DEFAULT 'trial'")
+        add_col("restaurantes", "plan_inicio",      "TIMESTAMP")
+        add_col("restaurantes", "plan_vence",       "TIMESTAMP")
+
+    # Crear métodos de pago por defecto para restaurantes existentes
+    for r in Restaurante.query.all():
+        if MetodoPago.query.filter_by(restaurante_id=r.id).count() == 0:
+            _crear_metodos_default(r.id)
+        # Asignar trial a restaurantes sin plan/vencimiento
+        if not r.plan:
+            r.plan = 'trial'
+        if not r.plan_vence:
+            base = r.fecha_registro or datetime.utcnow()
+            r.plan_vence = base + timedelta(days=TRIAL_DIAS)
+    db.session.commit()
 
 
 with app.app_context():
@@ -144,13 +309,35 @@ def register():
 
         r = Restaurante(nombre=nombre, email=email, slug=slug,
                         whatsapp=whatsapp, ciudad=ciudad,
-                        logo_url=logo_url, descripcion=descripcion)
+                        logo_url=logo_url, descripcion=descripcion,
+                        email_verificado=False)
         r.set_password(pwd)
         db.session.add(r)
+        db.session.flush()
+        _crear_metodos_default(r.id)
         db.session.commit()
-        session["restaurante_id"] = r.id
-        flash(f"¡Bienvenido, {nombre}! Empieza creando tu menú.", "success")
-        return redirect(url_for("dashboard"))
+
+        codigo = crear_codigo(email, "registro")
+        try:
+            enviar_email(email, "Verifica tu cuenta — Carta Digital",
+                f"""<div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+                <h2 style="color:#F97316">¡Bienvenido a Carta Digital!</h2>
+                <p>Usa este código para verificar tu cuenta:</p>
+                <div style="font-size:2.5rem;font-weight:900;letter-spacing:0.5rem;
+                            text-align:center;padding:1.5rem;background:#F9FAFB;
+                            border-radius:12px;margin:1.5rem 0;color:#1C1C1E">
+                  {codigo}
+                </div>
+                <p style="color:#6B7280;font-size:0.85rem">
+                  Este código expira en {CODIGO_TTL} minutos.<br>
+                  Si no creaste esta cuenta, ignora este correo.
+                </p></div>""")
+        except Exception as e:
+            print(f"[EMAIL ERROR] {e}")
+
+        session["verificar_email"] = email
+        flash("Te enviamos un código de verificación a tu correo.", "info")
+        return redirect(url_for("verificar_email"))
 
     return render_template("auth/register.html")
 
@@ -167,6 +354,25 @@ def login():
         if not r.activo:
             flash("Tu cuenta está desactivada.", "error")
             return redirect(url_for("login"))
+        if not r.email_verificado:
+            codigo = crear_codigo(email, "registro")
+            try:
+                enviar_email(email, "Verifica tu cuenta — Carta Digital",
+                    f"""<div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+                    <h2 style="color:#F97316">Verifica tu cuenta</h2>
+                    <p>Tu cuenta aún no está verificada. Usa este código:</p>
+                    <div style="font-size:2.5rem;font-weight:900;letter-spacing:0.5rem;
+                                text-align:center;padding:1.5rem;background:#F9FAFB;
+                                border-radius:12px;margin:1.5rem 0;color:#1C1C1E">
+                      {codigo}
+                    </div>
+                    <p style="color:#6B7280;font-size:0.85rem">Expira en {CODIGO_TTL} minutos.</p>
+                    </div>""")
+            except Exception as e:
+                print(f"[EMAIL ERROR] {e}")
+            session["verificar_email"] = email
+            flash("Verifica tu correo antes de entrar.", "error")
+            return redirect(url_for("verificar_email"))
         session["restaurante_id"] = r.id
         return redirect(url_for("dashboard"))
     return render_template("auth/login.html")
@@ -178,34 +384,154 @@ def logout():
     return redirect(url_for("index"))
 
 
+@app.route("/verificar-email", methods=["GET", "POST"])
+def verificar_email():
+    email = session.get("verificar_email")
+    if not email:
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        codigo = request.form.get("codigo", "").strip()
+        if validar_codigo(email, codigo, "registro"):
+            r = Restaurante.query.filter_by(email=email).first()
+            if r:
+                r.email_verificado = True
+                db.session.commit()
+                session.pop("verificar_email", None)
+                session["restaurante_id"] = r.id
+                flash(f"¡Bienvenido, {r.nombre}! Empieza creando tu menú.", "success")
+                return redirect(url_for("dashboard"))
+        flash("Código incorrecto o expirado.", "error")
+        return redirect(url_for("verificar_email"))
+
+    return render_template("auth/verificar_email.html", email=email)
+
+
+@app.route("/verificar-email/reenviar", methods=["POST"])
+def reenviar_codigo_registro():
+    email = session.get("verificar_email")
+    if not email:
+        return redirect(url_for("login"))
+    codigo = crear_codigo(email, "registro")
+    try:
+        enviar_email(email, "Tu nuevo código — Carta Digital",
+            f"""<div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+            <h2 style="color:#F97316">Nuevo código de verificación</h2>
+            <div style="font-size:2.5rem;font-weight:900;letter-spacing:0.5rem;
+                        text-align:center;padding:1.5rem;background:#F9FAFB;
+                        border-radius:12px;margin:1.5rem 0;color:#1C1C1E">
+              {codigo}
+            </div>
+            <p style="color:#6B7280;font-size:0.85rem">Expira en {CODIGO_TTL} minutos.</p>
+            </div>""")
+        flash("Te enviamos un nuevo código.", "success")
+    except Exception as e:
+        print(f"[EMAIL ERROR] {e}")
+        flash("Error al enviar el correo. Intenta de nuevo.", "error")
+    return redirect(url_for("verificar_email"))
+
+
+@app.route("/recuperar", methods=["GET", "POST"])
+def recuperar():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        r = Restaurante.query.filter_by(email=email).first()
+        if r:
+            codigo = crear_codigo(email, "reset")
+            try:
+                enviar_email(email, "Recupera tu contraseña — Carta Digital",
+                    f"""<div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+                    <h2 style="color:#F97316">Recuperar contraseña</h2>
+                    <p>Usa este código para crear una nueva contraseña:</p>
+                    <div style="font-size:2.5rem;font-weight:900;letter-spacing:0.5rem;
+                                text-align:center;padding:1.5rem;background:#F9FAFB;
+                                border-radius:12px;margin:1.5rem 0;color:#1C1C1E">
+                      {codigo}
+                    </div>
+                    <p style="color:#6B7280;font-size:0.85rem">
+                      Expira en {CODIGO_TTL} minutos.<br>
+                      Si no solicitaste esto, ignora este correo.
+                    </p></div>""")
+            except Exception as e:
+                print(f"[EMAIL ERROR] {e}")
+        # Siempre mostramos el mismo mensaje para no revelar si el email existe
+        session["reset_email"] = email
+        flash("Si ese correo está registrado, recibirás el código en breve.", "info")
+        return redirect(url_for("recuperar_codigo"))
+    return render_template("auth/recuperar.html")
+
+
+@app.route("/recuperar/codigo", methods=["GET", "POST"])
+def recuperar_codigo():
+    email = session.get("reset_email")
+    if not email:
+        return redirect(url_for("recuperar"))
+
+    if request.method == "POST":
+        codigo = request.form.get("codigo", "").strip()
+        pwd    = request.form.get("password", "")
+        pwd2   = request.form.get("password2", "")
+
+        if not codigo:
+            flash("Ingresa el código.", "error")
+            return redirect(url_for("recuperar_codigo"))
+        if pwd != pwd2:
+            flash("Las contraseñas no coinciden.", "error")
+            return redirect(url_for("recuperar_codigo"))
+        if len(pwd) < 6:
+            flash("La contraseña debe tener al menos 6 caracteres.", "error")
+            return redirect(url_for("recuperar_codigo"))
+        if not validar_codigo(email, codigo, "reset"):
+            flash("Código incorrecto o expirado.", "error")
+            return redirect(url_for("recuperar_codigo"))
+
+        r = Restaurante.query.filter_by(email=email).first()
+        if r:
+            r.set_password(pwd)
+            db.session.commit()
+        session.pop("reset_email", None)
+        flash("Contraseña actualizada. Ya puedes iniciar sesión.", "success")
+        return redirect(url_for("login"))
+
+    return render_template("auth/recuperar_codigo.html", email=email)
+
+
 # ══════════════════════════════════════════════
 #  DASHBOARD
 # ══════════════════════════════════════════════
 
 @app.route("/dashboard")
 @login_required
+@plan_requerido
 def dashboard():
-    r   = restaurante_session()
-    hoy = date.today()
+    r               = restaurante_session()
+    inicio, fin     = inicio_fin_dia_ec()
 
     ordenes_activas = Orden.query.filter(
         Orden.restaurante_id == r.id,
-        Orden.estado.in_(["pendiente", "confirmada", "lista"])
+        Orden.estado.in_(["pendiente", "confirmada", "lista"]),
+        Orden.fecha >= inicio,
+        Orden.fecha <= fin,
     ).order_by(Orden.fecha.desc()).all()
 
     total_hoy = db.session.query(func.count(Orden.id)).filter(
         Orden.restaurante_id == r.id,
         Orden.estado == "pagada",
-        func.date(Orden.fecha) == hoy,
+        Orden.fecha >= inicio,
+        Orden.fecha <= fin,
     ).scalar() or 0
 
     ingresos_hoy = db.session.query(func.sum(Orden.total)).filter(
         Orden.restaurante_id == r.id,
         Orden.estado == "pagada",
-        func.date(Orden.fecha) == hoy,
+        Orden.fecha >= inicio,
+        Orden.fecha <= fin,
     ).scalar() or 0.0
 
     cuentas_solicitadas = sum(1 for o in ordenes_activas if o.solicita_cuenta)
+    metodos_pago = MetodoPago.query.filter_by(
+        restaurante_id=r.id, activo=True
+    ).order_by(MetodoPago.orden_display).all()
 
     return render_template("restaurante/dashboard.html",
         restaurante=r,
@@ -213,6 +539,8 @@ def dashboard():
         total_hoy=total_hoy,
         ingresos_hoy=ingresos_hoy,
         cuentas_solicitadas=cuentas_solicitadas,
+        metodos_pago=metodos_pago,
+        dias_plan=dias_plan(r),
     )
 
 
@@ -270,6 +598,7 @@ def cancelar_orden(oid):
 
 @app.route("/menu")
 @login_required
+@plan_requerido
 def menu():
     r = restaurante_session()
     productos = Producto.query.filter_by(restaurante_id=r.id).order_by(
@@ -395,6 +724,28 @@ def agregar_mesa():
     return redirect(url_for("mesas"))
 
 
+@app.route("/mesas/<int:mid>/qr")
+@login_required
+def imprimir_qr(mid):
+    r    = restaurante_session()
+    mesa = Mesa.query.filter_by(id=mid, restaurante_id=r.id).first_or_404()
+    carta_url = request.host_url.rstrip("/") + f"/carta/{r.slug}/{mesa.token}"
+    return render_template("restaurante/qr_imprimir.html",
+        restaurante=r, mesa=mesa, carta_url=carta_url)
+
+
+@app.route("/mesas/<int:mid>/toggle-sesion", methods=["POST"])
+@login_required
+def toggle_sesion_mesa(mid):
+    r = restaurante_session()
+    m = Mesa.query.filter_by(id=mid, restaurante_id=r.id).first_or_404()
+    m.abierta = not m.abierta
+    db.session.commit()
+    estado = "abierta" if m.abierta else "cerrada"
+    flash(f"{m.nombre} {estado}.", "success")
+    return redirect(url_for("mesas"))
+
+
 @app.route("/mesas/eliminar/<int:mid>", methods=["POST"])
 @login_required
 def eliminar_mesa(mid):
@@ -435,13 +786,16 @@ def carta(slug, mesa_token):
         categorias=categorias, cat_map=cat_map,
         carrito=carrito, total_carrito=total_carrito,
         items_carrito=items_carrito, max_cantidad=MAX_CANTIDAD,
+        mesa_abierta=mesa.abierta,
     )
 
 
 @app.route("/carta/<slug>/<mesa_token>/agregar", methods=["POST"])
 def carta_agregar(slug, mesa_token):
     r    = Restaurante.query.filter_by(slug=slug, activo=True).first_or_404()
-    Mesa.query.filter_by(token=mesa_token, restaurante_id=r.id, activa=True).first_or_404()
+    mesa = Mesa.query.filter_by(token=mesa_token, restaurante_id=r.id, activa=True).first_or_404()
+    if not mesa.abierta:
+        return redirect(url_for("carta", slug=slug, mesa_token=mesa_token))
 
     prod_id  = request.form.get("producto_id", type=int)
     cantidad = max(1, min(request.form.get("cantidad", 1, type=int), MAX_CANTIDAD))
@@ -487,6 +841,10 @@ def carta_cambiar(slug, mesa_token, prod_id):
 def hacer_pedido(slug, mesa_token):
     r    = Restaurante.query.filter_by(slug=slug, activo=True).first_or_404()
     mesa = Mesa.query.filter_by(token=mesa_token, restaurante_id=r.id, activa=True).first_or_404()
+
+    if not mesa.abierta:
+        flash("Esta mesa no está disponible.", "error")
+        return redirect(url_for("carta", slug=slug, mesa_token=mesa_token))
 
     cart_key = f"cart_{mesa_token}"
     carrito  = session.get(cart_key, {})
@@ -538,16 +896,27 @@ def hacer_pedido(slug, mesa_token):
 @app.route("/orden/<token>")
 def estado_orden(token):
     orden = Orden.query.filter_by(token=token).first_or_404()
-    return render_template("carta/orden.html", orden=orden, restaurante=orden.restaurante)
+    metodos_pago = MetodoPago.query.filter_by(
+        restaurante_id=orden.restaurante_id, activo=True
+    ).order_by(MetodoPago.orden_display).all()
+    return render_template("carta/orden.html", orden=orden,
+                           restaurante=orden.restaurante, metodos_pago=metodos_pago)
 
 
 @app.route("/orden/<token>/cuenta", methods=["POST"])
 def solicitar_cuenta(token):
     orden = Orden.query.filter_by(token=token).first_or_404()
     if orden.estado == "lista":
-        orden.solicita_cuenta = True
+        orden.solicita_cuenta  = True
+        orden.metodo_preferido = request.form.get("metodo_preferido", "efectivo")
         db.session.commit()
     return redirect(url_for("estado_orden", token=token))
+
+
+@app.route("/orden/<token>/recibo")
+def recibo_orden(token):
+    orden = Orden.query.filter_by(token=token).first_or_404()
+    return render_template("carta/recibo.html", orden=orden, restaurante=orden.restaurante)
 
 
 # ══════════════════════════════════════════════
@@ -556,6 +925,7 @@ def solicitar_cuenta(token):
 
 @app.route("/reportes")
 @login_required
+@plan_requerido
 def reportes():
     r   = restaurante_session()
     hoy = date.today()
@@ -610,10 +980,11 @@ def descargar_reporte():
                 "Total Orden", "Método Pago"])
 
     for o in ordenes:
+        ec_fecha = o.fecha + EC_OFFSET
         for item in o.items:
             w.writerow([
-                o.fecha.strftime("%d/%m/%Y"),
-                o.fecha.strftime("%H:%M"),
+                ec_fecha.strftime("%d/%m/%Y"),
+                ec_fecha.strftime("%H:%M"),
                 o.id,
                 o.mesa.nombre if o.mesa else "—",
                 o.nombre_cliente,
@@ -638,6 +1009,7 @@ def descargar_reporte():
 
 @app.route("/perfil", methods=["GET", "POST"])
 @login_required
+@plan_requerido
 def perfil():
     r = restaurante_session()
     if request.method == "POST":
@@ -665,6 +1037,315 @@ def perfil():
         return redirect(url_for("perfil"))
 
     return render_template("restaurante/perfil.html", restaurante=r)
+
+
+DEMO_EMAIL = "demo@cartadigital.app"
+DEMO_PASS  = "demo1234"
+
+DEMO_PRODUCTOS = [
+    ("Ceviche de camarón",   "Camarones frescos marinados en limón, cebolla morada, cilantro y ají. Servido con chifles y patacones.",  7.50, "Entradas",  "https://picsum.photos/seed/ceviche1/900/700"),
+    ("Patacones con hogao",  "Patacones crocantes acompañados de hogao casero y queso costeño.",                                        4.50, "Entradas",  "https://picsum.photos/seed/patacon2/900/700"),
+    ("Seco de pollo",        "Pollo en salsa criolla de cerveza y especias, servido con arroz, menestra y aguacate.",                    8.50, "Principal", "https://picsum.photos/seed/chicken3/900/700"),
+    ("Bandeja paisa",        "Frijoles, chicharrón, chorizo, huevo frito, arroz, aguacate, maduro y arepa. El plato más completo.",     10.00, "Principal", "https://picsum.photos/seed/bandeja4/900/700"),
+    ("Arroz con mariscos",   "Arroz marinero con camarones, calamar y mejillones en salsa de tomate y azafrán.",                        12.00, "Principal", "https://picsum.photos/seed/seafood5/900/700"),
+    ("Churrasco a la parrilla","350g de res a la parrilla con chimichurri casero, papas fritas y ensalada fresca.",                    14.00, "Principal", "https://picsum.photos/seed/steak6/900/700"),
+    ("Sopa de quinua",       "Sopa andina con quinua, papa, zanahoria, apio y hierbas aromáticas. Reconfortante y nutritiva.",          5.50, "Sopas",     "https://picsum.photos/seed/soup7/900/700"),
+    ("Caldo de gallina",     "Caldo tradicional de gallina criolla con papa, yuca, hierbas y ají.",                                     5.00, "Sopas",     "https://picsum.photos/seed/broth8/900/700"),
+    ("Tres leches",          "Bizcocho bañado en tres tipos de leche, cubierto con crema chantilly y canela.",                          4.00, "Postres",   "https://picsum.photos/seed/cake9/900/700"),
+    ("Flan de coco",         "Flan artesanal de coco con caramelo natural. Cremoso y ligero.",                                          3.50, "Postres",   "https://picsum.photos/seed/flan10/900/700"),
+    ("Jugo de naranja",      "Naranja recién exprimida, 100% natural. Sin azúcar añadida.",                                             2.50, "Bebidas",   "https://picsum.photos/seed/juice11/900/700"),
+    ("Cola de avena",        "Bebida tradicional de avena con leche, canela y azúcar. Fría y refrescante.",                             2.00, "Bebidas",   "https://picsum.photos/seed/oat12/900/700"),
+    ("Cerveza artesanal",    "Cerveza artesanal local tipo lager. Fría y refrescante.",                                                  3.50, "Bebidas",   "https://picsum.photos/seed/beer13/900/700"),
+]
+
+
+def crear_demo():
+    r = Restaurante.query.filter_by(email=DEMO_EMAIL).first()
+    if not r:
+        slug = "restaurante-demo"
+        r = Restaurante(
+            nombre="El Rincón Criollo",
+            email=DEMO_EMAIL,
+            slug=slug,
+            whatsapp="0991234567",
+            ciudad="Quito",
+            descripcion="Cocina criolla ecuatoriana · Lun–Dom 8:00–22:00",
+            logo_url="https://picsum.photos/seed/logorest/200/200",
+        )
+        r.set_password(DEMO_PASS)
+        r.plan       = 'anual'
+        r.plan_vence = datetime(2099, 12, 31)
+        db.session.add(r)
+        db.session.flush()
+
+        for i in range(1, 9):
+            db.session.add(Mesa(restaurante_id=r.id, numero=i,
+                                nombre=f"Mesa {i}", token=Mesa.nuevo_token()))
+
+        for i, (nombre, desc, precio, cat, img) in enumerate(DEMO_PRODUCTOS):
+            db.session.add(Producto(
+                restaurante_id=r.id, nombre=nombre, descripcion=desc,
+                precio=precio, categoria=cat, imagen_url=img,
+                disponible=True, orden_display=i,
+            ))
+        db.session.commit()
+    return r
+
+
+@app.route("/demo")
+def demo_landing():
+    r    = crear_demo()
+    mesa = Mesa.query.filter_by(restaurante_id=r.id, numero=1).first()
+    carta_url = url_for("carta", slug=r.slug, mesa_token=mesa.token, _external=False)
+    return render_template("demo.html", restaurante=r, carta_url=carta_url)
+
+
+@app.route("/demo/admin")
+def demo_admin():
+    r = crear_demo()
+    session["restaurante_id"] = r.id
+    flash("Estás en el panel de demostración — explora libremente.", "info")
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/demo/prueba")
+def demo_prueba():
+    r    = crear_demo()
+    session["restaurante_id"] = r.id          # auto-login como demo admin
+    mesa = Mesa.query.filter_by(restaurante_id=r.id, numero=1).first()
+    carta_url    = url_for("carta",     slug=r.slug, mesa_token=mesa.token)
+    dashboard_url = url_for("dashboard")
+    return render_template("demo_prueba.html",
+        restaurante=r, carta_url=carta_url, dashboard_url=dashboard_url)
+
+
+@app.route("/api/ordenes-activas")
+@login_required
+def api_ordenes_activas():
+    from flask import jsonify
+    r = restaurante_session()
+    count = Orden.query.filter(
+        Orden.restaurante_id == r.id,
+        Orden.estado.in_(["pendiente", "confirmada", "lista"])
+    ).count()
+    pendientes = Orden.query.filter(
+        Orden.restaurante_id == r.id,
+        Orden.estado == "pendiente"
+    ).count()
+    cuentas = Orden.query.filter(
+        Orden.restaurante_id == r.id,
+        Orden.estado == "lista",
+        Orden.solicita_cuenta == True,
+    ).count()
+    return jsonify({"count": count, "pendientes": pendientes, "cuentas": cuentas})
+
+
+# ══════════════════════════════════════════════
+#  MÉTODOS DE PAGO
+# ══════════════════════════════════════════════
+
+@app.route("/metodos-pago")
+@login_required
+def metodos_pago():
+    r = restaurante_session()
+    metodos = MetodoPago.query.filter_by(restaurante_id=r.id).order_by(MetodoPago.orden_display).all()
+    return render_template("restaurante/metodos_pago.html", restaurante=r, metodos=metodos)
+
+
+@app.route("/metodos-pago/agregar", methods=["POST"])
+@login_required
+def agregar_metodo_pago():
+    r      = restaurante_session()
+    nombre = request.form.get("nombre", "").strip()
+    icono  = request.form.get("icono",  "💳").strip() or "💳"
+    if nombre:
+        ultimo = db.session.query(func.max(MetodoPago.orden_display)).filter_by(restaurante_id=r.id).scalar() or 0
+        db.session.add(MetodoPago(restaurante_id=r.id, nombre=nombre, icono=icono, orden_display=ultimo+1))
+        db.session.commit()
+        flash(f"Método '{nombre}' agregado.", "success")
+    return redirect(url_for("metodos_pago"))
+
+
+@app.route("/metodos-pago/<int:mid>/toggle", methods=["POST"])
+@login_required
+def toggle_metodo_pago(mid):
+    r = restaurante_session()
+    m = MetodoPago.query.filter_by(id=mid, restaurante_id=r.id).first_or_404()
+    m.activo = not m.activo
+    db.session.commit()
+    return redirect(url_for("metodos_pago"))
+
+
+@app.route("/metodos-pago/<int:mid>/eliminar", methods=["POST"])
+@login_required
+def eliminar_metodo_pago(mid):
+    r = restaurante_session()
+    m = MetodoPago.query.filter_by(id=mid, restaurante_id=r.id).first_or_404()
+    db.session.delete(m)
+    db.session.commit()
+    flash("Método eliminado.", "success")
+    return redirect(url_for("metodos_pago"))
+
+
+# ══════════════════════════════════════════════
+#  SOPORTE
+# ══════════════════════════════════════════════
+
+@app.route("/soporte/enviar", methods=["POST"])
+def soporte_enviar():
+    from flask import jsonify
+    nombre  = request.form.get("nombre",  "").strip()
+    email   = request.form.get("email",   "").strip()
+    mensaje = request.form.get("mensaje", "").strip()
+    if not mensaje:
+        return jsonify({"ok": False, "error": "El mensaje no puede estar vacío"}), 400
+    db.session.add(MensajeSoporte(nombre=nombre, email=email, mensaje=mensaje))
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+# ══════════════════════════════════════════════
+#  SUPER-ADMIN
+# ══════════════════════════════════════════════
+
+ADMIN_USER = os.getenv("ADMIN_USER", "admin")
+ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "")
+
+
+def admin_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get("is_admin"):
+            return redirect(url_for("admin_login"))
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        if (request.form.get("usuario") == ADMIN_USER and
+                request.form.get("password") == ADMIN_PASS):
+            session["is_admin"] = True
+            return redirect(url_for("admin_panel"))
+        return render_template("admin/login.html", error="Credenciales incorrectas")
+    return render_template("admin/login.html", error=None)
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("is_admin", None)
+    return redirect(url_for("admin_login"))
+
+
+@app.route("/admin")
+@admin_required
+def admin_panel():
+    restaurantes  = Restaurante.query.order_by(Restaurante.fecha_registro.desc()).all()
+    msgs_no_leidos = MensajeSoporte.query.filter_by(leido=False).count()
+
+    stats = {}
+    for r in restaurantes:
+        total_ordenes  = Orden.query.filter_by(restaurante_id=r.id).count()
+        ordenes_hoy    = Orden.query.filter(
+            Orden.restaurante_id == r.id,
+            func.date(Orden.fecha) == date.today(),
+        ).count()
+        ingresos_total = db.session.query(func.sum(Orden.total)).filter(
+            Orden.restaurante_id == r.id,
+            Orden.estado == "pagada",
+        ).scalar() or 0.0
+        stats[r.id] = {
+            "total_ordenes":  total_ordenes,
+            "ordenes_hoy":    ordenes_hoy,
+            "ingresos_total": ingresos_total,
+        }
+
+    return render_template("admin/panel.html", restaurantes=restaurantes, stats=stats,
+                           msgs_no_leidos=msgs_no_leidos)
+
+
+@app.route("/admin/restaurante/<int:rid>/panel")
+@admin_required
+def admin_ver_panel(rid):
+    r = Restaurante.query.get_or_404(rid)
+    session["restaurante_id"] = r.id   # impersona al restaurante
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/admin/restaurante/<int:rid>/toggle", methods=["POST"])
+@admin_required
+def admin_toggle_restaurante(rid):
+    r = Restaurante.query.get_or_404(rid)
+    r.activo = not r.activo
+    db.session.commit()
+    return redirect(url_for("admin_panel"))
+
+
+@app.route("/admin/restaurante/<int:rid>/eliminar", methods=["POST"])
+@admin_required
+def admin_eliminar_restaurante(rid):
+    r = Restaurante.query.get_or_404(rid)
+    db.session.delete(r)
+    db.session.commit()
+    return redirect(url_for("admin_panel"))
+
+
+@app.route("/admin/mensajes")
+@admin_required
+def admin_mensajes():
+    mensajes = MensajeSoporte.query.order_by(MensajeSoporte.fecha.desc()).all()
+    # marcar todos como leídos al abrir la página
+    MensajeSoporte.query.filter_by(leido=False).update({"leido": True})
+    db.session.commit()
+    return render_template("admin/mensajes.html", mensajes=mensajes)
+
+
+@app.route("/admin/mensajes/<int:mid>/eliminar", methods=["POST"])
+@admin_required
+def admin_eliminar_mensaje(mid):
+    m = MensajeSoporte.query.get_or_404(mid)
+    db.session.delete(m)
+    db.session.commit()
+    return redirect(url_for("admin_mensajes"))
+
+
+@app.route("/admin/restaurante/<int:rid>/plan", methods=["POST"])
+@admin_required
+def admin_set_plan(rid):
+    r         = Restaurante.query.get_or_404(rid)
+    plan_tipo = request.form.get("plan", "")
+    fecha_str = request.form.get("fecha_inicio", "").strip()
+
+    if plan_tipo not in PLANES and plan_tipo != "trial":
+        flash("Plan inválido.", "error")
+        return redirect(url_for("admin_panel"))
+
+    try:
+        fecha_inicio = datetime.strptime(fecha_str, "%Y-%m-%d") if fecha_str else datetime.utcnow()
+    except ValueError:
+        fecha_inicio = datetime.utcnow()
+
+    r.plan        = plan_tipo
+    r.plan_inicio = fecha_inicio
+    if plan_tipo == "trial":
+        r.plan_vence = fecha_inicio + timedelta(days=TRIAL_DIAS)
+    else:
+        r.plan_vence = fecha_inicio + timedelta(days=PLANES[plan_tipo]["dias"])
+    db.session.commit()
+
+    vence_str = r.plan_vence.strftime("%d/%m/%Y") if r.plan_vence else "—"
+    flash(f"Plan '{r.plan}' asignado a {r.nombre}. Vence: {vence_str}", "success")
+    return redirect(url_for("admin_panel"))
+
+
+# ══════════════════════════════════════════════
+#  PLANES (pública)
+# ══════════════════════════════════════════════
+
+@app.route("/planes")
+def planes_page():
+    return render_template("planes.html", planes=PLANES)
 
 
 if __name__ == "__main__":

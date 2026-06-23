@@ -13,7 +13,12 @@
   <header class="header">
     <div class="contenedor header-inner">
       <a href="/" class="logo">
-        <div class="logo-icon">🍽️</div>
+        {% if restaurante_session and restaurante_session.logo_url %}
+          <img src="{{ restaurante_session.logo_url }}"
+               style="width:32px;height:32px;border-radius:8px;object-fit:cover;flex-shrink:0">
+        {% else %}
+          <div class="logo-icon">🍽️</div>
+        {% endif %}
         Carta Digital
       </a>
       <nav class="nav">
@@ -21,7 +26,11 @@
           <a href="/dashboard" class="nav-link">Panel</a>
           <a href="/menu" class="nav-link">Menú</a>
           <a href="/mesas" class="nav-link">Mesas</a>
+          <a href="/metodos-pago" class="nav-link">Pagos</a>
           <a href="/reportes" class="nav-link">Reportes</a>
+          <a href="/planes" class="nav-link" style="font-size:0.78rem;color:#F97316;font-weight:700">
+            {{ restaurante_session.plan|upper if restaurante_session.plan else 'TRIAL' }}
+          </a>
           <span class="nav-nombre">{{ restaurante_session.nombre }}</span>
           <a href="/logout" class="btn-primario btn-sm">Salir</a>
         {% else %}
@@ -49,5 +58,100 @@
   </footer>
 
   <script src="/static/js/main.js"></script>
+
+  <!-- Botón flotante de soporte -->
+  <button id="btn-soporte" onclick="abrirSoporte()" aria-label="Contactar soporte"
+    style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:900;
+           width:54px;height:54px;border-radius:50%;border:none;
+           background:#F97316;color:#fff;font-size:1.4rem;
+           cursor:pointer;box-shadow:0 4px 16px rgba(249,115,22,0.5);
+           display:flex;align-items:center;justify-content:center;
+           transition:transform 0.15s,box-shadow 0.15s">
+    💬
+  </button>
+
+  <!-- Modal de soporte -->
+  <div id="modal-soporte" style="display:none;position:fixed;inset:0;z-index:1000;
+       background:rgba(0,0,0,0.5);align-items:flex-end;justify-content:center;
+       padding:1rem">
+    <div style="background:#fff;border-radius:20px 20px 16px 16px;
+                width:100%;max-width:420px;padding:1.5rem;
+                animation:slide-up-modal 0.25s ease">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+        <div>
+          <p style="font-weight:800;font-size:1rem;color:#1C1C1E">¿Necesitas ayuda?</p>
+          <p style="font-size:0.8rem;color:#6B7280;margin-top:2px">Te respondemos lo antes posible</p>
+        </div>
+        <button onclick="cerrarSoporte()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:#9CA3AF;padding:4px">✕</button>
+      </div>
+
+      <form id="form-soporte" onsubmit="enviarSoporte(event)">
+        <div style="margin-bottom:0.75rem">
+          <input name="nombre" type="text" placeholder="Nombre del restaurante" required
+            value="{{ restaurante_session.nombre if restaurante_session else '' }}"
+            {% if restaurante_session %}readonly style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #E5E7EB;border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none;background:#F9FAFB;color:#6B7280"
+            {% else %}style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #E5E7EB;border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none"{% endif %}>
+        </div>
+        <div style="margin-bottom:0.75rem">
+          <input name="email" type="email" placeholder="Correo de contacto" required
+            value="{{ restaurante_session.email if restaurante_session else '' }}"
+            {% if restaurante_session %}readonly style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #E5E7EB;border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none;background:#F9FAFB;color:#6B7280"
+            {% else %}style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #E5E7EB;border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none"{% endif %}>
+        </div>
+        <div style="margin-bottom:1rem">
+          <textarea name="mensaje" placeholder="¿En qué podemos ayudarte?" required rows="3"
+            style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #E5E7EB;
+                   border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none;
+                   resize:vertical"></textarea>
+        </div>
+        <button type="submit"
+          style="width:100%;padding:0.8rem;background:#F97316;color:#fff;border:none;
+                 border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer;
+                 font-family:inherit">
+          Enviar mensaje
+        </button>
+        <div id="soporte-ok" style="display:none;text-align:center;padding:0.75rem;
+             color:#059669;font-weight:600;font-size:0.9rem;margin-top:0.5rem">
+          ✓ Mensaje enviado — te responderemos pronto
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <style>
+    @keyframes slide-up-modal {
+      from { transform: translateY(30px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    #btn-soporte:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 22px rgba(249,115,22,0.6);
+    }
+  </style>
+
+  <script>
+    const modalSoporte = document.getElementById('modal-soporte');
+    function abrirSoporte() {
+      modalSoporte.style.display = 'flex';
+      document.getElementById('soporte-ok').style.display = 'none';
+      document.getElementById('form-soporte').reset();
+    }
+    function cerrarSoporte() { modalSoporte.style.display = 'none'; }
+    modalSoporte.addEventListener('click', e => { if (e.target === modalSoporte) cerrarSoporte(); });
+
+    async function enviarSoporte(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = new FormData(form);
+      const res  = await fetch('/soporte/enviar', { method: 'POST', body: data });
+      const json = await res.json();
+      if (json.ok) {
+        form.style.display = 'none';
+        document.getElementById('soporte-ok').style.display = 'block';
+        setTimeout(cerrarSoporte, 2500);
+        form.style.display = '';
+      }
+    }
+  </script>
 </body>
 </html>

@@ -98,13 +98,62 @@
     {% if orden.estado == 'lista' %}
     <div class="orden-acciones">
       {% if orden.solicita_cuenta %}
-        <div class="cuenta-solicitada">✓ Solicitud de cuenta enviada — el mesero viene en camino</div>
+        <div class="cuenta-solicitada">
+          ✓ Cuenta solicitada — el mesero viene en camino
+          {% if orden.metodo_preferido %}
+            {% set icono_map = {} %}{% for m in metodos_pago %}{% set _ = icono_map.update({m.nombre: m.icono}) %}{% endfor %}
+            <br><span style="font-size:0.85rem;margin-top:0.3rem;display:inline-block">
+              Método elegido: {{ icono_map.get(orden.metodo_preferido, '💳') }} <strong>{{ orden.metodo_preferido }}</strong>
+            </span>
+          {% endif %}
+        </div>
       {% else %}
-        <form method="POST" action="/orden/{{ orden.token }}/cuenta">
+        <form method="POST" action="/orden/{{ orden.token }}/cuenta" id="form-cuenta">
+          <p style="font-size:0.88rem;font-weight:700;color:#1C1C1E;margin-bottom:0.85rem;text-align:center">
+            💳 ¿Cómo quieres pagar?
+          </p>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:0.6rem;margin-bottom:1rem">
+            {% for m in metodos_pago %}
+            <label class="metodo-opcion">
+              <input type="radio" name="metodo_preferido" value="{{ m.nombre }}"
+                     {% if loop.first %}checked{% endif %} style="display:none">
+              <div class="metodo-card">
+                <span style="font-size:1.6rem">{{ m.icono }}</span>
+                <span>{{ m.nombre }}</span>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+
           <button type="submit" class="btn-cuenta">
-            💳 Solicitar la cuenta
+            Solicitar la cuenta
           </button>
         </form>
+
+        <style>
+          .metodo-card {
+            border: 2px solid #E5E7EB; border-radius: 12px;
+            padding: 0.75rem 0.4rem; text-align: center;
+            cursor: pointer; transition: border-color 0.15s, background 0.15s;
+            display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+            font-size: 0.78rem; font-weight: 600; color: #374151;
+          }
+          .metodo-card.seleccionada {
+            border-color: #1C1C1E; background: #F9FAFB; color: #1C1C1E;
+          }
+        </style>
+        <script>
+          document.querySelectorAll('.metodo-opcion').forEach(label => {
+            const radio = label.querySelector('input[type="radio"]');
+            const card  = label.querySelector('.metodo-card');
+            if (radio.checked) card.classList.add('seleccionada');
+            label.addEventListener('click', () => {
+              document.querySelectorAll('.metodo-card').forEach(c => c.classList.remove('seleccionada'));
+              card.classList.add('seleccionada');
+            });
+          });
+        </script>
       {% endif %}
     </div>
     {% endif %}
@@ -112,7 +161,7 @@
   </div>
 
   <p style="text-align:center;font-size:0.78rem;color:#9CA3AF;margin-top:1.5rem">
-    Pedido realizado el {{ orden.fecha.strftime('%d/%m/%Y a las %H:%M') }}
+    Pedido realizado el {{ orden.fecha|ec_time("%d/%m/%Y") }} a las {{ orden.fecha|ec_time("%H:%M") }}
   </p>
 
 </div>

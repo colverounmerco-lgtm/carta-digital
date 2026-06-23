@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR {{ mesa.nombre }} — {{ restaurante.nombre }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+      gap: 1.5rem;
+    }
+
+    /* ── Barra de acciones (solo pantalla) ── */
+    .acciones {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      background: #1E293B;
+      padding: 0.85rem 1.5rem;
+      border-radius: 999px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    .acciones span { color: #94A3B8; font-size: 0.85rem; }
+    .btn-print {
+      background: #F97316; color: #fff;
+      border: none; padding: 0.6rem 1.4rem;
+      border-radius: 999px; font-weight: 700;
+      font-size: 0.9rem; cursor: pointer;
+      display: flex; align-items: center; gap: 0.4rem;
+      transition: background 0.15s;
+    }
+    .btn-print:hover { background: #EA580C; }
+    .btn-volver {
+      color: #94A3B8; font-size: 0.85rem; text-decoration: none;
+      padding: 0.5rem 0.9rem; border-radius: 999px;
+      border: 1px solid #334155;
+      transition: border-color 0.15s;
+    }
+    .btn-volver:hover { border-color: #64748B; color: #fff; }
+
+    /* ── Tarjeta imprimible ── */
+    .tarjeta {
+      width: 340px;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+      overflow: hidden;
+      page-break-inside: avoid;
+    }
+
+    .tarjeta-header {
+      background: #F97316;
+      padding: 1.5rem 1.25rem 1.25rem;
+      text-align: center;
+      color: #fff;
+    }
+    .tarjeta-logo {
+      width: 64px; height: 64px;
+      border-radius: 16px; object-fit: cover;
+      margin: 0 auto 0.75rem;
+      border: 3px solid rgba(255,255,255,0.4);
+      display: block;
+    }
+    .tarjeta-logo-placeholder {
+      width: 64px; height: 64px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.2);
+      margin: 0 auto 0.75rem;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem;
+    }
+    .tarjeta-restaurante {
+      font-size: 1.2rem; font-weight: 800; letter-spacing: -0.3px;
+    }
+    .tarjeta-desc {
+      font-size: 0.78rem; opacity: 0.85; margin-top: 0.2rem;
+    }
+
+    .tarjeta-body {
+      padding: 1.5rem 1.25rem;
+      text-align: center;
+    }
+    .tarjeta-instruccion {
+      font-size: 0.82rem; color: #6B7280;
+      margin-bottom: 1.1rem; line-height: 1.5;
+    }
+    .tarjeta-instruccion strong { color: #1C1C1E; }
+
+    #qr-box {
+      display: flex; justify-content: center;
+      margin-bottom: 1.1rem;
+    }
+    #qr-box canvas, #qr-box img {
+      border-radius: 12px;
+      padding: 10px;
+      border: 2px solid #F3F4F6;
+    }
+
+    .tarjeta-mesa {
+      display: inline-block;
+      background: #FFF7ED;
+      color: #9A3412;
+      border: 1.5px solid #FED7AA;
+      border-radius: 999px;
+      padding: 0.35rem 1.1rem;
+      font-weight: 800;
+      font-size: 1rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .tarjeta-url {
+      font-size: 0.68rem;
+      color: #9CA3AF;
+      word-break: break-all;
+      padding: 0.5rem 0.75rem;
+      background: #F9FAFB;
+      border-radius: 8px;
+    }
+
+    .tarjeta-footer {
+      background: #F9FAFB;
+      border-top: 1px solid #F3F4F6;
+      padding: 0.85rem 1.25rem;
+      text-align: center;
+      font-size: 0.72rem;
+      color: #9CA3AF;
+    }
+    .tarjeta-footer strong { color: #6B7280; }
+
+    /* ── Grilla multi-QR para imprimir varios ── */
+    .grilla-hint {
+      font-size: 0.8rem; color: #64748B; text-align: center;
+    }
+
+    /* ── Print media ── */
+    @media print {
+      body {
+        background: #fff;
+        padding: 0;
+        display: block;
+      }
+      .acciones, .grilla-hint { display: none !important; }
+      .tarjeta {
+        width: 9cm;
+        border-radius: 12px;
+        box-shadow: none;
+        border: 1.5px solid #E5E7EB;
+        margin: 0.5cm auto;
+        page-break-inside: avoid;
+      }
+      .tarjeta-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra de acciones -->
+  <div class="acciones">
+    <a href="/mesas" class="btn-volver">← Volver</a>
+    <span>|</span>
+    <span>QR listo para imprimir</span>
+    <button class="btn-print" onclick="window.print()">
+      🖨️ Imprimir
+    </button>
+  </div>
+
+  <!-- Tarjeta QR -->
+  <div class="tarjeta">
+    <div class="tarjeta-header">
+      {% if restaurante.logo_url %}
+        <img src="{{ restaurante.logo_url }}" class="tarjeta-logo" alt="{{ restaurante.nombre }}">
+      {% else %}
+        <div class="tarjeta-logo-placeholder">🍽️</div>
+      {% endif %}
+      <div class="tarjeta-restaurante">{{ restaurante.nombre }}</div>
+      {% if restaurante.descripcion %}
+        <div class="tarjeta-desc">{{ restaurante.descripcion }}</div>
+      {% endif %}
+    </div>
+
+    <div class="tarjeta-body">
+      <p class="tarjeta-instruccion">
+        <strong>Escanea el código QR</strong> con tu celular<br>
+        para ver la carta y hacer tu pedido
+      </p>
+
+      <div id="qr-box"></div>
+
+      <div class="tarjeta-mesa">📍 {{ mesa.nombre }}</div>
+
+      <div class="tarjeta-url">{{ carta_url }}</div>
+    </div>
+
+    <div class="tarjeta-footer">
+      Carta digital · Pide desde tu mesa · Sin esperas
+    </div>
+  </div>
+
+  <p class="grilla-hint">Presiona <strong>Ctrl + P</strong> para imprimir · Tamaño recomendado: A5 o 10×15cm</p>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    new QRCode(document.getElementById("qr-box"), {
+      text: "{{ carta_url }}",
+      width: 240,
+      height: 240,
+      colorDark: "#1C1C1E",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  </script>
+</body>
+</html>
