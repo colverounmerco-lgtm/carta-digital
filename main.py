@@ -39,7 +39,7 @@ cloudinary.config(
 
 MAX_CANTIDAD = 10
 CODIGO_TTL   = 15  # minutos
-TRIAL_DIAS   = 30
+TRIAL_DIAS   = 8
 
 PLANES = {
     "mensual": {
