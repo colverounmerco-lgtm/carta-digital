@@ -23,7 +23,7 @@
           style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:flex-end">
       <div class="campo" style="margin-bottom:0;flex:0 0 90px">
         <label>Ícono</label>
-        <input type="text" name="icono" placeholder="💳" maxlength="4"
+        <input type="text" name="icono" placeholder="💳" maxlength="300"
                style="text-align:center;font-size:1.3rem" value="💳">
       </div>
       <div class="campo" style="margin-bottom:0;flex:1;min-width:180px">
@@ -46,7 +46,11 @@
 
       <div style="font-size:1.8rem;width:44px;height:44px;background:#F9FAFB;border-radius:10px;
                   display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        {{ m.icono }}
+        {% if m.icono and (m.icono.startswith('/') or m.icono.startswith('http')) %}
+          <img src="{{ m.icono }}" style="width:32px;height:32px;object-fit:contain">
+        {% else %}
+          {{ m.icono }}
+        {% endif %}
       </div>
 
       <div style="flex:1">
