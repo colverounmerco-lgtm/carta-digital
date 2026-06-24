@@ -1218,20 +1218,32 @@ def descargar_reporte():
         fecha_ref = date.today()
 
     if tipo == "diario":
+        # Convertir el día Ecuador a rango UTC (UTC-5 → sumar 5h)
+        inicio_utc = datetime.combine(fecha_ref, time(0, 0, 0)) - EC_OFFSET
+        fin_utc    = datetime.combine(fecha_ref, time(23, 59, 59)) - EC_OFFSET
         ordenes = Orden.query.filter(
             Orden.restaurante_id == r.id,
             Orden.estado == "pagada",
-            func.date(Orden.fecha) == fecha_ref,
+            Orden.fecha >= inicio_utc,
+            Orden.fecha <= fin_utc,
         ).order_by(Orden.fecha).all()
-        nombre_archivo = f"reporte_diario_{fecha_ref}.csv"
+        nombre_archivo = f"reporte_diario_{fecha_ref}.xlsx"
     else:
+        # Primer y último instante del mes en UTC
+        primer_dia  = fecha_ref.replace(day=1)
+        if fecha_ref.month == 12:
+            ultimo_dia = fecha_ref.replace(year=fecha_ref.year + 1, month=1, day=1)
+        else:
+            ultimo_dia = fecha_ref.replace(month=fecha_ref.month + 1, day=1)
+        inicio_utc = datetime.combine(primer_dia, time(0, 0, 0)) - EC_OFFSET
+        fin_utc    = datetime.combine(ultimo_dia, time(0, 0, 0)) - EC_OFFSET
         ordenes = Orden.query.filter(
             Orden.restaurante_id == r.id,
             Orden.estado == "pagada",
-            func.extract("year",  Orden.fecha) == fecha_ref.year,
-            func.extract("month", Orden.fecha) == fecha_ref.month,
+            Orden.fecha >= inicio_utc,
+            Orden.fecha < fin_utc,
         ).order_by(Orden.fecha).all()
-        nombre_archivo = f"reporte_mensual_{fecha_ref.year}_{fecha_ref.month:02d}.csv"
+        nombre_archivo = f"reporte_mensual_{fecha_ref.year}_{fecha_ref.month:02d}.xlsx"
 
     # ── Estilos ──────────────────────────────────────────────────────────
     naranja     = "F97316"
