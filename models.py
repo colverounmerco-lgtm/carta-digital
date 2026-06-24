@@ -78,8 +78,9 @@ class Producto(db.Model):
     categoria      = db.Column(db.String(50), default="Principal")
     disponible     = db.Column(db.Boolean, default=True)
     orden_display  = db.Column(db.Integer, default=0)
-    terminos_asado = db.Column(db.Boolean, default=False)
-    salsas_activas = db.Column(db.Boolean, default=False)
+    terminos_asado    = db.Column(db.Boolean, default=False)
+    salsas_activas    = db.Column(db.Boolean, default=False)
+    adiciones_activas = db.Column(db.Boolean, default=False)
 
     items = db.relationship("ItemOrden", backref="producto", lazy=True)
 
@@ -137,6 +138,16 @@ class Salsa(db.Model):
     id             = db.Column(db.Integer, primary_key=True)
     restaurante_id = db.Column(db.Integer, db.ForeignKey("restaurantes.id"), nullable=False)
     nombre         = db.Column(db.String(80), nullable=False)
+    activa         = db.Column(db.Boolean, default=True)
+    orden_display  = db.Column(db.Integer, default=0)
+
+
+class Adicion(db.Model):
+    __tablename__ = "adiciones"
+    id             = db.Column(db.Integer, primary_key=True)
+    restaurante_id = db.Column(db.Integer, db.ForeignKey("restaurantes.id"), nullable=False)
+    nombre         = db.Column(db.String(80), nullable=False)
+    precio         = db.Column(db.Float, default=0.0)
     activa         = db.Column(db.Boolean, default=True)
     orden_display  = db.Column(db.Integer, default=0)
 

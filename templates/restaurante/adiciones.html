@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Adiciones — {{ restaurante.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor page-wrap">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-titulo">Adiciones</h1>
+      <p class="page-sub">Define los extras que el cliente puede agregar a un plato (con o sin costo adicional)</p>
+    </div>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Formulario para agregar nueva adición -->
+  <div class="card" style="max-width:520px;margin-bottom:2rem">
+    <p style="font-weight:700;font-size:0.95rem;margin-bottom:0.75rem">Agregar nueva adición</p>
+    <form method="POST" action="/adiciones/agregar" style="display:flex;gap:0.5rem;align-items:flex-start;flex-wrap:wrap">
+      <input type="text" name="nombre" placeholder="Ej: Huevo extra, Tocino, Aguacate..." required
+             style="flex:1;min-width:160px;padding:0.65rem 0.9rem;border:1.5px solid #E5E7EB;border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none">
+      <div style="display:flex;align-items:center;gap:0.4rem">
+        <span style="font-size:0.88rem;color:#6B7280;white-space:nowrap">+ $</span>
+        <input type="number" name="precio" placeholder="0.00" min="0" step="0.01" value="0"
+               style="width:90px;padding:0.65rem 0.75rem;border:1.5px solid #E5E7EB;border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none">
+      </div>
+      <button type="submit" class="btn-primario" style="white-space:nowrap">+ Agregar</button>
+    </form>
+    <p style="font-size:0.78rem;color:#9CA3AF;margin-top:0.6rem">Deja el precio en 0 si la adición es gratuita.</p>
+  </div>
+
+  {% if adiciones %}
+  <div style="display:flex;flex-direction:column;gap:0.6rem;max-width:520px">
+    {% for a in adiciones %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;background:#fff;border:1.5px solid {% if a.activa %}#E5E7EB{% else %}#F3F4F6{% endif %};border-radius:12px;{% if not a.activa %}opacity:0.55{% endif %}">
+      <div>
+        <span style="font-weight:600;font-size:0.92rem;color:{% if a.activa %}#1C1C1E{% else %}#9CA3AF{% endif %}">
+          🍳 {{ a.nombre }}
+        </span>
+        {% if a.precio > 0 %}
+        <span style="font-size:0.8rem;color:#F97316;font-weight:700;margin-left:0.5rem">+${{ "%.2f"|format(a.precio) }}</span>
+        {% else %}
+        <span style="font-size:0.78rem;color:#9CA3AF;margin-left:0.5rem">gratis</span>
+        {% endif %}
+      </div>
+      <div style="display:flex;gap:0.5rem">
+        <form method="POST" action="/adiciones/{{ a.id }}/toggle">
+          <button class="btn-xs btn-outline" style="font-size:0.72rem">
+            {% if a.activa %}Desactivar{% else %}Activar{% endif %}
+          </button>
+        </form>
+        <form method="POST" action="/adiciones/{{ a.id }}/eliminar"
+              onsubmit="return confirm('¿Eliminar {{ a.nombre }}?')">
+          <button class="btn-danger btn-xs">Eliminar</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div style="text-align:center;padding:3rem 1rem;color:#94A3B8;max-width:520px">
+    <div style="font-size:3rem;margin-bottom:0.75rem">🍳</div>
+    <p style="font-weight:600">Sin adiciones todavía</p>
+    <p style="font-size:0.85rem;margin-top:0.35rem">Agrega los extras que ofrece tu restaurante y actívalos por plato desde el Menú.</p>
+  </div>
+  {% endif %}
+
+  <div style="margin-top:2rem;padding:1rem;background:#F8FAFC;border-radius:12px;max-width:520px;font-size:0.83rem;color:#64748B">
+    <strong>¿Cómo funciona?</strong><br>
+    1. Agrega aquí los extras con su precio (o gratis).<br>
+    2. En <a href="/menu" style="color:#F97316">Menú</a>, activa el botón <strong>🍳 Adiciones</strong> en los platos que las tengan disponibles.<br>
+    3. El cliente verá los extras como casillas de selección y puede elegir uno o varios al agregar el plato.
+  </div>
+
+</div>
+{% endblock %}

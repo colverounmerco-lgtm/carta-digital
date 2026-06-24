@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 import cloudinary, cloudinary.uploader
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
-from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, slugify
+from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, slugify
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "carta-dev-secret")
@@ -280,7 +280,8 @@ def run_migrations():
     if "productos" in tables:
         add_col("productos", "orden_display",  "INTEGER DEFAULT 0")
         add_col("productos", "terminos_asado", "BOOLEAN DEFAULT FALSE")
-        add_col("productos", "salsas_activas", "BOOLEAN DEFAULT FALSE")
+        add_col("productos", "salsas_activas",    "BOOLEAN DEFAULT FALSE")
+        add_col("productos", "adiciones_activas", "BOOLEAN DEFAULT FALSE")
 
     if "restaurantes" in tables:
         add_col("restaurantes", "descripcion",      "TEXT")
@@ -835,6 +836,64 @@ def salsa_eliminar(sid):
 
 
 # ══════════════════════════════════════════════
+#  ADICIONES
+# ══════════════════════════════════════════════
+
+@app.route("/adiciones")
+@login_required
+def adiciones():
+    r = restaurante_session()
+    lista = Adicion.query.filter_by(restaurante_id=r.id).order_by(Adicion.orden_display).all()
+    return render_template("restaurante/adiciones.html", restaurante=r, adiciones=lista)
+
+
+@app.route("/adiciones/agregar", methods=["POST"])
+@login_required
+def adicion_agregar():
+    r = restaurante_session()
+    nombre = request.form.get("nombre", "").strip()
+    try:
+        precio = round(float(request.form.get("precio", 0) or 0), 2)
+    except ValueError:
+        precio = 0.0
+    if nombre:
+        orden = Adicion.query.filter_by(restaurante_id=r.id).count()
+        db.session.add(Adicion(restaurante_id=r.id, nombre=nombre, precio=precio, orden_display=orden))
+        db.session.commit()
+    return redirect(url_for("adiciones"))
+
+
+@app.route("/adiciones/<int:aid>/toggle", methods=["POST"])
+@login_required
+def adicion_toggle(aid):
+    r = restaurante_session()
+    a = Adicion.query.filter_by(id=aid, restaurante_id=r.id).first_or_404()
+    a.activa = not a.activa
+    db.session.commit()
+    return redirect(url_for("adiciones"))
+
+
+@app.route("/adiciones/<int:aid>/eliminar", methods=["POST"])
+@login_required
+def adicion_eliminar(aid):
+    r = restaurante_session()
+    a = Adicion.query.filter_by(id=aid, restaurante_id=r.id).first_or_404()
+    db.session.delete(a)
+    db.session.commit()
+    return redirect(url_for("adiciones"))
+
+
+@app.route("/menu/producto/<int:pid>/adiciones", methods=["POST"])
+@login_required
+def toggle_adiciones_producto(pid):
+    r = restaurante_session()
+    p = Producto.query.filter_by(id=pid, restaurante_id=r.id).first_or_404()
+    p.adiciones_activas = not p.adiciones_activas
+    db.session.commit()
+    return redirect(url_for("menu"))
+
+
+# ══════════════════════════════════════════════
 #  MESAS
 # ══════════════════════════════════════════════
 
@@ -940,6 +999,7 @@ def carta(slug, mesa_token):
         mesa_abierta=mesa.abierta,
         terminos_asado=TERMINOS_ASADO,
         salsas_rest=Salsa.query.filter_by(restaurante_id=r.id, activa=True).order_by(Salsa.orden_display).all(),
+        adiciones_rest=Adicion.query.filter_by(restaurante_id=r.id, activa=True).order_by(Adicion.orden_display).all(),
     )
 
 
@@ -960,18 +1020,41 @@ def carta_agregar(slug, mesa_token):
     if p.terminos_asado and termino_asado not in TERMINOS_ASADO:
         return redirect(url_for("carta", slug=slug, mesa_token=mesa_token))
 
-    partes   = [t for t in [termino_asado, termino_salsa] if t]
-    termino  = " · ".join(partes)
+    # Adiciones (checkboxes — múltiples)
+    adicion_ids_raw = request.form.getlist("adicion_id")
+    extra_precio    = 0.0
+    adicion_partes  = []
+    adicion_key     = ""
+    if p.adiciones_activas and adicion_ids_raw:
+        ids_validos = [int(i) for i in adicion_ids_raw if i.isdigit()]
+        if ids_validos:
+            adic_objs = Adicion.query.filter(
+                Adicion.id.in_(ids_validos),
+                Adicion.restaurante_id == r.id,
+                Adicion.activa == True,
+            ).all()
+            for a in adic_objs:
+                adicion_partes.append(f"+{a.nombre}")
+                extra_precio += a.precio
+            adicion_key = ",".join(sorted(str(a.id) for a in adic_objs))
 
-    cart_key     = f"cart_{mesa_token}"
-    carrito      = session.get(cart_key, {})
-    item_key     = f"{prod_id}_{termino}" if termino else str(prod_id)
-    actual       = carrito.get(item_key, {}).get("cantidad", 0)
+    partes  = [t for t in [termino_asado, termino_salsa] if t] + adicion_partes
+    termino = " · ".join(partes)
+
+    precio_final = round(p.precio + extra_precio, 2)
+
+    cart_key  = f"cart_{mesa_token}"
+    carrito   = session.get(cart_key, {})
+    key_parts = [str(prod_id)]
+    if termino:    key_parts.append(termino)
+    if adicion_key: key_parts.append(adicion_key)
+    item_key  = "_".join(key_parts)
+    actual    = carrito.get(item_key, {}).get("cantidad", 0)
 
     etiqueta = f"{p.nombre} ({termino})" if termino else p.nombre
     carrito[item_key] = {
         "nombre":   etiqueta,
-        "precio":   p.precio,
+        "precio":   precio_final,
         "cantidad": min(actual + cantidad, MAX_CANTIDAD),
         "imagen":   p.imagen_url or "",
         "termino":  termino,
@@ -1025,13 +1108,14 @@ def hacer_pedido(slug, mesa_token):
         p = Producto.query.filter_by(id=prod_id, restaurante_id=r.id, disponible=True).first()
         if not p:
             continue
-        cant     = max(1, min(item["cantidad"], MAX_CANTIDAD))
-        subtotal = round(p.precio * cant, 2)
-        total   += subtotal
-        termino  = item.get("termino", "")
+        cant        = max(1, min(item["cantidad"], MAX_CANTIDAD))
+        precio_unit = round(item.get("precio", p.precio), 2)
+        subtotal    = round(precio_unit * cant, 2)
+        total      += subtotal
+        termino     = item.get("termino", "")
         items.append(ItemOrden(
             producto_id=p.id, cantidad=cant,
-            precio_unitario=p.precio, subtotal=subtotal,
+            precio_unitario=precio_unit, subtotal=subtotal,
             notas_item=termino if termino else None,
         ))
 

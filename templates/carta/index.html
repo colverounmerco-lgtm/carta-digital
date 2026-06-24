@@ -78,7 +78,7 @@
               <div class="plato-descripcion">{{ p.descripcion }}</div>
             {% endif %}
           </div>
-          {% set tiene_opciones = p.terminos_asado or (p.salsas_activas and salsas_rest) %}
+          {% set tiene_opciones = p.terminos_asado or (p.salsas_activas and salsas_rest) or (p.adiciones_activas and adiciones_rest) %}
           <div class="plato-footer" style="{% if tiene_opciones %}flex-direction:column;align-items:flex-start;gap:0.5rem{% endif %}">
             <span class="plato-precio">${{ "%.2f"|format(p.precio) }}</span>
 
@@ -115,6 +115,26 @@
                             style="display:inline-block;padding:0.22rem 0.6rem;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid #E5E7EB;background:#F9FAFB;color:#6B7280;cursor:pointer;transition:all 0.15s">
                         {{ s.nombre }}
                       </span>
+                    </label>
+                    {% endfor %}
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if p.adiciones_activas and adiciones_rest %}
+                <div style="margin-bottom:0.5rem">
+                  <div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem">Adiciones</div>
+                  <div style="display:flex;flex-direction:column;gap:0.3rem">
+                    {% for a in adiciones_rest %}
+                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.82rem;color:#374151">
+                      <input type="checkbox" name="adicion_id" value="{{ a.id }}"
+                             style="width:16px;height:16px;accent-color:#F97316;cursor:pointer;flex-shrink:0">
+                      <span>{{ a.nombre }}</span>
+                      {% if a.precio > 0 %}
+                      <span style="color:#F97316;font-weight:700;font-size:0.78rem;margin-left:auto">+${{ "%.2f"|format(a.precio) }}</span>
+                      {% else %}
+                      <span style="color:#9CA3AF;font-size:0.75rem;margin-left:auto">gratis</span>
+                      {% endif %}
                     </label>
                     {% endfor %}
                   </div>
