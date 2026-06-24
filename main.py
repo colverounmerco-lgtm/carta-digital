@@ -287,6 +287,7 @@ def run_migrations():
         add_col("restaurantes", "plan_vence",       "TIMESTAMP")
         add_col("restaurantes", "ip_red",           "VARCHAR(50)")
         add_col("restaurantes", "restringir_red",   "BOOLEAN DEFAULT TRUE")
+        add_col("restaurantes", "dia_apertura",     "DATE")
 
     # Crear métodos de pago por defecto para restaurantes existentes
     for r in Restaurante.query.all():
@@ -566,7 +567,14 @@ def dashboard():
     ip_actual = get_client_ip()
     if r.ip_red != ip_actual:
         r.ip_red = ip_actual
-        db.session.commit()
+
+    # Primera apertura del día: abrir todas las mesas automáticamente
+    hoy_ec = (datetime.utcnow() + EC_OFFSET).date()
+    if r.dia_apertura != hoy_ec:
+        Mesa.query.filter_by(restaurante_id=r.id, activa=True).update({"abierta": True})
+        r.dia_apertura = hoy_ec
+
+    db.session.commit()
     inicio, fin     = inicio_fin_dia_ec()
 
     ordenes_activas = Orden.query.filter(
@@ -837,19 +845,12 @@ def carta(slug, mesa_token):
         if cliente_ip != r.ip_red:
             return render_template("carta/red_requerida.html", restaurante=r)
 
-    # Abrir la mesa solo si no hay pedido activo y el último pago fue hace más de 15 min.
-    # Esto evita que el refresh del cliente reabre la mesa justo después del cobro.
-    GRACIA = timedelta(minutes=15)
+    # Reabrir mesa al escanear QR si no hay orden activa en curso
     orden_activa = Orden.query.filter(
         Orden.mesa_id == mesa.id,
         Orden.estado.in_(["pendiente", "confirmada", "lista"]),
     ).first()
-    pago_reciente = Orden.query.filter(
-        Orden.mesa_id == mesa.id,
-        Orden.estado == "pagada",
-        Orden.fecha_pago >= datetime.utcnow() - GRACIA,
-    ).first()
-    if not mesa.abierta and not orden_activa and not pago_reciente:
+    if not mesa.abierta and not orden_activa:
         mesa.abierta = True
         db.session.commit()
 
