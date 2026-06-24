@@ -236,33 +236,40 @@ function toggleSonido() {
 
 document.getElementById('btn-sonido').onclick = toggleSonido;
 
-// Si el sonido estaba activo antes del reload, restaurar AudioContext en la primera interacción
+// Restaurar AudioContext al cargar si el sonido estaba activo
 if (sonidoOn) {
   actualizarBoton();
-  document.addEventListener('click', function initCtx() {
-    if (!audioCtx) {
-      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
-    }
-    document.removeEventListener('click', initCtx);
-  }, { once: true });
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch(e) {}
 }
 
 function tocarChime(freqs, vol) {
-  if (!audioCtx || !sonidoOn) return;
-  freqs.forEach((f, i) => {
-    const osc  = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.type = 'sine';
-    osc.frequency.value = f;
-    const t = audioCtx.currentTime + i * 0.18;
-    gain.gain.setValueAtTime(0, t);
-    gain.gain.linearRampToValueAtTime(vol, t + 0.04);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
-    osc.start(t);
-    osc.stop(t + 0.5);
-  });
+  if (!sonidoOn) return;
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return; }
+  }
+  const play = () => {
+    freqs.forEach((f, i) => {
+      const osc  = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      const t = audioCtx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(vol, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      osc.start(t);
+      osc.stop(t + 0.5);
+    });
+  };
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().then(play);
+  } else {
+    play();
+  }
 }
 
 function tocarAlerta() { tocarChime([880, 1047, 880, 1175], 0.85); }
