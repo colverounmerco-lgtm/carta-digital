@@ -207,12 +207,18 @@
   var ordenUrl = sessionStorage.getItem('orden_url');
 
   if (navType === 'back_forward' && ordenUrl) {
-    // Llegó con el botón atrás → vuelve al pedido
+    // Llegó con el botón atrás y tiene pedido activo → vuelve al pedido
     window.location.replace(ordenUrl);
   } else if (navType === 'navigate') {
     // Escaneó el QR de nuevo → limpia el bloqueo y muestra el menú
     sessionStorage.removeItem('orden_url');
   }
+
+  // Bloquea el botón atrás en el menú — no puede salir del proceso
+  history.pushState(null, null, location.href);
+  window.addEventListener('popstate', function () {
+    history.go(1);
+  });
 </script>
 </body>
 </html>
