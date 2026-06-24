@@ -606,6 +606,9 @@ def pagar_orden(oid):
         o.estado      = "pagada"
         o.metodo_pago = request.form.get("metodo", "efectivo")
         o.fecha_pago  = datetime.utcnow()
+        mesa = Mesa.query.get(o.mesa_id)
+        if mesa:
+            mesa.abierta = False
         db.session.commit()
     return redirect(url_for("dashboard"))
 
@@ -794,6 +797,11 @@ def eliminar_mesa(mid):
 def carta(slug, mesa_token):
     r    = Restaurante.query.filter_by(slug=slug, activo=True).first_or_404()
     mesa = Mesa.query.filter_by(token=mesa_token, restaurante_id=r.id, activa=True).first_or_404()
+
+    # Re-open the table every time the QR URL is accessed (fresh scan)
+    if not mesa.abierta:
+        mesa.abierta = True
+        db.session.commit()
 
     productos = Producto.query.filter_by(
         restaurante_id=r.id, disponible=True
