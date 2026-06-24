@@ -93,7 +93,7 @@
           <span class="cuenta-badge urgente">
             💳 Solicita la cuenta
             {% if orden.metodo_preferido %}
-              {% for mp in metodos_pago %}{% if mp.nombre == orden.metodo_preferido %} · {{ mp.icono }}{% endif %}{% endfor %}
+              · {% for mp in metodos_pago %}{% if mp.nombre == orden.metodo_preferido %}{% if mp.icono and (mp.icono.startswith('/') or mp.icono.startswith('http')) %}<img src="{{ mp.icono }}" style="width:14px;height:14px;object-fit:contain;vertical-align:middle">{% else %}{{ mp.icono }}{% endif %}{% endif %}{% endfor %}
               {{ orden.metodo_preferido }}
             {% endif %}
           </span>
@@ -146,7 +146,7 @@
           <select name="metodo" style="padding:0.4rem 0.7rem;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.85rem">
             {% for mp in metodos_pago %}
             <option value="{{ mp.nombre }}" {% if orden.metodo_preferido == mp.nombre %}selected{% endif %}>
-              {{ mp.icono }} {{ mp.nombre }}
+              {% if mp.icono and not (mp.icono.startswith('/') or mp.icono.startswith('http')) %}{{ mp.icono }} {% endif %}{{ mp.nombre }}
             </option>
             {% endfor %}
           </select>
