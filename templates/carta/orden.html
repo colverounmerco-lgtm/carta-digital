@@ -168,10 +168,20 @@
 
 <script src="/static/js/main.js"></script>
 <script>
-  // Bloquea el botón "atrás" del navegador en la página de pedido
+  {% if orden.estado == 'pagada' or orden.estado == 'cancelada' %}
+  // Pedido terminado — libera el bloqueo de retroceso
+  sessionStorage.removeItem('orden_activa');
+  sessionStorage.removeItem('orden_url');
+  {% else %}
+  // Guarda el token del pedido activo para bloquear retroceso al menú
+  sessionStorage.setItem('orden_activa', '{{ orden.token }}');
+  sessionStorage.setItem('orden_url', window.location.href);
+  {% endif %}
+
+  // Bloquea completamente el botón "atrás" del navegador
   history.pushState(null, null, location.href);
   window.addEventListener('popstate', function () {
-    history.pushState(null, null, location.href);
+    history.go(1);
   });
 </script>
 </body>

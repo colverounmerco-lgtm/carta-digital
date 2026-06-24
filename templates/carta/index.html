@@ -198,5 +198,12 @@
 {% endif %}
 
 <script src="/static/js/main.js"></script>
+<script>
+  // Si el cliente tiene un pedido activo, lo redirige al estado del pedido
+  var ordenUrl = sessionStorage.getItem('orden_url');
+  if (ordenUrl) {
+    window.location.replace(ordenUrl);
+  }
+</script>
 </body>
 </html>
