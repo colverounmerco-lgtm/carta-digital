@@ -117,7 +117,7 @@
       <ul class="orden-items-lista">
         {% for item in orden.items %}
         <li>
-          <span>{{ item.cantidad }}× {{ item.producto.nombre if item.producto else '—' }}</span>
+          <span>{{ item.cantidad }}× {{ item.producto.nombre if item.producto else '—' }}{% if item.notas_item %} <span style="background:#FFF7ED;color:#C2410C;font-size:0.72rem;font-weight:700;padding:0.1rem 0.45rem;border-radius:20px;margin-left:0.3rem">{{ item.notas_item }}</span>{% endif %}</span>
           <span>${{ "%.2f"|format(item.subtotal) }}</span>
         </li>
         {% endfor %}

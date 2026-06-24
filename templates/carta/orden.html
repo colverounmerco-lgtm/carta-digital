@@ -81,7 +81,7 @@
       <p style="font-size:0.82rem;font-weight:600;color:#9CA3AF;margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.4px">Detalle del pedido</p>
       {% for item in orden.items %}
       <div class="orden-det-item">
-        <span>{{ item.cantidad }}× {{ item.producto.nombre if item.producto else '—' }}</span>
+        <span>{{ item.cantidad }}× {{ item.producto.nombre if item.producto else '—' }}{% if item.notas_item %} <span style="background:#FFF7ED;color:#C2410C;font-size:0.7rem;font-weight:700;padding:0.1rem 0.4rem;border-radius:20px;margin-left:0.3rem">{{ item.notas_item }}</span>{% endif %}</span>
         <span>${{ "%.2f"|format(item.subtotal) }}</span>
       </div>
       {% endfor %}
