@@ -97,13 +97,35 @@ def inicio_fin_dia_ec():
 
 # ── Email ──
 def enviar_email(destinatario, asunto, cuerpo_html):
+    # Prioridad 1: Resend API (funciona en Railway y cualquier cloud)
+    resend_key = os.getenv("RESEND_API_KEY", "")
+    if resend_key:
+        import urllib.request, json as _json
+        payload = _json.dumps({
+            "from":    os.getenv("RESEND_FROM", "Carta Digital <noreply@cartadigital.app>"),
+            "to":      [destinatario],
+            "subject": asunto,
+            "html":    cuerpo_html,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {resend_key}",
+                "Content-Type":  "application/json",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            print(f"[EMAIL OK → {destinatario}] {asunto} (Resend {resp.status})")
+        return
+
+    # Prioridad 2: SMTP directo (funciona en local)
     host = os.getenv("SMTP_HOST", "")
     user = os.getenv("SMTP_USER", "")
     pwd  = os.getenv("SMTP_PASS", "")
     port = int(os.getenv("SMTP_PORT", "587"))
 
     if not all([host, user, pwd]):
-        # Sin SMTP configurado: imprime en consola para desarrollo local
         print(f"\n[EMAIL → {destinatario}] {asunto}\n{cuerpo_html}\n")
         return
 
@@ -1271,6 +1293,16 @@ def admin_ver_panel(rid):
     r = Restaurante.query.get_or_404(rid)
     session["restaurante_id"] = r.id   # impersona al restaurante
     return redirect(url_for("dashboard"))
+
+
+@app.route("/admin/restaurante/<int:rid>/verificar", methods=["POST"])
+@admin_required
+def admin_verificar_email(rid):
+    r = Restaurante.query.get_or_404(rid)
+    r.email_verificado = True
+    db.session.commit()
+    flash(f"Email de {r.nombre} verificado manualmente.", "success")
+    return redirect(url_for("admin_panel"))
 
 
 @app.route("/admin/restaurante/<int:rid>/toggle", methods=["POST"])
