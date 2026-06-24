@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 import cloudinary, cloudinary.uploader
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
-from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, SeccionBebida, VarianteBebida, TamañoBebida, slugify
+from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, SeccionBebida, VarianteBebida, TamañoBebida, TamañoProducto, SaborProducto, slugify
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "carta-dev-secret")
@@ -287,6 +287,7 @@ def run_migrations():
         add_col("productos", "adiciones_activas", "BOOLEAN DEFAULT FALSE")
         add_col("productos", "bebidas_activas",   "BOOLEAN DEFAULT FALSE")
         add_col("productos", "tamanos_activos",   "BOOLEAN DEFAULT FALSE")
+        add_col("productos", "sabores_activos",   "BOOLEAN DEFAULT FALSE")
 
     if "restaurantes" in tables:
         add_col("restaurantes", "descripcion",      "TEXT")
@@ -718,13 +719,14 @@ def agregar_producto():
             flash("Debes subir una foto del plato.", "error")
             return redirect(url_for("agregar_producto"))
 
-        db.session.add(Producto(
+        p_nuevo = Producto(
             restaurante_id=r.id, nombre=nombre, descripcion=descripcion,
             precio=precio, imagen_url=imagen_url, categoria=categoria,
-        ))
+        )
+        db.session.add(p_nuevo)
         db.session.commit()
-        flash("Plato agregado al menú.", "success")
-        return redirect(url_for("menu"))
+        flash("Plato creado. Configura tamaños y sabores aquí si lo necesitas.", "success")
+        return redirect(url_for("editar_producto", pid=p_nuevo.id))
 
     return render_template("restaurante/agregar_producto.html", restaurante=r)
 
@@ -1021,7 +1023,97 @@ def toggle_tamanos_producto(pid):
     p = Producto.query.filter_by(id=pid, restaurante_id=r.id).first_or_404()
     p.tamanos_activos = not p.tamanos_activos
     db.session.commit()
-    return redirect(url_for("menu"))
+    return redirect(url_for("editar_producto", pid=pid))
+
+
+@app.route("/menu/producto/<int:pid>/sabores/toggle", methods=["POST"])
+@login_required
+def toggle_sabores_producto(pid):
+    r = restaurante_session()
+    p = Producto.query.filter_by(id=pid, restaurante_id=r.id).first_or_404()
+    p.sabores_activos = not p.sabores_activos
+    db.session.commit()
+    return redirect(url_for("editar_producto", pid=pid))
+
+
+@app.route("/menu/producto/<int:pid>/tamano/agregar", methods=["POST"])
+@login_required
+def agregar_tamano_producto(pid):
+    r = restaurante_session()
+    p = Producto.query.filter_by(id=pid, restaurante_id=r.id).first_or_404()
+    nombre = request.form.get("nombre", "").strip()
+    try:
+        precio = float(request.form.get("precio", "0"))
+    except ValueError:
+        precio = 0.0
+    if nombre:
+        orden = TamañoProducto.query.filter_by(producto_id=pid).count()
+        db.session.add(TamañoProducto(producto_id=pid, nombre=nombre, precio=precio, orden_display=orden))
+        db.session.commit()
+    return redirect(url_for("editar_producto", pid=pid))
+
+
+@app.route("/menu/tamano/<int:tid>/toggle", methods=["POST"])
+@login_required
+def toggle_tamano_producto(tid):
+    r = restaurante_session()
+    t = TamañoProducto.query.join(Producto).filter(
+        TamañoProducto.id == tid, Producto.restaurante_id == r.id
+    ).first_or_404()
+    t.activo = not t.activo
+    db.session.commit()
+    return redirect(url_for("editar_producto", pid=t.producto_id))
+
+
+@app.route("/menu/tamano/<int:tid>/eliminar", methods=["POST"])
+@login_required
+def eliminar_tamano_producto(tid):
+    r = restaurante_session()
+    t = TamañoProducto.query.join(Producto).filter(
+        TamañoProducto.id == tid, Producto.restaurante_id == r.id
+    ).first_or_404()
+    pid = t.producto_id
+    db.session.delete(t)
+    db.session.commit()
+    return redirect(url_for("editar_producto", pid=pid))
+
+
+@app.route("/menu/producto/<int:pid>/sabor/agregar", methods=["POST"])
+@login_required
+def agregar_sabor_producto(pid):
+    r = restaurante_session()
+    p = Producto.query.filter_by(id=pid, restaurante_id=r.id).first_or_404()
+    nombre = request.form.get("nombre", "").strip()
+    if nombre:
+        orden = SaborProducto.query.filter_by(producto_id=pid).count()
+        db.session.add(SaborProducto(producto_id=pid, nombre=nombre, orden_display=orden))
+        db.session.commit()
+    return redirect(url_for("editar_producto", pid=pid))
+
+
+@app.route("/menu/sabor/<int:sid>/toggle", methods=["POST"])
+@login_required
+def toggle_sabor_producto(sid):
+    r = restaurante_session()
+    s = SaborProducto.query.join(Producto).filter(
+        SaborProducto.id == sid, Producto.restaurante_id == r.id
+    ).first_or_404()
+    s.activo = not s.activo
+    db.session.commit()
+    return redirect(url_for("editar_producto", pid=s.producto_id))
+
+
+@app.route("/menu/sabor/<int:sid>/eliminar", methods=["POST"])
+@login_required
+def eliminar_sabor_producto(sid):
+    r = restaurante_session()
+    s = SaborProducto.query.join(Producto).filter(
+        SaborProducto.id == sid, Producto.restaurante_id == r.id
+    ).first_or_404()
+    pid = s.producto_id
+    db.session.delete(s)
+    db.session.commit()
+    return redirect(url_for("editar_producto", pid=pid))
 
 
 @app.route("/menu/producto/<int:pid>/bebidas", methods=["POST"])
@@ -1142,7 +1234,6 @@ def carta(slug, mesa_token):
         salsas_rest=Salsa.query.filter_by(restaurante_id=r.id, activa=True).order_by(Salsa.orden_display).all(),
         adiciones_rest=Adicion.query.filter_by(restaurante_id=r.id, activa=True).order_by(Adicion.orden_display).all(),
         secciones_bebida=SeccionBebida.query.filter_by(restaurante_id=r.id, activa=True).order_by(SeccionBebida.orden_display).all(),
-        tamanos_bebida=TamañoBebida.query.filter_by(restaurante_id=r.id, activo=True).order_by(TamañoBebida.orden_display).all(),
     )
 
 
@@ -1161,18 +1252,32 @@ def carta_agregar(slug, mesa_token):
     termino_salsa  = request.form.get("termino_salsa",  "").strip()
     termino_bebida = request.form.get("termino_bebida", "").strip()
 
-    # Tamaño: valor compuesto "id:nombre:precio"
+    # Sabor por producto (per-product flat list)
+    termino_sabor = ""
+    if p.sabores_activos:
+        sabor_raw = request.form.get("termino_sabor", "").strip()
+        if sabor_raw:
+            sabor_valido = SaborProducto.query.filter_by(
+                producto_id=p.id, nombre=sabor_raw, activo=True
+            ).first()
+            if sabor_valido:
+                termino_sabor = sabor_raw
+
+    # Tamaño per-producto: valor compuesto "id:nombre:precio"
     tamano_raw    = request.form.get("tamano", "").strip()
     tamano_nombre = ""
     tamano_precio = None
     if p.tamanos_activos and tamano_raw:
         partes_t = tamano_raw.split(":")
         if len(partes_t) == 3:
-            tamano_nombre = partes_t[1]
             try:
-                tamano_precio = float(partes_t[2])
-            except ValueError:
-                tamano_precio = None
+                tid_val = int(partes_t[0])
+                t_obj   = TamañoProducto.query.filter_by(id=tid_val, producto_id=p.id, activo=True).first()
+                if t_obj:
+                    tamano_nombre = t_obj.nombre
+                    tamano_precio = t_obj.precio
+            except (ValueError, AttributeError):
+                pass
 
     if p.terminos_asado and termino_asado not in TERMINOS_ASADO:
         return redirect(url_for("carta", slug=slug, mesa_token=mesa_token))
@@ -1195,7 +1300,7 @@ def carta_agregar(slug, mesa_token):
                 extra_precio += a.precio
             adicion_key = ",".join(sorted(str(a.id) for a in adic_objs))
 
-    partes  = [t for t in [tamano_nombre, termino_asado, termino_salsa, termino_bebida] if t] + adicion_partes
+    partes  = [t for t in [tamano_nombre, termino_asado, termino_salsa, termino_bebida, termino_sabor] if t] + adicion_partes
     termino = " · ".join(partes)
 
     base_precio  = tamano_precio if tamano_precio is not None else p.precio

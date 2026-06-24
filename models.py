@@ -83,8 +83,15 @@ class Producto(db.Model):
     adiciones_activas = db.Column(db.Boolean, default=False)
     bebidas_activas   = db.Column(db.Boolean, default=False)
     tamanos_activos   = db.Column(db.Boolean, default=False)
+    sabores_activos   = db.Column(db.Boolean, default=False)
 
-    items = db.relationship("ItemOrden", backref="producto", lazy=True)
+    items   = db.relationship("ItemOrden",     backref="producto",     lazy=True)
+    tamanos = db.relationship("TamañoProducto", backref="producto_obj", lazy=True,
+                              cascade="all, delete-orphan",
+                              order_by="TamañoProducto.orden_display")
+    sabores = db.relationship("SaborProducto",  backref="producto_obj", lazy=True,
+                              cascade="all, delete-orphan",
+                              order_by="SaborProducto.orden_display")
 
 
 class Orden(db.Model):
@@ -171,6 +178,25 @@ class VarianteBebida(db.Model):
     seccion_id = db.Column(db.Integer, db.ForeignKey("secciones_bebida.id"), nullable=False)
     nombre     = db.Column(db.String(80), nullable=False)       # "Coca-Cola", "Naranja", "Fresa"
     activa     = db.Column(db.Boolean, default=True)
+    orden_display = db.Column(db.Integer, default=0)
+
+
+class TamañoProducto(db.Model):
+    __tablename__ = "tamanos_producto"
+    id            = db.Column(db.Integer, primary_key=True)
+    producto_id   = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
+    nombre        = db.Column(db.String(50), nullable=False)
+    precio        = db.Column(db.Float, nullable=False)
+    activo        = db.Column(db.Boolean, default=True)
+    orden_display = db.Column(db.Integer, default=0)
+
+
+class SaborProducto(db.Model):
+    __tablename__ = "sabores_producto"
+    id            = db.Column(db.Integer, primary_key=True)
+    producto_id   = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
+    nombre        = db.Column(db.String(80), nullable=False)
+    activo        = db.Column(db.Boolean, default=True)
     orden_display = db.Column(db.Integer, default=0)
 
 

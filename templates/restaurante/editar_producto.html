@@ -5,7 +5,7 @@
 
   <div class="page-header">
     <h1 class="page-titulo">Editar plato</h1>
-    <a href="/menu" class="btn-outline btn-sm">← Volver</a>
+    <a href="/menu" class="btn-outline btn-sm">← Volver al menú</a>
   </div>
 
   {% with msgs = get_flashed_messages(with_categories=true) %}
@@ -14,6 +14,7 @@
     {% endfor %}
   {% endwith %}
 
+  <!-- Formulario principal -->
   <div class="card">
     <form method="POST" action="/menu/editar/{{ producto.id }}" enctype="multipart/form-data">
 
@@ -69,6 +70,106 @@
       </div>
     </form>
   </div>
+
+  <!-- ── TAMAÑOS ──────────────────────────────────────── -->
+  <div style="margin-top:2rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem">
+      <div>
+        <h2 style="font-size:0.95rem;font-weight:700;color:#374151;margin:0">📏 Tamaños</h2>
+        <p style="font-size:0.82rem;color:#6B7280;margin:0.3rem 0 0">Ej: Pequeño $1.50 · Mediano $2.00 · Grande $2.50</p>
+      </div>
+      <form method="POST" action="/menu/producto/{{ producto.id }}/tamanos">
+        <button class="btn-xs" style="border:1.5px solid {% if producto.tamanos_activos %}#F97316{% else %}#E2E8F0{% endif %};background:{% if producto.tamanos_activos %}#FFF7ED{% else %}#fff{% endif %};color:{% if producto.tamanos_activos %}#C2410C{% else %}#94A3B8{% endif %};border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-size:0.8rem;font-weight:700">
+          {% if producto.tamanos_activos %}Activo ✓{% else %}Inactivo{% endif %}
+        </button>
+      </form>
+    </div>
+
+    <div class="card">
+      {% if producto.tamanos %}
+      <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.9rem">
+        {% for t in producto.tamanos %}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0.55rem 0.85rem;background:{% if t.activo %}#FFF7ED{% else %}#F9FAFB{% endif %};border:1.5px solid {% if t.activo %}#FED7AA{% else %}#E5E7EB{% endif %};border-radius:10px;{% if not t.activo %}opacity:0.55{% endif %}">
+          <div>
+            <span style="font-weight:700;font-size:0.9rem;color:{% if t.activo %}#C2410C{% else %}#9CA3AF{% endif %}">{{ t.nombre }}</span>
+            <span style="font-size:0.82rem;color:#F97316;font-weight:700;margin-left:0.5rem">${{ "%.2f"|format(t.precio) }}</span>
+          </div>
+          <div style="display:flex;gap:0.4rem">
+            <form method="POST" action="/menu/tamano/{{ t.id }}/toggle">
+              <button class="btn-xs btn-outline" style="font-size:0.72rem">{% if t.activo %}Desactivar{% else %}Activar{% endif %}</button>
+            </form>
+            <form method="POST" action="/menu/tamano/{{ t.id }}/eliminar"
+                  onsubmit="return confirm('¿Eliminar {{ t.nombre }}?')">
+              <button class="btn-danger btn-xs">✕</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p style="font-size:0.83rem;color:#9CA3AF;margin-bottom:0.75rem">Sin tamaños todavía. Agrégalos aquí.</p>
+      {% endif %}
+
+      <form method="POST" action="/menu/producto/{{ producto.id }}/tamano/agregar"
+            style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        <input type="text" name="nombre" placeholder="Ej: Pequeño, Mediano, Grande" required
+               style="flex:2;min-width:120px;padding:0.6rem 0.85rem;border:1.5px solid #E5E7EB;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none">
+        <div style="display:flex;align-items:center;gap:0.3rem">
+          <span style="font-size:0.85rem;color:#6B7280">$</span>
+          <input type="number" name="precio" placeholder="0.00" min="0" step="0.01" required
+                 style="width:90px;padding:0.6rem 0.75rem;border:1.5px solid #E5E7EB;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none">
+        </div>
+        <button type="submit" class="btn-primario" style="white-space:nowrap">+ Agregar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── SABORES ──────────────────────────────────────── -->
+  <div style="margin-top:1.75rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem">
+      <div>
+        <h2 style="font-size:0.95rem;font-weight:700;color:#374151;margin:0">🍶 Sabores</h2>
+        <p style="font-size:0.82rem;color:#6B7280;margin:0.3rem 0 0">Ej: Naranja · Maracuyá · Fresa · Guanábana</p>
+      </div>
+      <form method="POST" action="/menu/producto/{{ producto.id }}/sabores/toggle">
+        <button class="btn-xs" style="border:1.5px solid {% if producto.sabores_activos %}#F97316{% else %}#E2E8F0{% endif %};background:{% if producto.sabores_activos %}#FFF7ED{% else %}#fff{% endif %};color:{% if producto.sabores_activos %}#C2410C{% else %}#94A3B8{% endif %};border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-size:0.8rem;font-weight:700">
+          {% if producto.sabores_activos %}Activo ✓{% else %}Inactivo{% endif %}
+        </button>
+      </form>
+    </div>
+
+    <div class="card">
+      {% if producto.sabores %}
+      <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.75rem">
+        {% for s in producto.sabores %}
+        <div style="display:flex;align-items:center;gap:0.3rem;background:{% if s.activo %}#FFF7ED{% else %}#F3F4F6{% endif %};border:1.5px solid {% if s.activo %}#FED7AA{% else %}#E5E7EB{% endif %};border-radius:20px;padding:0.25rem 0.6rem 0.25rem 0.8rem">
+          <span style="font-size:0.84rem;font-weight:600;color:{% if s.activo %}#C2410C{% else %}#9CA3AF{% endif %}">{{ s.nombre }}</span>
+          <form method="POST" action="/menu/sabor/{{ s.id }}/toggle" style="display:inline;margin:0">
+            <button style="background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:0.78rem;padding:0 0.15rem" title="{% if s.activo %}Desactivar{% else %}Activar{% endif %}">
+              {% if s.activo %}●{% else %}○{% endif %}
+            </button>
+          </form>
+          <form method="POST" action="/menu/sabor/{{ s.id }}/eliminar"
+                onsubmit="return confirm('¿Eliminar {{ s.nombre }}?')" style="display:inline;margin:0">
+            <button style="background:none;border:none;cursor:pointer;color:#D1D5DB;font-size:0.82rem;padding:0 0.1rem" title="Eliminar">✕</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p style="font-size:0.83rem;color:#9CA3AF;margin-bottom:0.75rem">Sin sabores todavía. Agrégalos aquí.</p>
+      {% endif %}
+
+      <form method="POST" action="/menu/producto/{{ producto.id }}/sabor/agregar"
+            style="display:flex;gap:0.5rem">
+        <input type="text" name="nombre" placeholder="Agregar sabor..." required
+               style="flex:1;padding:0.55rem 0.8rem;border:1.5px solid #E5E7EB;border-radius:8px;font-size:0.88rem;font-family:inherit;outline:none">
+        <button type="submit" class="btn-primario" style="white-space:nowrap">+ Agregar</button>
+      </form>
+    </div>
+  </div>
+
+  <div style="height:2rem"></div>
 
 </div>
 <script src="/static/js/main.js"></script>

@@ -78,7 +78,7 @@
               <div class="plato-descripcion">{{ p.descripcion }}</div>
             {% endif %}
           </div>
-          {% set tiene_opciones = p.terminos_asado or (p.salsas_activas and salsas_rest) or (p.adiciones_activas and adiciones_rest) or (p.bebidas_activas and secciones_bebida) or (p.tamanos_activos and tamanos_bebida) %}
+          {% set tiene_opciones = p.terminos_asado or (p.salsas_activas and salsas_rest) or (p.adiciones_activas and adiciones_rest) or (p.bebidas_activas and secciones_bebida) or (p.tamanos_activos and p.tamanos) or (p.sabores_activos and p.sabores) %}
           <div class="plato-footer" style="{% if tiene_opciones %}flex-direction:column;align-items:flex-start;gap:0.5rem{% endif %}">
             <span class="plato-precio">${{ "%.2f"|format(p.precio) }}</span>
 
@@ -121,11 +121,12 @@
                 </div>
                 {% endif %}
 
-                {% if p.tamanos_activos and tamanos_bebida %}
+                {% set tamanos_activos_lista = p.tamanos | selectattr('activo') | list %}
+                {% if p.tamanos_activos and tamanos_activos_lista %}
                 <div style="margin-bottom:0.5rem">
                   <div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem">Tamaño</div>
                   <div style="display:flex;gap:0.35rem;flex-wrap:wrap">
-                    {% for t in tamanos_bebida %}
+                    {% for t in tamanos_activos_lista %}
                     <label style="cursor:pointer">
                       <input type="radio" name="tamano" value="{{ t.id }}:{{ t.nombre }}:{{ t.precio }}"
                              {% if loop.first %}checked{% endif %}
@@ -164,6 +165,26 @@
                   </div>
                   {% endif %}
                   {% endfor %}
+                </div>
+                {% endif %}
+
+                {% set sabores_activos_lista = p.sabores | selectattr('activo') | list %}
+                {% if p.sabores_activos and sabores_activos_lista %}
+                <div style="margin-bottom:0.5rem">
+                  <div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem">Sabor</div>
+                  <div style="display:flex;gap:0.3rem;flex-wrap:wrap">
+                    {% for s in sabores_activos_lista %}
+                    <label style="cursor:pointer">
+                      <input type="radio" name="termino_sabor" value="{{ s.nombre }}"
+                             {% if loop.first %}checked{% endif %}
+                             style="display:none" class="radio-sabor-{{ p.id }}">
+                      <span class="termino-chip sabor-chip-{{ p.id }}"
+                            style="display:inline-block;padding:0.22rem 0.6rem;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid #E5E7EB;background:#F9FAFB;color:#6B7280;cursor:pointer;transition:all 0.15s">
+                        {{ s.nombre }}
+                      </span>
+                    </label>
+                    {% endfor %}
+                  </div>
                 </div>
                 {% endif %}
 
@@ -359,6 +380,7 @@
   activarChips('input[type="radio"][class^="radio-asado"]');
   activarChips('input[type="radio"][class^="radio-salsa"]');
   activarChips('input[type="radio"][class^="radio-bebida"]');
+  activarChips('input[type="radio"][class^="radio-sabor"]');
 
   // Tamaños: resaltar chip + actualizar precio mostrado en el plato
   document.querySelectorAll('input[type="radio"][class^="radio-tamano"]').forEach(radio => {
