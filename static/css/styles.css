@@ -173,6 +173,7 @@ a    { text-decoration: none; }
 .cuenta-badge {
   background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;
   padding: 0.3rem 0.7rem; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+  white-space: nowrap; display: inline-flex; align-items: center; gap: 0.3rem;
 }
 .cuenta-badge.urgente { background: #FEE2E2; color: #991B1B; border-color: #FECACA; animation: pulse-badge 1.2s ease-in-out infinite; }
 @keyframes pulse-badge { 0%,100%{opacity:1} 50%{opacity:0.65} }
