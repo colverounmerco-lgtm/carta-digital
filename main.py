@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 import cloudinary, cloudinary.uploader
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
-from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, SeccionBebida, VarianteBebida, slugify
+from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, SeccionBebida, VarianteBebida, TamañoBebida, slugify
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "carta-dev-secret")
@@ -286,6 +286,7 @@ def run_migrations():
         add_col("productos", "salsas_activas",    "BOOLEAN DEFAULT FALSE")
         add_col("productos", "adiciones_activas", "BOOLEAN DEFAULT FALSE")
         add_col("productos", "bebidas_activas",   "BOOLEAN DEFAULT FALSE")
+        add_col("productos", "tamanos_activos",   "BOOLEAN DEFAULT FALSE")
 
     if "restaurantes" in tables:
         add_col("restaurantes", "descripcion",      "TEXT")
@@ -905,8 +906,9 @@ def toggle_adiciones_producto(pid):
 @login_required
 def bebidas():
     r = restaurante_session()
-    secciones = SeccionBebida.query.filter_by(restaurante_id=r.id).order_by(SeccionBebida.orden_display).all()
-    return render_template("restaurante/bebidas.html", restaurante=r, secciones=secciones)
+    secciones     = SeccionBebida.query.filter_by(restaurante_id=r.id).order_by(SeccionBebida.orden_display).all()
+    tamanos_lista = TamañoBebida.query.filter_by(restaurante_id=r.id).order_by(TamañoBebida.orden_display).all()
+    return render_template("restaurante/bebidas.html", restaurante=r, secciones=secciones, tamanos_lista=tamanos_lista)
 
 
 @app.route("/bebidas/seccion/agregar", methods=["POST"])
@@ -974,6 +976,52 @@ def bebida_variante_eliminar(vid):
     db.session.delete(v)
     db.session.commit()
     return redirect(url_for("bebidas"))
+
+
+@app.route("/bebidas/tamano/agregar", methods=["POST"])
+@login_required
+def bebida_tamano_agregar():
+    r = restaurante_session()
+    nombre = request.form.get("nombre", "").strip()
+    try:
+        precio = round(float(request.form.get("precio", 0) or 0), 2)
+    except ValueError:
+        precio = 0.0
+    if nombre and precio > 0:
+        orden = TamañoBebida.query.filter_by(restaurante_id=r.id).count()
+        db.session.add(TamañoBebida(restaurante_id=r.id, nombre=nombre, precio=precio, orden_display=orden))
+        db.session.commit()
+    return redirect(url_for("bebidas"))
+
+
+@app.route("/bebidas/tamano/<int:tid>/toggle", methods=["POST"])
+@login_required
+def bebida_tamano_toggle(tid):
+    r = restaurante_session()
+    t = TamañoBebida.query.filter_by(id=tid, restaurante_id=r.id).first_or_404()
+    t.activo = not t.activo
+    db.session.commit()
+    return redirect(url_for("bebidas"))
+
+
+@app.route("/bebidas/tamano/<int:tid>/eliminar", methods=["POST"])
+@login_required
+def bebida_tamano_eliminar(tid):
+    r = restaurante_session()
+    t = TamañoBebida.query.filter_by(id=tid, restaurante_id=r.id).first_or_404()
+    db.session.delete(t)
+    db.session.commit()
+    return redirect(url_for("bebidas"))
+
+
+@app.route("/menu/producto/<int:pid>/tamanos", methods=["POST"])
+@login_required
+def toggle_tamanos_producto(pid):
+    r = restaurante_session()
+    p = Producto.query.filter_by(id=pid, restaurante_id=r.id).first_or_404()
+    p.tamanos_activos = not p.tamanos_activos
+    db.session.commit()
+    return redirect(url_for("menu"))
 
 
 @app.route("/menu/producto/<int:pid>/bebidas", methods=["POST"])
@@ -1094,6 +1142,7 @@ def carta(slug, mesa_token):
         salsas_rest=Salsa.query.filter_by(restaurante_id=r.id, activa=True).order_by(Salsa.orden_display).all(),
         adiciones_rest=Adicion.query.filter_by(restaurante_id=r.id, activa=True).order_by(Adicion.orden_display).all(),
         secciones_bebida=SeccionBebida.query.filter_by(restaurante_id=r.id, activa=True).order_by(SeccionBebida.orden_display).all(),
+        tamanos_bebida=TamañoBebida.query.filter_by(restaurante_id=r.id, activo=True).order_by(TamañoBebida.orden_display).all(),
     )
 
 
@@ -1111,6 +1160,19 @@ def carta_agregar(slug, mesa_token):
     termino_asado  = request.form.get("termino_asado",  "").strip()
     termino_salsa  = request.form.get("termino_salsa",  "").strip()
     termino_bebida = request.form.get("termino_bebida", "").strip()
+
+    # Tamaño: valor compuesto "id:nombre:precio"
+    tamano_raw    = request.form.get("tamano", "").strip()
+    tamano_nombre = ""
+    tamano_precio = None
+    if p.tamanos_activos and tamano_raw:
+        partes_t = tamano_raw.split(":")
+        if len(partes_t) == 3:
+            tamano_nombre = partes_t[1]
+            try:
+                tamano_precio = float(partes_t[2])
+            except ValueError:
+                tamano_precio = None
 
     if p.terminos_asado and termino_asado not in TERMINOS_ASADO:
         return redirect(url_for("carta", slug=slug, mesa_token=mesa_token))
@@ -1133,10 +1195,11 @@ def carta_agregar(slug, mesa_token):
                 extra_precio += a.precio
             adicion_key = ",".join(sorted(str(a.id) for a in adic_objs))
 
-    partes  = [t for t in [termino_asado, termino_salsa, termino_bebida] if t] + adicion_partes
+    partes  = [t for t in [tamano_nombre, termino_asado, termino_salsa, termino_bebida] if t] + adicion_partes
     termino = " · ".join(partes)
 
-    precio_final = round(p.precio + extra_precio, 2)
+    base_precio  = tamano_precio if tamano_precio is not None else p.precio
+    precio_final = round(base_precio + extra_precio, 2)
 
     cart_key  = f"cart_{mesa_token}"
     carrito   = session.get(cart_key, {})

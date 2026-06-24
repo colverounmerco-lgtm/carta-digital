@@ -82,6 +82,7 @@ class Producto(db.Model):
     salsas_activas    = db.Column(db.Boolean, default=False)
     adiciones_activas = db.Column(db.Boolean, default=False)
     bebidas_activas   = db.Column(db.Boolean, default=False)
+    tamanos_activos   = db.Column(db.Boolean, default=False)
 
     items = db.relationship("ItemOrden", backref="producto", lazy=True)
 
@@ -152,6 +153,16 @@ class SeccionBebida(db.Model):
     orden_display  = db.Column(db.Integer, default=0)
     variantes      = db.relationship("VarianteBebida", backref="seccion", lazy=True,
                                      cascade="all, delete-orphan", order_by="VarianteBebida.orden_display")
+
+
+class TamañoBebida(db.Model):
+    __tablename__ = "tamanos_bebida"
+    id             = db.Column(db.Integer, primary_key=True)
+    restaurante_id = db.Column(db.Integer, db.ForeignKey("restaurantes.id"), nullable=False)
+    nombre         = db.Column(db.String(50), nullable=False)   # "Pequeño", "Mediano", "Grande"
+    precio         = db.Column(db.Float, nullable=False)        # precio absoluto de este tamaño
+    activo         = db.Column(db.Boolean, default=True)
+    orden_display  = db.Column(db.Integer, default=0)
 
 
 class VarianteBebida(db.Model):

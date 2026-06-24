@@ -78,7 +78,7 @@
               <div class="plato-descripcion">{{ p.descripcion }}</div>
             {% endif %}
           </div>
-          {% set tiene_opciones = p.terminos_asado or (p.salsas_activas and salsas_rest) or (p.adiciones_activas and adiciones_rest) or (p.bebidas_activas and secciones_bebida) %}
+          {% set tiene_opciones = p.terminos_asado or (p.salsas_activas and salsas_rest) or (p.adiciones_activas and adiciones_rest) or (p.bebidas_activas and secciones_bebida) or (p.tamanos_activos and tamanos_bebida) %}
           <div class="plato-footer" style="{% if tiene_opciones %}flex-direction:column;align-items:flex-start;gap:0.5rem{% endif %}">
             <span class="plato-precio">${{ "%.2f"|format(p.precio) }}</span>
 
@@ -114,6 +114,27 @@
                       <span class="termino-chip salsa-chip-{{ p.id }}"
                             style="display:inline-block;padding:0.22rem 0.6rem;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid #E5E7EB;background:#F9FAFB;color:#6B7280;cursor:pointer;transition:all 0.15s">
                         {{ s.nombre }}
+                      </span>
+                    </label>
+                    {% endfor %}
+                  </div>
+                </div>
+                {% endif %}
+
+                {% if p.tamanos_activos and tamanos_bebida %}
+                <div style="margin-bottom:0.5rem">
+                  <div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem">Tamaño</div>
+                  <div style="display:flex;gap:0.35rem;flex-wrap:wrap">
+                    {% for t in tamanos_bebida %}
+                    <label style="cursor:pointer">
+                      <input type="radio" name="tamano" value="{{ t.id }}:{{ t.nombre }}:{{ t.precio }}"
+                             {% if loop.first %}checked{% endif %}
+                             style="display:none" class="radio-tamano-{{ p.id }}"
+                             data-precio="{{ t.precio }}">
+                      <span class="tamano-chip-{{ p.id }}"
+                            style="display:inline-flex;flex-direction:column;align-items:center;padding:0.3rem 0.65rem;border-radius:10px;font-size:0.75rem;font-weight:700;border:1.5px solid #E5E7EB;background:#F9FAFB;color:#6B7280;cursor:pointer;transition:all 0.15s;line-height:1.3">
+                        <span>{{ t.nombre }}</span>
+                        <span style="font-size:0.7rem;font-weight:600">${{ "%.2f"|format(t.precio) }}</span>
                       </span>
                     </label>
                     {% endfor %}
@@ -338,6 +359,32 @@
   activarChips('input[type="radio"][class^="radio-asado"]');
   activarChips('input[type="radio"][class^="radio-salsa"]');
   activarChips('input[type="radio"][class^="radio-bebida"]');
+
+  // Tamaños: resaltar chip + actualizar precio mostrado en el plato
+  document.querySelectorAll('input[type="radio"][class^="radio-tamano"]').forEach(radio => {
+    const chip = radio.nextElementSibling;
+    function highlightTamano(r) {
+      const form = r.closest('form');
+      const name = r.name;
+      form.querySelectorAll(`input[name="${name}"]`).forEach(x => {
+        x.nextElementSibling.style.background   = '#F9FAFB';
+        x.nextElementSibling.style.borderColor  = '#E5E7EB';
+        x.nextElementSibling.style.color        = '#6B7280';
+      });
+      r.nextElementSibling.style.background   = '#FFF7ED';
+      r.nextElementSibling.style.borderColor  = '#F97316';
+      r.nextElementSibling.style.color        = '#C2410C';
+      // Actualizar precio en la card del plato
+      const card  = r.closest('.plato-card');
+      if (card) {
+        const precioEl = card.querySelector('.plato-precio');
+        if (precioEl) precioEl.textContent = '$' + parseFloat(r.dataset.precio).toFixed(2);
+      }
+    }
+    if (radio.checked) highlightTamano(radio);
+    radio.addEventListener('change', () => highlightTamano(radio));
+    chip.addEventListener('click', () => { radio.checked = true; highlightTamano(radio); });
+  });
 </script>
 </body>
 </html>
