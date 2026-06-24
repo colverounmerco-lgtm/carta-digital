@@ -195,7 +195,7 @@
 
 <script>
 let audioCtx    = null;
-let sonidoOn    = false;
+let sonidoOn    = localStorage.getItem('sonido') === '1';
 let prevCount   = {{ ordenes_activas|length }};
 let prevPend    = {{ ordenes_activas | selectattr('estado','equalto','pendiente') | list | length }};
 let prevCuentas = {{ ordenes_activas | selectattr('solicita_cuenta') | list | length }};
@@ -218,6 +218,7 @@ function actualizarBoton() {
 function toggleSonido() {
   if (sonidoOn) {
     sonidoOn = false;
+    localStorage.setItem('sonido', '0');
     actualizarBoton();
     return;
   }
@@ -228,11 +229,23 @@ function toggleSonido() {
       audioCtx.resume();
     }
     sonidoOn = true;
+    localStorage.setItem('sonido', '1');
   } catch (e) {}
   actualizarBoton();
 }
 
 document.getElementById('btn-sonido').onclick = toggleSonido;
+
+// Si el sonido estaba activo antes del reload, restaurar AudioContext en la primera interacción
+if (sonidoOn) {
+  actualizarBoton();
+  document.addEventListener('click', function initCtx() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+    }
+    document.removeEventListener('click', initCtx);
+  }, { once: true });
+}
 
 function tocarChime(freqs, vol) {
   if (!audioCtx || !sonidoOn) return;
