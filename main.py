@@ -1,4 +1,7 @@
 import os, csv, io, random, smtplib
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 from datetime import datetime, date, time, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -1230,31 +1233,51 @@ def descargar_reporte():
         ).order_by(Orden.fecha).all()
         nombre_archivo = f"reporte_mensual_{fecha_ref.year}_{fecha_ref.month:02d}.csv"
 
-    # 1. Recopilar todos los productos únicos del período (orden alfabético)
-    productos_map = {}  # producto_id -> nombre
+    # ── Estilos ──────────────────────────────────────────────────────────
+    naranja     = "F97316"
+    gris_fondo  = "F8FAFC"
+    borde_color = "E2E8F0"
+
+    def borde_fino():
+        s = Side(style="thin", color=borde_color)
+        return Border(left=s, right=s, top=s, bottom=s)
+
+    # ── Libro Excel ──────────────────────────────────────────────────────
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Reporte"
+
+    # ── Productos únicos del período (orden alfabético) ───────────────────
+    productos_map = {}
     for o in ordenes:
         for item in o.items:
             if item.producto and item.producto_id not in productos_map:
                 productos_map[item.producto_id] = item.producto.nombre
     prod_ids = sorted(productos_map, key=lambda pid: productos_map[pid])
 
-    # 2. Construir cabecera dinámica
-    output = io.StringIO()
-    w = csv.writer(output)
-    cabecera = ["Fecha", "Hora", "# Orden", "Mesa", "Cliente"] \
-             + [productos_map[pid] for pid in prod_ids] \
-             + ["TOTAL", "Método de pago"]
-    w.writerow(cabecera)
+    # ── Cabecera ─────────────────────────────────────────────────────────
+    cols_fijas  = ["Fecha", "Hora", "# Orden", "Mesa", "Cliente"]
+    cols_prod   = [productos_map[pid] for pid in prod_ids]
+    cols_fin    = ["TOTAL ($)", "Método de pago"]
+    cabecera    = cols_fijas + cols_prod + cols_fin
 
-    # 3. Una fila por orden
+    for col_idx, titulo in enumerate(cabecera, start=1):
+        cell = ws.cell(row=1, column=col_idx, value=titulo)
+        cell.font      = Font(bold=True, color="FFFFFF", size=10)
+        cell.fill      = PatternFill("solid", fgColor=naranja)
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        cell.border    = borde_fino()
+    ws.row_dimensions[1].height = 30
+
+    # ── Filas de datos ────────────────────────────────────────────────────
     totales_qty  = {pid: 0 for pid in prod_ids}
     total_global = 0.0
+    fila_excel   = 2
 
     for o in ordenes:
         ec_fecha = o.fecha + EC_OFFSET
 
-        # Agrupar items por producto
-        item_map = {}   # producto_id -> (cantidad, notas_item)
+        item_map = {}
         for item in o.items:
             if item.producto:
                 if item.producto_id not in item_map:
@@ -1263,7 +1286,7 @@ def descargar_reporte():
                 if item.notas_item:
                     item_map[item.producto_id]["notas"].append(item.notas_item)
 
-        fila = [
+        valores = [
             ec_fecha.strftime("%d/%m/%Y"),
             ec_fecha.strftime("%H:%M"),
             o.id,
@@ -1272,30 +1295,57 @@ def descargar_reporte():
         ]
         for pid in prod_ids:
             if pid in item_map:
-                datos = item_map[pid]
-                celda = str(datos["qty"])
-                if datos["notas"]:
-                    celda += f" ({', '.join(datos['notas'])})"
-                fila.append(celda)
-                totales_qty[pid] += datos["qty"]
+                d = item_map[pid]
+                val = d["qty"]
+                if d["notas"]:
+                    val = f"{d['qty']} ({', '.join(d['notas'])})"
+                valores.append(val)
+                totales_qty[pid] += d["qty"]
             else:
-                fila.append("")
-        fila.append(f"{o.total:.2f}")
-        fila.append(o.metodo_pago or "—")
+                valores.append("")
+        valores.append(round(o.total, 2))
+        valores.append(o.metodo_pago or "—")
         total_global += o.total
-        w.writerow(fila)
 
-    # 4. Fila de totales
-    w.writerow([])  # línea en blanco
-    fila_total = ["TOTAL", "", "", "", ""] \
-               + [totales_qty[pid] if totales_qty[pid] > 0 else "" for pid in prod_ids] \
-               + [f"{total_global:.2f}", ""]
-    w.writerow(fila_total)
+        bg = "FFFFFF" if fila_excel % 2 == 0 else gris_fondo
+        for col_idx, val in enumerate(valores, start=1):
+            cell = ws.cell(row=fila_excel, column=col_idx, value=val)
+            cell.fill      = PatternFill("solid", fgColor=bg)
+            cell.border    = borde_fino()
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.font      = Font(size=10)
+        fila_excel += 1
 
-    output.seek(0)
-    resp = make_response("﻿" + output.getvalue())  # BOM para Excel
+    # ── Fila de totales ───────────────────────────────────────────────────
+    fila_excel += 1  # fila en blanco
+    fila_tot = fila_excel
+    totales_vals = ["TOTAL", "", "", "", ""] \
+                 + [totales_qty[pid] if totales_qty[pid] > 0 else "" for pid in prod_ids] \
+                 + [round(total_global, 2), ""]
+
+    for col_idx, val in enumerate(totales_vals, start=1):
+        cell = ws.cell(row=fila_tot, column=col_idx, value=val)
+        cell.font      = Font(bold=True, color="FFFFFF", size=10)
+        cell.fill      = PatternFill("solid", fgColor=naranja)
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border    = borde_fino()
+    ws.row_dimensions[fila_tot].height = 22
+
+    # ── Ancho de columnas automático ─────────────────────────────────────
+    anchos_min = {"A": 12, "B": 8, "C": 9, "D": 12, "E": 14}
+    for col_idx, titulo in enumerate(cabecera, start=1):
+        letra = get_column_letter(col_idx)
+        ancho = max(len(str(titulo)) + 2, anchos_min.get(letra, 10))
+        ws.column_dimensions[letra].width = min(ancho, 30)
+
+    # ── Respuesta ─────────────────────────────────────────────────────────
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    nombre_archivo = nombre_archivo.replace(".csv", ".xlsx")
+    resp = make_response(buf.read())
     resp.headers["Content-Disposition"] = f"attachment; filename={nombre_archivo}"
-    resp.headers["Content-Type"] = "text/csv; charset=utf-8"
+    resp.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     return resp
 
 

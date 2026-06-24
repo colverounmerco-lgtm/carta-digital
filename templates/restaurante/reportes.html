@@ -6,7 +6,7 @@
   <div class="page-header">
     <div>
       <h1 class="page-titulo">Reportes de ventas</h1>
-      <p class="page-sub">Descarga tus ventas en CSV para abrirlo en Excel</p>
+      <p class="page-sub">Descarga tus ventas en formato Excel (.xlsx)</p>
     </div>
   </div>
 
@@ -19,7 +19,7 @@
         <label>Fecha</label>
         <input type="date" name="fecha" value="{{ hoy }}" max="{{ hoy }}">
       </div>
-      <button class="btn-primario" style="align-self:flex-end">⬇ Descargar CSV</button>
+      <button class="btn-primario" style="align-self:flex-end">⬇ Descargar Excel</button>
     </form>
   </div>
 
@@ -32,7 +32,7 @@
         <label>Mes</label>
         <input type="month" name="fecha" value="{{ hoy.strftime('%Y-%m') }}">
       </div>
-      <button class="btn-primario" style="align-self:flex-end">⬇ Descargar CSV</button>
+      <button class="btn-primario" style="align-self:flex-end">⬇ Descargar Excel</button>
     </form>
   </div>
 
