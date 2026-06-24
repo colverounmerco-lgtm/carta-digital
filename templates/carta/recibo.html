@@ -164,6 +164,9 @@
         <td class="col-qty">{{ item.cantidad }}x</td>
         <td class="col-name">
           {{ item.producto.nombre if item.producto else '—' }}
+          {% if item.notas_item %}
+          <div style="font-size:11px;font-style:italic">{{ item.notas_item }}</div>
+          {% endif %}
           <div style="font-size:11px;color:#555">${{ "%.2f"|format(item.precio_unitario) }} c/u</div>
         </td>
         <td class="col-price">${{ "%.2f"|format(item.subtotal) }}</td>
