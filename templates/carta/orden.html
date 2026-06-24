@@ -103,7 +103,14 @@
           {% if orden.metodo_preferido %}
             {% set icono_map = {} %}{% for m in metodos_pago %}{% set _ = icono_map.update({m.nombre: m.icono}) %}{% endfor %}
             <br><span style="font-size:0.85rem;margin-top:0.3rem;display:inline-block">
-              Método elegido: {{ icono_map.get(orden.metodo_preferido, '💳') }} <strong>{{ orden.metodo_preferido }}</strong>
+              Método elegido:
+              {% set ic = icono_map.get(orden.metodo_preferido, '💳') %}
+              {% if ic.startswith('/') or ic.startswith('http') %}
+                <img src="{{ ic }}" style="width:1.2rem;height:1.2rem;object-fit:contain;vertical-align:middle">
+              {% else %}
+                {{ ic }}
+              {% endif %}
+              <strong>{{ orden.metodo_preferido }}</strong>
             </span>
           {% endif %}
         </div>
@@ -119,7 +126,11 @@
               <input type="radio" name="metodo_preferido" value="{{ m.nombre }}"
                      {% if loop.first %}checked{% endif %} style="display:none">
               <div class="metodo-card">
-                <span style="font-size:1.6rem">{{ m.icono }}</span>
+                {% if m.icono and (m.icono.startswith('/') or m.icono.startswith('http')) %}
+                  <img src="{{ m.icono }}" style="width:2rem;height:2rem;object-fit:contain">
+                {% else %}
+                  <span style="font-size:1.6rem">{{ m.icono }}</span>
+                {% endif %}
                 <span>{{ m.nombre }}</span>
               </div>
             </label>

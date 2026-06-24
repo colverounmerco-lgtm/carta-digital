@@ -79,7 +79,7 @@ def dias_plan(r):
 
 
 def _crear_metodos_default(restaurante_id):
-    defaults = [("💵", "Efectivo", 0), ("💳", "Tarjeta", 1), ("📲", "Transferencia", 2)]
+    defaults = [("💵", "Efectivo", 0), ("💳", "Tarjeta", 1), ("📲", "Transferencia", 2), ("/static/img/deuna.svg", "Deuna!", 3)]
     for icono, nombre, orden in defaults:
         db.session.add(MetodoPago(
             restaurante_id=restaurante_id, nombre=nombre,
@@ -287,6 +287,10 @@ def run_migrations():
     for r in Restaurante.query.all():
         if MetodoPago.query.filter_by(restaurante_id=r.id).count() == 0:
             _crear_metodos_default(r.id)
+        # Añadir Deuna! si el restaurante no lo tiene aún
+        if not MetodoPago.query.filter_by(restaurante_id=r.id, nombre="Deuna!").first():
+            ultimo = MetodoPago.query.filter_by(restaurante_id=r.id).count()
+            db.session.add(MetodoPago(restaurante_id=r.id, nombre="Deuna!", icono="/static/img/deuna.svg", orden_display=ultimo))
         # Asignar trial a restaurantes sin plan/vencimiento
         if not r.plan:
             r.plan = 'trial'
