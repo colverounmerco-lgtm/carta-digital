@@ -329,15 +329,22 @@ def register():
                 flash(f"Error al subir logo: {e}", "error")
                 return redirect(url_for("register"))
 
+        skip_verificacion = os.getenv("SKIP_EMAIL_VERIFICATION", "false").lower() == "true"
+
         r = Restaurante(nombre=nombre, email=email, slug=slug,
                         whatsapp=whatsapp, ciudad=ciudad,
                         logo_url=logo_url, descripcion=descripcion,
-                        email_verificado=False)
+                        email_verificado=skip_verificacion)
         r.set_password(pwd)
         db.session.add(r)
         db.session.flush()
         _crear_metodos_default(r.id)
         db.session.commit()
+
+        if skip_verificacion:
+            session["restaurante_id"] = r.id
+            flash(f"¡Bienvenido, {r.nombre}! Empieza creando tu menú.", "success")
+            return redirect(url_for("dashboard"))
 
         codigo = crear_codigo(email, "registro")
         try:
