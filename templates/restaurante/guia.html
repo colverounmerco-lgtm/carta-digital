@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% block title %}Guía de uso — Carta Digital{% endblock %}
+{% block contenido %}
+<style>
+  .guia-wrap   { max-width: 760px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  .guia-hero   { text-align: center; margin-bottom: 2.5rem; }
+  .guia-hero h1{ font-size: 1.75rem; font-weight: 800; color: #1C1C1E; }
+  .guia-hero p { font-size: 0.95rem; color: #6B7280; margin-top: 0.4rem; }
+
+  .seccion     { background: #fff; border-radius: 16px; border: 1px solid #F1F5F9;
+                 box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 1.25rem; overflow: hidden; }
+  .sec-header  { display: flex; align-items: center; gap: 0.9rem; padding: 1.1rem 1.4rem;
+                 cursor: pointer; user-select: none; }
+  .sec-icono   { width: 42px; height: 42px; border-radius: 12px; display: flex;
+                 align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+  .sec-titulo  { font-weight: 700; font-size: 1rem; color: #1C1C1E; }
+  .sec-sub     { font-size: 0.78rem; color: #9CA3AF; margin-top: 1px; }
+  .sec-arrow   { margin-left: auto; color: #9CA3AF; font-size: 1rem; transition: transform 0.2s; }
+  .sec-body    { padding: 0 1.4rem 1.4rem; display: none; }
+  .sec-body.abierto { display: block; }
+  .sec-arrow.abierto { transform: rotate(180deg); }
+
+  .paso        { display: flex; gap: 0.85rem; margin-bottom: 1rem; }
+  .paso-num    { width: 26px; height: 26px; border-radius: 50%; background: #F97316;
+                 color: #fff; font-size: 0.75rem; font-weight: 800; display: flex;
+                 align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .paso-texto  { font-size: 0.88rem; color: #374151; line-height: 1.55; }
+  .paso-texto strong { color: #1C1C1E; }
+
+  .tip         { background: #FFF7ED; border-left: 3px solid #F97316; border-radius: 0 8px 8px 0;
+                 padding: 0.65rem 0.9rem; margin: 0.75rem 0; font-size: 0.83rem; color: #92400E; }
+  .tip strong  { color: #C2410C; }
+
+  .flujo       { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
+                 margin: 0.75rem 0; font-size: 0.82rem; }
+  .flujo-paso  { background: #F3F4F6; border-radius: 20px; padding: 0.3rem 0.75rem;
+                 font-weight: 600; color: #374151; }
+  .flujo-arr   { color: #9CA3AF; font-size: 0.9rem; }
+
+  .tabla-guia  { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin-top: 0.5rem; }
+  .tabla-guia th { text-align: left; padding: 0.5rem 0.75rem; background: #F8FAFC;
+                   color: #64748B; font-weight: 600; border-bottom: 1px solid #E2E8F0; }
+  .tabla-guia td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #F1F5F9; color: #374151; }
+  .tabla-guia tr:last-child td { border-bottom: none; }
+
+  .badge-guia  { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px;
+                 font-size: 0.72rem; font-weight: 700; }
+  .badge-verde { background: #D1FAE5; color: #065F46; }
+  .badge-azul  { background: #DBEAFE; color: #1E40AF; }
+  .badge-naranja{ background: #FEF3C7; color: #92400E; }
+</style>
+
+<div class="guia-wrap">
+
+  <div class="guia-hero">
+    <h1>📖 Guía de uso</h1>
+    <p>Todo lo que necesitas saber para operar tu restaurante con Carta Digital</p>
+  </div>
+
+  <!-- 1. PANEL -->
+  <div class="seccion">
+    <div class="sec-header" onclick="toggle(this)">
+      <div class="sec-icono" style="background:#FFF7ED">📋</div>
+      <div>
+        <div class="sec-titulo">Panel de pedidos</div>
+        <div class="sec-sub">Cómo ver y gestionar los pedidos en tiempo real</div>
+      </div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <div class="flujo">
+        <span class="flujo-paso">Nuevo pedido</span><span class="flujo-arr">→</span>
+        <span class="flujo-paso">Confirmar</span><span class="flujo-arr">→</span>
+        <span class="flujo-paso">Listo</span><span class="flujo-arr">→</span>
+        <span class="flujo-paso">Cobrar</span>
+      </div>
+
+      <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
+        Cuando un cliente hace un pedido aparece automáticamente en el panel. El panel se actualiza solo — no necesitas recargar la página.
+      </div></div>
+      <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
+        Haz clic en <strong>Confirmar</strong> para que el cliente sepa que la cocina recibió su pedido.
+      </div></div>
+      <div class="paso"><div class="paso-num">3</div><div class="paso-texto">
+        Cuando el plato está listo, clic en <strong>Listo</strong>. El cliente verá "¡Listo para entregar!" en su pantalla y puede solicitar la cuenta eligiendo su método de pago.
+      </div></div>
+      <div class="paso"><div class="paso-num">4</div><div class="paso-texto">
+        Selecciona el método de pago en el selector y haz clic en <strong>✓ Cobrado</strong>. La mesa se cierra automáticamente.
+      </div></div>
+
+      <div class="tip">
+        <strong>💡 Sonido de alerta:</strong> Activa el botón "Activar sonido" en el panel para escuchar una alerta cuando llegue un pedido nuevo.
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. MENÚ -->
+  <div class="seccion">
+    <div class="sec-header" onclick="toggle(this)">
+      <div class="sec-icono" style="background:#F0FDF4">🍽️</div>
+      <div>
+        <div class="sec-titulo">Gestión del menú</div>
+        <div class="sec-sub">Agregar, editar y organizar tus platos</div>
+      </div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
+        Ve a <strong>Menú</strong> en la barra de navegación. Desde ahí puedes agregar platos con el botón <strong>+ Agregar plato</strong>.
+      </div></div>
+      <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
+        Cada plato tiene: nombre, precio, categoría (ej: Entradas, Principal, Bebidas), descripción e imagen. La imagen es opcional pero mejora las ventas.
+      </div></div>
+      <div class="paso"><div class="paso-num">3</div><div class="paso-texto">
+        Para <strong>desactivar temporalmente</strong> un plato (por ejemplo si se acabó) usa el toggle sin eliminarlo. El plato no aparecerá en la carta del cliente.
+      </div></div>
+      <div class="paso"><div class="paso-num">4</div><div class="paso-texto">
+        Arrastra los platos para cambiar el orden en que aparecen en la carta.
+      </div></div>
+      <div class="tip">
+        <strong>💡 Categorías:</strong> Organiza tu menú por secciones. Las categorías se crean automáticamente según el texto que escribas en el campo "Categoría".
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MESAS -->
+  <div class="seccion">
+    <div class="sec-header" onclick="toggle(this)">
+      <div class="sec-icono" style="background:#EFF6FF">🪑</div>
+      <div>
+        <div class="sec-titulo">Mesas y códigos QR</div>
+        <div class="sec-sub">Crear mesas, descargar QR y controlar el acceso</div>
+      </div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
+        Ve a <strong>Mesas</strong> y crea una mesa por cada mesa física de tu local. Dale un nombre (ej: "Mesa 1", "Terraza", "Barra").
+      </div></div>
+      <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
+        Descarga el código QR de cada mesa e imprímelo. Colócalo sobre la mesa. Cuando el cliente lo escanee verá directamente el menú de esa mesa.
+      </div></div>
+      <div class="paso"><div class="paso-num">3</div><div class="paso-texto">
+        <strong>Estado de la mesa:</strong> Las mesas se abren automáticamente al inicio del día. Se cierran al cobrar el pedido o al presionar <strong>Cerrar mesa</strong>.
+      </div></div>
+      <div class="paso"><div class="paso-num">4</div><div class="paso-texto">
+        Si una mesa está cerrada y el cliente escanea el QR, la mesa se abre automáticamente para el nuevo cliente.
+      </div></div>
+      <div class="tip">
+        <strong>💡 Mesa cerrada:</strong> El cliente ve "Esta mesa no está disponible" si intenta ordenar desde una mesa cerrada. Úsalo para reservar mesas o durante el cierre del local.
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MÉTODOS DE PAGO -->
+  <div class="seccion">
+    <div class="sec-header" onclick="toggle(this)">
+      <div class="sec-icono" style="background:#FDF4FF">💳</div>
+      <div>
+        <div class="sec-titulo">Métodos de pago</div>
+        <div class="sec-sub">Configurar cómo acepta pagos tu restaurante</div>
+      </div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
+        Ve a <strong>Pagos</strong>. Por defecto tienes: Efectivo, Tarjeta, Transferencia y Deuna!
+      </div></div>
+      <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
+        Puedes agregar métodos propios (ej: "PayPhone", "Nequi") con su emoji o icono. Desactiva los que no uses para que no aparezcan al cliente.
+      </div></div>
+      <div class="paso"><div class="paso-num">3</div><div class="paso-texto">
+        El cliente elige su método preferido cuando solicita la cuenta. Tú lo ves en el panel antes de cobrar.
+      </div></div>
+    </div>
+  </div>
+
+  <!-- 5. REPORTES -->
+  <div class="seccion">
+    <div class="sec-header" onclick="toggle(this)">
+      <div class="sec-icono" style="background:#F0FDF4">📊</div>
+      <div>
+        <div class="sec-titulo">Reportes</div>
+        <div class="sec-sub">Ver ventas, ingresos y platos más pedidos</div>
+      </div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
+        En <strong>Reportes</strong> puedes filtrar por rango de fechas para ver el resumen de ventas de cualquier período.
+      </div></div>
+      <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
+        Verás: total de pedidos cobrados, ingresos totales, ticket promedio y los platos más vendidos.
+      </div></div>
+      <div class="paso"><div class="paso-num">3</div><div class="paso-texto">
+        Cada pedido tiene un <strong>recibo</strong> que puedes abrir e imprimir o compartir con el cliente.
+      </div></div>
+    </div>
+  </div>
+
+  <!-- 6. PERFIL -->
+  <div class="seccion">
+    <div class="sec-header" onclick="toggle(this)">
+      <div class="sec-icono" style="background:#FFF7ED">⚙️</div>
+      <div>
+        <div class="sec-titulo">Perfil y configuración</div>
+        <div class="sec-sub">Logo, datos del local y restricción de red WiFi</div>
+      </div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
+        En <strong>Perfil</strong> (clic en el nombre del restaurante arriba) puedes cambiar el nombre, descripción, ciudad, WhatsApp, logo y contraseña.
+      </div></div>
+      <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
+        <strong>Restricción de red WiFi:</strong> cuando está activa, solo los clientes conectados al WiFi del local pueden ver el menú. Los que usan datos móviles ven una pantalla pidiéndoles que se conecten al WiFi.
+      </div></div>
+      <div class="paso"><div class="paso-num">3</div><div class="paso-texto">
+        La IP del restaurante se guarda automáticamente cada vez que abres el panel desde el local. Si cambias de red o proveedor de internet, ve a Perfil y haz clic en <strong>Actualizar IP</strong> desde el WiFi del local.
+      </div></div>
+      <div class="tip">
+        <strong>💡 Si quieres ver el menú desde casa</strong> (para pruebas), desactiva temporalmente el toggle de restricción de red en Perfil.
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. PLAN -->
+  <div class="seccion">
+    <div class="sec-header" onclick="toggle(this)">
+      <div class="sec-icono" style="background:#FFF7ED">⭐</div>
+      <div>
+        <div class="sec-titulo">Plan y facturación</div>
+        <div class="sec-sub">Trial, planes disponibles y renovación</div>
+      </div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <table class="tabla-guia">
+        <thead>
+          <tr><th>Plan</th><th>Precio</th><th>Duración</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge-guia badge-naranja">TRIAL</span></td><td>Gratis</td><td>8 días desde el registro</td></tr>
+          <tr><td><span class="badge-guia badge-azul">MENSUAL</span></td><td>$46 <small style="color:#9CA3AF">(+ IVA)</small></td><td>30 días</td></tr>
+          <tr><td><span class="badge-guia badge-verde">ANUAL</span></td><td>$419.75 <small style="color:#9CA3AF">(+ IVA)</small></td><td>365 días — equivale a $35/mes</td></tr>
+        </tbody>
+      </table>
+      <div class="tip" style="margin-top:0.85rem">
+        <strong>Para contratar o renovar:</strong> contacta al administrador de la plataforma. Cuando tu plan vence, el acceso al panel se bloquea hasta renovar.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function toggle(header) {
+    const body  = header.nextElementSibling;
+    const arrow = header.querySelector('.sec-arrow');
+    body.classList.toggle('abierto');
+    arrow.classList.toggle('abierto');
+  }
+  // Abrir la primera sección por defecto
+  document.querySelector('.sec-header').click();
+</script>
+{% endblock %}

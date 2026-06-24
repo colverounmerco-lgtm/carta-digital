@@ -1011,6 +1011,12 @@ def recibo_orden(token):
 #  REPORTES
 # ══════════════════════════════════════════════
 
+@app.route("/guia")
+@login_required
+def guia():
+    return render_template("restaurante/guia.html")
+
+
 @app.route("/reportes")
 @login_required
 @plan_requerido
