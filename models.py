@@ -81,6 +81,7 @@ class Producto(db.Model):
     terminos_asado    = db.Column(db.Boolean, default=False)
     salsas_activas    = db.Column(db.Boolean, default=False)
     adiciones_activas = db.Column(db.Boolean, default=False)
+    bebidas_activas   = db.Column(db.Boolean, default=False)
 
     items = db.relationship("ItemOrden", backref="producto", lazy=True)
 
@@ -140,6 +141,26 @@ class Salsa(db.Model):
     nombre         = db.Column(db.String(80), nullable=False)
     activa         = db.Column(db.Boolean, default=True)
     orden_display  = db.Column(db.Integer, default=0)
+
+
+class SeccionBebida(db.Model):
+    __tablename__ = "secciones_bebida"
+    id             = db.Column(db.Integer, primary_key=True)
+    restaurante_id = db.Column(db.Integer, db.ForeignKey("restaurantes.id"), nullable=False)
+    nombre         = db.Column(db.String(80), nullable=False)   # "Colas", "Jugos", "Batidos"
+    activa         = db.Column(db.Boolean, default=True)
+    orden_display  = db.Column(db.Integer, default=0)
+    variantes      = db.relationship("VarianteBebida", backref="seccion", lazy=True,
+                                     cascade="all, delete-orphan", order_by="VarianteBebida.orden_display")
+
+
+class VarianteBebida(db.Model):
+    __tablename__ = "variantes_bebida"
+    id         = db.Column(db.Integer, primary_key=True)
+    seccion_id = db.Column(db.Integer, db.ForeignKey("secciones_bebida.id"), nullable=False)
+    nombre     = db.Column(db.String(80), nullable=False)       # "Coca-Cola", "Naranja", "Fresa"
+    activa     = db.Column(db.Boolean, default=True)
+    orden_display = db.Column(db.Integer, default=0)
 
 
 class Adicion(db.Model):

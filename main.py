@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 import cloudinary, cloudinary.uploader
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
-from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, slugify
+from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, SeccionBebida, VarianteBebida, slugify
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "carta-dev-secret")
@@ -285,6 +285,7 @@ def run_migrations():
         add_col("productos", "terminos_asado", "BOOLEAN DEFAULT FALSE")
         add_col("productos", "salsas_activas",    "BOOLEAN DEFAULT FALSE")
         add_col("productos", "adiciones_activas", "BOOLEAN DEFAULT FALSE")
+        add_col("productos", "bebidas_activas",   "BOOLEAN DEFAULT FALSE")
 
     if "restaurantes" in tables:
         add_col("restaurantes", "descripcion",      "TEXT")
@@ -897,6 +898,95 @@ def toggle_adiciones_producto(pid):
 
 
 # ══════════════════════════════════════════════
+#  BEBIDAS
+# ══════════════════════════════════════════════
+
+@app.route("/bebidas")
+@login_required
+def bebidas():
+    r = restaurante_session()
+    secciones = SeccionBebida.query.filter_by(restaurante_id=r.id).order_by(SeccionBebida.orden_display).all()
+    return render_template("restaurante/bebidas.html", restaurante=r, secciones=secciones)
+
+
+@app.route("/bebidas/seccion/agregar", methods=["POST"])
+@login_required
+def bebida_seccion_agregar():
+    r = restaurante_session()
+    nombre = request.form.get("nombre", "").strip()
+    if nombre:
+        orden = SeccionBebida.query.filter_by(restaurante_id=r.id).count()
+        db.session.add(SeccionBebida(restaurante_id=r.id, nombre=nombre, orden_display=orden))
+        db.session.commit()
+    return redirect(url_for("bebidas"))
+
+
+@app.route("/bebidas/seccion/<int:sid>/toggle", methods=["POST"])
+@login_required
+def bebida_seccion_toggle(sid):
+    r = restaurante_session()
+    s = SeccionBebida.query.filter_by(id=sid, restaurante_id=r.id).first_or_404()
+    s.activa = not s.activa
+    db.session.commit()
+    return redirect(url_for("bebidas"))
+
+
+@app.route("/bebidas/seccion/<int:sid>/eliminar", methods=["POST"])
+@login_required
+def bebida_seccion_eliminar(sid):
+    r = restaurante_session()
+    s = SeccionBebida.query.filter_by(id=sid, restaurante_id=r.id).first_or_404()
+    db.session.delete(s)
+    db.session.commit()
+    return redirect(url_for("bebidas"))
+
+
+@app.route("/bebidas/seccion/<int:sid>/variante/agregar", methods=["POST"])
+@login_required
+def bebida_variante_agregar(sid):
+    r = restaurante_session()
+    SeccionBebida.query.filter_by(id=sid, restaurante_id=r.id).first_or_404()
+    nombre = request.form.get("nombre", "").strip()
+    if nombre:
+        orden = VarianteBebida.query.filter_by(seccion_id=sid).count()
+        db.session.add(VarianteBebida(seccion_id=sid, nombre=nombre, orden_display=orden))
+        db.session.commit()
+    return redirect(url_for("bebidas"))
+
+
+@app.route("/bebidas/variante/<int:vid>/toggle", methods=["POST"])
+@login_required
+def bebida_variante_toggle(vid):
+    r = restaurante_session()
+    v = VarianteBebida.query.join(SeccionBebida).filter(
+        VarianteBebida.id == vid, SeccionBebida.restaurante_id == r.id).first_or_404()
+    v.activa = not v.activa
+    db.session.commit()
+    return redirect(url_for("bebidas"))
+
+
+@app.route("/bebidas/variante/<int:vid>/eliminar", methods=["POST"])
+@login_required
+def bebida_variante_eliminar(vid):
+    r = restaurante_session()
+    v = VarianteBebida.query.join(SeccionBebida).filter(
+        VarianteBebida.id == vid, SeccionBebida.restaurante_id == r.id).first_or_404()
+    db.session.delete(v)
+    db.session.commit()
+    return redirect(url_for("bebidas"))
+
+
+@app.route("/menu/producto/<int:pid>/bebidas", methods=["POST"])
+@login_required
+def toggle_bebidas_producto(pid):
+    r = restaurante_session()
+    p = Producto.query.filter_by(id=pid, restaurante_id=r.id).first_or_404()
+    p.bebidas_activas = not p.bebidas_activas
+    db.session.commit()
+    return redirect(url_for("menu"))
+
+
+# ══════════════════════════════════════════════
 #  MESAS
 # ══════════════════════════════════════════════
 
@@ -1003,6 +1093,7 @@ def carta(slug, mesa_token):
         terminos_asado=TERMINOS_ASADO,
         salsas_rest=Salsa.query.filter_by(restaurante_id=r.id, activa=True).order_by(Salsa.orden_display).all(),
         adiciones_rest=Adicion.query.filter_by(restaurante_id=r.id, activa=True).order_by(Adicion.orden_display).all(),
+        secciones_bebida=SeccionBebida.query.filter_by(restaurante_id=r.id, activa=True).order_by(SeccionBebida.orden_display).all(),
     )
 
 
@@ -1017,8 +1108,9 @@ def carta_agregar(slug, mesa_token):
     cantidad = max(1, min(request.form.get("cantidad", 1, type=int), MAX_CANTIDAD))
     p        = Producto.query.filter_by(id=prod_id, restaurante_id=r.id, disponible=True).first_or_404()
 
-    termino_asado = request.form.get("termino_asado", "").strip()
-    termino_salsa = request.form.get("termino_salsa", "").strip()
+    termino_asado  = request.form.get("termino_asado",  "").strip()
+    termino_salsa  = request.form.get("termino_salsa",  "").strip()
+    termino_bebida = request.form.get("termino_bebida", "").strip()
 
     if p.terminos_asado and termino_asado not in TERMINOS_ASADO:
         return redirect(url_for("carta", slug=slug, mesa_token=mesa_token))
@@ -1041,7 +1133,7 @@ def carta_agregar(slug, mesa_token):
                 extra_precio += a.precio
             adicion_key = ",".join(sorted(str(a.id) for a in adic_objs))
 
-    partes  = [t for t in [termino_asado, termino_salsa] if t] + adicion_partes
+    partes  = [t for t in [termino_asado, termino_salsa, termino_bebida] if t] + adicion_partes
     termino = " · ".join(partes)
 
     precio_final = round(p.precio + extra_precio, 2)

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Bebidas — {{ restaurante.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor page-wrap">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-titulo">Bebidas</h1>
+      <p class="page-sub">Define secciones (Colas, Jugos, Batidos…) y los sabores dentro de cada una</p>
+    </div>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Agregar sección nueva -->
+  <div class="card" style="max-width:480px;margin-bottom:2rem">
+    <p style="font-weight:700;font-size:0.95rem;margin-bottom:0.75rem">Nueva sección</p>
+    <form method="POST" action="/bebidas/seccion/agregar" style="display:flex;gap:0.5rem">
+      <input type="text" name="nombre" placeholder="Ej: Colas, Jugos, Batidos, Hidratantes…" required
+             style="flex:1;padding:0.65rem 0.9rem;border:1.5px solid #E5E7EB;border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none">
+      <button type="submit" class="btn-primario" style="white-space:nowrap">+ Agregar</button>
+    </form>
+  </div>
+
+  {% if secciones %}
+    {% for sec in secciones %}
+    <div class="card" style="max-width:520px;margin-bottom:1.25rem;{% if not sec.activa %}opacity:0.55{% endif %}">
+
+      <!-- Encabezado de sección -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.9rem">
+        <div style="display:flex;align-items:center;gap:0.6rem">
+          <span style="font-size:1.1rem">🥤</span>
+          <span style="font-weight:700;font-size:1rem;color:{% if sec.activa %}#1C1C1E{% else %}#9CA3AF{% endif %}">
+            {{ sec.nombre }}
+          </span>
+          <span style="font-size:0.75rem;color:#9CA3AF">{{ sec.variantes|selectattr('activa')|list|length }} activos</span>
+        </div>
+        <div style="display:flex;gap:0.5rem">
+          <form method="POST" action="/bebidas/seccion/{{ sec.id }}/toggle">
+            <button class="btn-xs btn-outline" style="font-size:0.72rem">
+              {% if sec.activa %}Desactivar{% else %}Activar{% endif %}
+            </button>
+          </form>
+          <form method="POST" action="/bebidas/seccion/{{ sec.id }}/eliminar"
+                onsubmit="return confirm('¿Eliminar sección {{ sec.nombre }} y todos sus sabores?')">
+            <button class="btn-danger btn-xs">Eliminar</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Sabores de la sección -->
+      {% if sec.variantes %}
+      <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.75rem">
+        {% for v in sec.variantes %}
+        <div style="display:flex;align-items:center;gap:0.3rem;background:{% if v.activa %}#FFF7ED{% else %}#F3F4F6{% endif %};border:1.5px solid {% if v.activa %}#FED7AA{% else %}#E5E7EB{% endif %};border-radius:20px;padding:0.2rem 0.6rem 0.2rem 0.75rem">
+          <span style="font-size:0.82rem;font-weight:600;color:{% if v.activa %}#C2410C{% else %}#9CA3AF{% endif %}">
+            {{ v.nombre }}
+          </span>
+          <form method="POST" action="/bebidas/variante/{{ v.id }}/toggle" style="display:inline;margin:0">
+            <button style="background:none;border:none;cursor:pointer;color:#9CA3AF;font-size:0.75rem;padding:0 0.1rem" title="{% if v.activa %}Desactivar{% else %}Activar{% endif %}">
+              {% if v.activa %}●{% else %}○{% endif %}
+            </button>
+          </form>
+          <form method="POST" action="/bebidas/variante/{{ v.id }}/eliminar"
+                onsubmit="return confirm('¿Eliminar {{ v.nombre }}?')" style="display:inline;margin:0">
+            <button style="background:none;border:none;cursor:pointer;color:#D1D5DB;font-size:0.8rem;padding:0 0.1rem" title="Eliminar">✕</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Agregar sabor a esta sección -->
+      <form method="POST" action="/bebidas/seccion/{{ sec.id }}/variante/agregar"
+            style="display:flex;gap:0.5rem">
+        <input type="text" name="nombre" placeholder="Agregar sabor…" required
+               style="flex:1;padding:0.5rem 0.75rem;border:1.5px solid #E5E7EB;border-radius:8px;font-size:0.85rem;font-family:inherit;outline:none">
+        <button type="submit" class="btn-outline btn-sm" style="white-space:nowrap;font-size:0.82rem">+ Agregar</button>
+      </form>
+
+    </div>
+    {% endfor %}
+
+  {% else %}
+  <div style="text-align:center;padding:3rem 1rem;color:#94A3B8;max-width:480px">
+    <div style="font-size:3rem;margin-bottom:0.75rem">🥤</div>
+    <p style="font-weight:600">Sin secciones todavía</p>
+    <p style="font-size:0.85rem;margin-top:0.35rem">Crea secciones como "Colas", "Jugos" o "Batidos" y agrega los sabores dentro de cada una.</p>
+  </div>
+  {% endif %}
+
+  <div style="margin-top:2rem;padding:1rem;background:#F8FAFC;border-radius:12px;max-width:520px;font-size:0.83rem;color:#64748B">
+    <strong>¿Cómo funciona?</strong><br>
+    1. Crea las secciones (Colas, Jugos, Batidos…) y agrega los sabores de cada una.<br>
+    2. En <a href="/menu" style="color:#F97316">Menú</a>, activa el botón <strong>🥤 Bebidas</strong> en los platos que correspondan.<br>
+    3. El cliente verá los sabores agrupados por sección y elige uno al pedir.
+  </div>
+
+</div>
+{% endblock %}

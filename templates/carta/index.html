@@ -78,7 +78,7 @@
               <div class="plato-descripcion">{{ p.descripcion }}</div>
             {% endif %}
           </div>
-          {% set tiene_opciones = p.terminos_asado or (p.salsas_activas and salsas_rest) or (p.adiciones_activas and adiciones_rest) %}
+          {% set tiene_opciones = p.terminos_asado or (p.salsas_activas and salsas_rest) or (p.adiciones_activas and adiciones_rest) or (p.bebidas_activas and secciones_bebida) %}
           <div class="plato-footer" style="{% if tiene_opciones %}flex-direction:column;align-items:flex-start;gap:0.5rem{% endif %}">
             <span class="plato-precio">${{ "%.2f"|format(p.precio) }}</span>
 
@@ -118,6 +118,32 @@
                     </label>
                     {% endfor %}
                   </div>
+                </div>
+                {% endif %}
+
+                {% if p.bebidas_activas and secciones_bebida %}
+                <div style="margin-bottom:0.5rem">
+                  {% for sec in secciones_bebida %}
+                  {% set vars_activas = sec.variantes | selectattr('activa') | list %}
+                  {% if vars_activas %}
+                  <div style="margin-bottom:0.45rem">
+                    <div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem">{{ sec.nombre }}</div>
+                    <div style="display:flex;gap:0.3rem;flex-wrap:wrap">
+                      {% for v in vars_activas %}
+                      <label style="cursor:pointer">
+                        <input type="radio" name="termino_bebida" value="{{ v.nombre }}"
+                               {% if loop.first and loop.index0 == 0 and forloop_outer.first %}checked{% endif %}
+                               style="display:none" class="radio-bebida-{{ p.id }}">
+                        <span class="termino-chip bebida-chip-{{ p.id }}"
+                              style="display:inline-block;padding:0.22rem 0.6rem;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid #E5E7EB;background:#F9FAFB;color:#6B7280;cursor:pointer;transition:all 0.15s">
+                          {{ v.nombre }}
+                        </span>
+                      </label>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {% endif %}
+                  {% endfor %}
                 </div>
                 {% endif %}
 
@@ -312,6 +338,7 @@
   }
   activarChips('input[type="radio"][class^="radio-asado"]');
   activarChips('input[type="radio"][class^="radio-salsa"]');
+  activarChips('input[type="radio"][class^="radio-bebida"]');
 </script>
 </body>
 </html>
