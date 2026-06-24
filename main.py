@@ -252,7 +252,16 @@ def run_migrations():
         add_col("ordenes", "fecha_pago",       "TIMESTAMP")
 
     if "mesas" in tables:
-        add_col("mesas", "abierta", "BOOLEAN DEFAULT TRUE")
+        add_col("mesas", "abierta", "BOOLEAN DEFAULT FALSE")
+        # Cerrar todas las mesas sin orden activa (limpieza de estado inicial)
+        db.session.execute(text(
+            "UPDATE mesas SET abierta = FALSE "
+            "WHERE id NOT IN ("
+            "  SELECT DISTINCT mesa_id FROM ordenes "
+            "  WHERE estado IN ('pendiente','confirmada','lista')"
+            ")"
+        ))
+        db.session.commit()
 
     if "productos" in tables:
         add_col("productos", "orden_display", "INTEGER DEFAULT 0")
@@ -798,8 +807,12 @@ def carta(slug, mesa_token):
     r    = Restaurante.query.filter_by(slug=slug, activo=True).first_or_404()
     mesa = Mesa.query.filter_by(token=mesa_token, restaurante_id=r.id, activa=True).first_or_404()
 
-    # Re-open the table every time the QR URL is accessed (fresh scan)
-    if not mesa.abierta:
+    # Abrir la mesa solo si no hay ordenes activas — indica cliente nuevo que escaneó el QR
+    orden_activa = Orden.query.filter(
+        Orden.mesa_id == mesa.id,
+        Orden.estado.in_(["pendiente", "confirmada", "lista"]),
+    ).first()
+    if not mesa.abierta and not orden_activa:
         mesa.abierta = True
         db.session.commit()
 
