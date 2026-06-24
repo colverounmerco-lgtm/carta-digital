@@ -78,46 +78,49 @@
               <div class="plato-descripcion">{{ p.descripcion }}</div>
             {% endif %}
           </div>
-          <div class="plato-footer" style="{% if p.terminos_asado or p.salsas_activas %}flex-direction:column;align-items:flex-start;gap:0.5rem{% endif %}">
+          {% set tiene_opciones = p.terminos_asado or (p.salsas_activas and salsas_rest) %}
+          <div class="plato-footer" style="{% if tiene_opciones %}flex-direction:column;align-items:flex-start;gap:0.5rem{% endif %}">
             <span class="plato-precio">${{ "%.2f"|format(p.precio) }}</span>
 
-            {% if p.terminos_asado %}
-              <!-- Selector de término de asado -->
+            {% if tiene_opciones %}
               <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/agregar" style="width:100%">
                 <input type="hidden" name="producto_id" value="{{ p.id }}">
                 <input type="hidden" name="cantidad" value="1">
-                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin-bottom:0.4rem">
-                  {% for t in terminos_asado %}
-                  <label style="cursor:pointer">
-                    <input type="radio" name="termino" value="{{ t }}" {% if loop.first %}checked{% endif %} style="display:none" class="radio-termino-{{ p.id }}">
-                    <span class="termino-chip termino-chip-{{ p.id }}" data-val="{{ t }}"
-                          style="display:inline-block;padding:0.22rem 0.6rem;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid #E5E7EB;background:#F9FAFB;color:#6B7280;cursor:pointer;transition:all 0.15s">
-                      {{ t }}
-                    </span>
-                  </label>
-                  {% endfor %}
-                </div>
-                <button class="btn-agregar" style="width:100%;font-size:0.8rem;padding:0.4rem 0;border-radius:8px">
-                  + Agregar al pedido
-                </button>
-              </form>
 
-            {% elif p.salsas_activas and salsas_rest %}
-              <!-- Selector de salsa -->
-              <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/agregar" style="width:100%">
-                <input type="hidden" name="producto_id" value="{{ p.id }}">
-                <input type="hidden" name="cantidad" value="1">
-                <div style="display:flex;gap:0.3rem;flex-wrap:wrap;margin-bottom:0.4rem">
-                  {% for s in salsas_rest %}
-                  <label style="cursor:pointer">
-                    <input type="radio" name="termino" value="{{ s.nombre }}" {% if loop.first %}checked{% endif %} style="display:none" class="radio-termino-{{ p.id }}">
-                    <span class="termino-chip termino-chip-{{ p.id }}" data-val="{{ s.nombre }}"
-                          style="display:inline-block;padding:0.22rem 0.6rem;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid #E5E7EB;background:#F9FAFB;color:#6B7280;cursor:pointer;transition:all 0.15s">
-                      {{ s.nombre }}
-                    </span>
-                  </label>
-                  {% endfor %}
+                {% if p.terminos_asado %}
+                <div style="margin-bottom:0.5rem">
+                  <div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem">Punto de cocción</div>
+                  <div style="display:flex;gap:0.3rem;flex-wrap:wrap">
+                    {% for t in terminos_asado %}
+                    <label style="cursor:pointer">
+                      <input type="radio" name="termino_asado" value="{{ t }}" {% if loop.first %}checked{% endif %} style="display:none" class="radio-asado-{{ p.id }}">
+                      <span class="termino-chip asado-chip-{{ p.id }}"
+                            style="display:inline-block;padding:0.22rem 0.6rem;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid #E5E7EB;background:#F9FAFB;color:#6B7280;cursor:pointer;transition:all 0.15s">
+                        {{ t }}
+                      </span>
+                    </label>
+                    {% endfor %}
+                  </div>
                 </div>
+                {% endif %}
+
+                {% if p.salsas_activas and salsas_rest %}
+                <div style="margin-bottom:0.5rem">
+                  <div style="font-size:0.7rem;font-weight:700;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem">Salsa</div>
+                  <div style="display:flex;gap:0.3rem;flex-wrap:wrap">
+                    {% for s in salsas_rest %}
+                    <label style="cursor:pointer">
+                      <input type="radio" name="termino_salsa" value="{{ s.nombre }}" {% if loop.first %}checked{% endif %} style="display:none" class="radio-salsa-{{ p.id }}">
+                      <span class="termino-chip salsa-chip-{{ p.id }}"
+                            style="display:inline-block;padding:0.22rem 0.6rem;border-radius:20px;font-size:0.72rem;font-weight:700;border:1.5px solid #E5E7EB;background:#F9FAFB;color:#6B7280;cursor:pointer;transition:all 0.15s">
+                        {{ s.nombre }}
+                      </span>
+                    </label>
+                    {% endfor %}
+                  </div>
+                </div>
+                {% endif %}
+
                 <button class="btn-agregar" style="width:100%;font-size:0.8rem;padding:0.4rem 0;border-radius:8px">
                   + Agregar al pedido
                 </button>
@@ -265,27 +268,30 @@
     history.go(1);
   });
 
-  // Resaltar chip de término seleccionado
-  document.querySelectorAll('input[type="radio"][class^="radio-termino"]').forEach(radio => {
-    const chip = radio.nextElementSibling;
-    if (radio.checked) {
-      chip.style.background = '#FFF7ED';
-      chip.style.borderColor = '#F97316';
-      chip.style.color = '#C2410C';
-    }
-    radio.addEventListener('change', () => {
-      const form = radio.closest('form');
-      form.querySelectorAll('span[class^="termino-chip"]').forEach(c => {
-        c.style.background = '#F9FAFB';
-        c.style.borderColor = '#E5E7EB';
-        c.style.color = '#6B7280';
-      });
-      chip.style.background = '#FFF7ED';
-      chip.style.borderColor = '#F97316';
-      chip.style.color = '#C2410C';
+  // Resaltar chip al seleccionar (asado y salsa)
+  function activarChips(selector) {
+    document.querySelectorAll(selector).forEach(radio => {
+      const chip = radio.nextElementSibling;
+      function highlight(target) {
+        // Desresaltar todos los chips del mismo grupo (mismo name en el mismo form)
+        const form = target.closest('form');
+        const name = target.name;
+        form.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+          r.nextElementSibling.style.background   = '#F9FAFB';
+          r.nextElementSibling.style.borderColor  = '#E5E7EB';
+          r.nextElementSibling.style.color        = '#6B7280';
+        });
+        target.nextElementSibling.style.background   = '#FFF7ED';
+        target.nextElementSibling.style.borderColor  = '#F97316';
+        target.nextElementSibling.style.color        = '#C2410C';
+      }
+      if (radio.checked) highlight(radio);
+      radio.addEventListener('change', () => highlight(radio));
+      chip.addEventListener('click', () => { radio.checked = true; highlight(radio); });
     });
-    chip.addEventListener('click', () => radio.click());
-  });
+  }
+  activarChips('input[type="radio"][class^="radio-asado"]');
+  activarChips('input[type="radio"][class^="radio-salsa"]');
 </script>
 </body>
 </html>

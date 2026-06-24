@@ -952,12 +952,16 @@ def carta_agregar(slug, mesa_token):
 
     prod_id  = request.form.get("producto_id", type=int)
     cantidad = max(1, min(request.form.get("cantidad", 1, type=int), MAX_CANTIDAD))
-    termino  = request.form.get("termino", "").strip()
     p        = Producto.query.filter_by(id=prod_id, restaurante_id=r.id, disponible=True).first_or_404()
 
-    # Si el producto requiere término y no se envió uno válido, redirigir sin agregar
-    if p.terminos_asado and termino not in TERMINOS_ASADO:
+    termino_asado = request.form.get("termino_asado", "").strip()
+    termino_salsa = request.form.get("termino_salsa", "").strip()
+
+    if p.terminos_asado and termino_asado not in TERMINOS_ASADO:
         return redirect(url_for("carta", slug=slug, mesa_token=mesa_token))
+
+    partes   = [t for t in [termino_asado, termino_salsa] if t]
+    termino  = " · ".join(partes)
 
     cart_key     = f"cart_{mesa_token}"
     carrito      = session.get(cart_key, {})
