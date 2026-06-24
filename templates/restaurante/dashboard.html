@@ -235,11 +235,6 @@ function toggleSonido() {
   }
 }
 
-// Activar audio en la primera interacción del usuario con la página
-['click','keydown','touchstart','scroll'].forEach(ev =>
-  document.addEventListener(ev, iniciarAudio, { once: true })
-);
-
 document.getElementById('btn-sonido').onclick = toggleSonido;
 
 function tocarChime(freqs, vol) {
