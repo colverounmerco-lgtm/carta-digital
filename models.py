@@ -35,7 +35,8 @@ class Restaurante(db.Model):
     plan             = db.Column(db.String(20), default='trial')  # trial | mensual | anual
     plan_inicio      = db.Column(db.DateTime)
     plan_vence       = db.Column(db.DateTime)
-    ip_red           = db.Column(db.String(50))  # IP pública del restaurante; None = sin restricción
+    ip_red           = db.Column(db.String(50))   # IP pública del restaurante
+    restringir_red   = db.Column(db.Boolean, default=True)  # False = menú accesible desde cualquier red
 
     mesas    = db.relationship("Mesa",     backref="restaurante", lazy=True, cascade="all, delete-orphan")
     productos = db.relationship("Producto", backref="restaurante", lazy=True, cascade="all, delete-orphan")

@@ -66,6 +66,68 @@
     </form>
   </div>
 
+  <!-- Restricción de red WiFi -->
+  <div class="card" style="margin-top:1.25rem">
+    <h2 style="font-size:1rem;font-weight:700;color:#1C1C1E;margin-bottom:0.25rem">📶 Restricción de red WiFi</h2>
+    <p style="font-size:0.83rem;color:#6B7280;margin-bottom:1.25rem">
+      Cuando está activa, solo los clientes conectados al WiFi del local pueden ver el menú.
+    </p>
+
+    <!-- Estado de IP guardada -->
+    <div style="background:#F8FAFC;border-radius:10px;padding:0.85rem 1rem;margin-bottom:1rem;font-size:0.83rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem">
+        <div>
+          <span style="color:#64748B">IP del restaurante guardada:</span><br>
+          <strong style="color:#1C1C1E;font-size:0.9rem">
+            {{ restaurante.ip_red or '— aún no registrada' }}
+          </strong>
+          {% if ip_actual and restaurante.ip_red and ip_actual != restaurante.ip_red %}
+          <br><span style="color:#F97316;font-size:0.78rem">⚠️ Tu IP actual ({{ ip_actual }}) es diferente</span>
+          {% endif %}
+        </div>
+        <form method="POST" action="/perfil/actualizar-ip" style="flex-shrink:0">
+          <button type="submit" style="padding:0.45rem 0.9rem;background:#1C1C1E;color:#fff;border:none;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap">
+            Actualizar IP
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toggle activar/desactivar -->
+    <form method="POST" action="/perfil">
+      <input type="hidden" name="nombre"      value="{{ restaurante.nombre }}">
+      <input type="hidden" name="whatsapp"    value="{{ restaurante.whatsapp or '' }}">
+      <input type="hidden" name="ciudad"      value="{{ restaurante.ciudad or '' }}">
+      <input type="hidden" name="descripcion" value="{{ restaurante.descripcion or '' }}">
+
+      <label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer">
+        <div style="position:relative;width:44px;height:24px;flex-shrink:0">
+          <input type="checkbox" name="restringir_red" id="toggle-red"
+                 {% if restaurante.restringir_red %}checked{% endif %}
+                 onchange="this.form.submit()"
+                 style="opacity:0;width:0;height:0;position:absolute">
+          <span id="track-red" style="
+            position:absolute;inset:0;border-radius:24px;transition:background 0.2s;
+            background:{{ '#1C1C1E' if restaurante.restringir_red else '#D1D5DB' }}">
+          </span>
+          <span id="thumb-red" style="
+            position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;
+            transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);
+            left:{{ '23px' if restaurante.restringir_red else '3px' }}">
+          </span>
+        </div>
+        <div>
+          <div style="font-size:0.88rem;font-weight:600;color:#1C1C1E">
+            Restringir menú al WiFi del local
+          </div>
+          <div style="font-size:0.78rem;color:#94A3B8">
+            {% if restaurante.restringir_red %}Activo — solo clientes en tu WiFi{% else %}Desactivado — menú accesible desde cualquier red{% endif %}
+          </div>
+        </div>
+      </label>
+    </form>
+  </div>
+
 </div>
 <script src="/static/js/main.js"></script>
 {% endblock %}

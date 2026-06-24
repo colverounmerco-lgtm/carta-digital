@@ -281,6 +281,7 @@ def run_migrations():
         add_col("restaurantes", "plan_inicio",      "TIMESTAMP")
         add_col("restaurantes", "plan_vence",       "TIMESTAMP")
         add_col("restaurantes", "ip_red",           "VARCHAR(50)")
+        add_col("restaurantes", "restringir_red",   "BOOLEAN DEFAULT TRUE")
 
     # Crear métodos de pago por defecto para restaurantes existentes
     for r in Restaurante.query.all():
@@ -822,7 +823,7 @@ def carta(slug, mesa_token):
     mesa = Mesa.query.filter_by(token=mesa_token, restaurante_id=r.id, activa=True).first_or_404()
 
     # Verificar que el cliente esté en la misma red WiFi que el restaurante
-    if r.ip_red and r.email != "demo@cartadigital.app":
+    if r.restringir_red and r.ip_red and r.email != "demo@cartadigital.app":
         cliente_ip = get_client_ip()
         if cliente_ip != r.ip_red:
             return render_template("carta/red_requerida.html", restaurante=r)
@@ -1090,10 +1091,11 @@ def descargar_reporte():
 def perfil():
     r = restaurante_session()
     if request.method == "POST":
-        r.nombre      = request.form.get("nombre", r.nombre).strip()
-        r.whatsapp    = request.form.get("whatsapp", "").strip()
-        r.ciudad      = request.form.get("ciudad", "").strip()
-        r.descripcion = request.form.get("descripcion", "").strip()
+        r.nombre        = request.form.get("nombre", r.nombre).strip()
+        r.whatsapp      = request.form.get("whatsapp", "").strip()
+        r.ciudad        = request.form.get("ciudad", "").strip()
+        r.descripcion   = request.form.get("descripcion", "").strip()
+        r.restringir_red = "restringir_red" in request.form
 
         pwd = request.form.get("password", "")
         if pwd:
@@ -1113,7 +1115,17 @@ def perfil():
         flash("Perfil actualizado.", "success")
         return redirect(url_for("perfil"))
 
-    return render_template("restaurante/perfil.html", restaurante=r)
+    return render_template("restaurante/perfil.html", restaurante=r, ip_actual=get_client_ip())
+
+
+@app.route("/perfil/actualizar-ip", methods=["POST"])
+@login_required
+def actualizar_ip_red():
+    r = restaurante_session()
+    r.ip_red = get_client_ip()
+    db.session.commit()
+    flash(f"IP de red actualizada a {r.ip_red}. Los clientes en este WiFi podrán ver el menú.", "success")
+    return redirect(url_for("perfil"))
 
 
 DEMO_EMAIL = "demo@cartadigital.app"
