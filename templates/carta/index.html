@@ -199,10 +199,19 @@
 
 <script src="/static/js/main.js"></script>
 <script>
-  // Si el cliente tiene un pedido activo, lo redirige al estado del pedido
+  // Detecta si llegó escaneando el QR (navigate) o presionando atrás (back_forward)
+  var navEntry = performance.getEntriesByType('navigation')[0];
+  var navType  = navEntry ? navEntry.type
+               : (performance.navigation.type === 2 ? 'back_forward' : 'navigate');
+
   var ordenUrl = sessionStorage.getItem('orden_url');
-  if (ordenUrl) {
+
+  if (navType === 'back_forward' && ordenUrl) {
+    // Llegó con el botón atrás → vuelve al pedido
     window.location.replace(ordenUrl);
+  } else if (navType === 'navigate') {
+    // Escaneó el QR de nuevo → limpia el bloqueo y muestra el menú
+    sessionStorage.removeItem('orden_url');
   }
 </script>
 </body>

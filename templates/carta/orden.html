@@ -168,15 +168,8 @@
 
 <script src="/static/js/main.js"></script>
 <script>
-  {% if orden.estado == 'pagada' or orden.estado == 'cancelada' %}
-  // Pedido terminado — libera el bloqueo de retroceso
-  sessionStorage.removeItem('orden_activa');
-  sessionStorage.removeItem('orden_url');
-  {% else %}
-  // Guarda el token del pedido activo para bloquear retroceso al menú
-  sessionStorage.setItem('orden_activa', '{{ orden.token }}');
+  // Siempre guarda la URL del pedido — el bloqueo solo se libera escaneando el QR
   sessionStorage.setItem('orden_url', window.location.href);
-  {% endif %}
 
   // Bloquea completamente el botón "atrás" del navegador
   history.pushState(null, null, location.href);
