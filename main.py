@@ -37,7 +37,8 @@ cloudinary.config(
     api_secret=os.getenv("CLOUDINARY_API_SECRET"),
 )
 
-MAX_CANTIDAD = 10
+MAX_CANTIDAD    = 10
+TERMINOS_ASADO  = ["Blue", "Medio", "Tres cuartos", "Bien cocido"]
 CODIGO_TTL   = 15  # minutos
 TRIAL_DIAS   = 8
 
@@ -277,7 +278,8 @@ def run_migrations():
         db.session.commit()
 
     if "productos" in tables:
-        add_col("productos", "orden_display", "INTEGER DEFAULT 0")
+        add_col("productos", "orden_display",  "INTEGER DEFAULT 0")
+        add_col("productos", "terminos_asado", "BOOLEAN DEFAULT FALSE")
 
     if "restaurantes" in tables:
         add_col("restaurantes", "descripcion",      "TEXT")
@@ -771,6 +773,16 @@ def toggle_producto(pid):
     return redirect(url_for("menu"))
 
 
+@app.route("/menu/producto/<int:pid>/terminos", methods=["POST"])
+@login_required
+def toggle_terminos_asado(pid):
+    r = restaurante_session()
+    p = Producto.query.filter_by(id=pid, restaurante_id=r.id).first_or_404()
+    p.terminos_asado = not p.terminos_asado
+    db.session.commit()
+    return redirect(url_for("menu"))
+
+
 # ══════════════════════════════════════════════
 #  MESAS
 # ══════════════════════════════════════════════
@@ -875,6 +887,7 @@ def carta(slug, mesa_token):
         carrito=carrito, total_carrito=total_carrito,
         items_carrito=items_carrito, max_cantidad=MAX_CANTIDAD,
         mesa_abierta=mesa.abierta,
+        terminos_asado=TERMINOS_ASADO,
     )
 
 
@@ -887,39 +900,46 @@ def carta_agregar(slug, mesa_token):
 
     prod_id  = request.form.get("producto_id", type=int)
     cantidad = max(1, min(request.form.get("cantidad", 1, type=int), MAX_CANTIDAD))
+    termino  = request.form.get("termino", "").strip()
     p        = Producto.query.filter_by(id=prod_id, restaurante_id=r.id, disponible=True).first_or_404()
 
-    cart_key = f"cart_{mesa_token}"
-    carrito  = session.get(cart_key, {})
-    key      = str(prod_id)
-    actual   = carrito.get(key, {}).get("cantidad", 0)
+    # Si el producto requiere término y no se envió uno válido, redirigir sin agregar
+    if p.terminos_asado and termino not in TERMINOS_ASADO:
+        return redirect(url_for("carta", slug=slug, mesa_token=mesa_token))
 
-    carrito[key] = {
-        "nombre":   p.nombre,
+    cart_key     = f"cart_{mesa_token}"
+    carrito      = session.get(cart_key, {})
+    item_key     = f"{prod_id}_{termino}" if termino else str(prod_id)
+    actual       = carrito.get(item_key, {}).get("cantidad", 0)
+
+    etiqueta = f"{p.nombre} ({termino})" if termino else p.nombre
+    carrito[item_key] = {
+        "nombre":   etiqueta,
         "precio":   p.precio,
         "cantidad": min(actual + cantidad, MAX_CANTIDAD),
         "imagen":   p.imagen_url or "",
+        "termino":  termino,
     }
     session[cart_key] = carrito
     return redirect(url_for("carta", slug=slug, mesa_token=mesa_token) + "#carrito")
 
 
-@app.route("/carta/<slug>/<mesa_token>/cambiar/<int:prod_id>", methods=["POST"])
-def carta_cambiar(slug, mesa_token, prod_id):
+@app.route("/carta/<slug>/<mesa_token>/cambiar", methods=["POST"])
+def carta_cambiar(slug, mesa_token):
     cart_key = f"cart_{mesa_token}"
     carrito  = session.get(cart_key, {})
-    key      = str(prod_id)
+    item_key = request.form.get("item_key", "")
     accion   = request.form.get("accion")  # "mas" | "menos" | "quitar"
 
-    if key in carrito:
+    if item_key in carrito:
         if accion == "mas":
-            carrito[key]["cantidad"] = min(carrito[key]["cantidad"] + 1, MAX_CANTIDAD)
+            carrito[item_key]["cantidad"] = min(carrito[item_key]["cantidad"] + 1, MAX_CANTIDAD)
         elif accion == "menos":
-            carrito[key]["cantidad"] -= 1
-            if carrito[key]["cantidad"] <= 0:
-                del carrito[key]
+            carrito[item_key]["cantidad"] -= 1
+            if carrito[item_key]["cantidad"] <= 0:
+                del carrito[item_key]
         elif accion == "quitar":
-            del carrito[key]
+            del carrito[item_key]
 
     session[cart_key] = carrito
     return redirect(url_for("carta", slug=slug, mesa_token=mesa_token) + "#carrito")
@@ -944,16 +964,19 @@ def hacer_pedido(slug, mesa_token):
     notas          = request.form.get("notas", "").strip()
 
     total, items = 0.0, []
-    for pid_str, item in carrito.items():
-        p = Producto.query.filter_by(id=int(pid_str), restaurante_id=r.id, disponible=True).first()
+    for item_key, item in carrito.items():
+        prod_id = int(item_key.split("_")[0])
+        p = Producto.query.filter_by(id=prod_id, restaurante_id=r.id, disponible=True).first()
         if not p:
             continue
         cant     = max(1, min(item["cantidad"], MAX_CANTIDAD))
         subtotal = round(p.precio * cant, 2)
         total   += subtotal
+        termino  = item.get("termino", "")
         items.append(ItemOrden(
             producto_id=p.id, cantidad=cant,
             precio_unitario=p.precio, subtotal=subtotal,
+            notas_item=termino if termino else None,
         ))
 
     if not items:

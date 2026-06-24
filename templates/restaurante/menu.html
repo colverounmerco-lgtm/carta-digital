@@ -56,6 +56,12 @@
             {% if p.disponible %}Pausar{% else %}Activar{% endif %}
           </button>
         </form>
+        <form method="POST" action="/menu/producto/{{ p.id }}/terminos"
+              title="{% if p.terminos_asado %}Desactivar términos de asado{% else %}Activar términos de asado (Blue, Medio, Tres cuartos, Bien cocido){% endif %}">
+          <button class="btn-xs" style="border:1.5px solid {% if p.terminos_asado %}#F97316{% else %}#E2E8F0{% endif %};background:{% if p.terminos_asado %}#FFF7ED{% else %}#fff{% endif %};color:{% if p.terminos_asado %}#C2410C{% else %}#94A3B8{% endif %};border-radius:6px;padding:0.25rem 0.55rem;cursor:pointer;font-size:0.72rem;font-weight:700">
+            🥩 {% if p.terminos_asado %}Asado ✓{% else %}Asado{% endif %}
+          </button>
+        </form>
         <form method="POST" action="/menu/eliminar/{{ p.id }}"
               onsubmit="return confirm('¿Eliminar {{ p.nombre }}?')">
           <button class="btn-danger btn-xs">Eliminar</button>

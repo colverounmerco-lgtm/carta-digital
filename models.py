@@ -78,6 +78,7 @@ class Producto(db.Model):
     categoria      = db.Column(db.String(50), default="Principal")
     disponible     = db.Column(db.Boolean, default=True)
     orden_display  = db.Column(db.Integer, default=0)
+    terminos_asado = db.Column(db.Boolean, default=False)
 
     items = db.relationship("ItemOrden", backref="producto", lazy=True)
 
