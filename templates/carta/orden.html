@@ -167,5 +167,12 @@
 </div>
 
 <script src="/static/js/main.js"></script>
+<script>
+  // Bloquea el botón "atrás" del navegador en la página de pedido
+  history.pushState(null, null, location.href);
+  window.addEventListener('popstate', function () {
+    history.pushState(null, null, location.href);
+  });
+</script>
 </body>
 </html>
