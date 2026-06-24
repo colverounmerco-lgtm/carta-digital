@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Salsas — {{ restaurante.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor page-wrap">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-titulo">Salsas</h1>
+      <p class="page-sub">Define los sabores que ofrecerás en cada plato que tenga salsas activas</p>
+    </div>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Formulario para agregar nueva salsa -->
+  <div class="card" style="max-width:480px;margin-bottom:2rem">
+    <p style="font-weight:700;font-size:0.95rem;margin-bottom:0.75rem">Agregar nuevo sabor</p>
+    <form method="POST" action="/salsas/agregar" style="display:flex;gap:0.5rem">
+      <input type="text" name="nombre" placeholder="Ej: BBQ, Chimichurri, Ají..." required
+             style="flex:1;padding:0.65rem 0.9rem;border:1.5px solid #E5E7EB;border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none">
+      <button type="submit" class="btn-primario" style="white-space:nowrap">+ Agregar</button>
+    </form>
+  </div>
+
+  {% if salsas %}
+  <div style="display:flex;flex-direction:column;gap:0.6rem;max-width:480px">
+    {% for s in salsas %}
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;background:#fff;border:1.5px solid {% if s.activa %}#E5E7EB{% else %}#F3F4F6{% endif %};border-radius:12px;{% if not s.activa %}opacity:0.55{% endif %}">
+      <span style="font-weight:600;font-size:0.92rem;color:{% if s.activa %}#1C1C1E{% else %}#9CA3AF{% endif %}">
+        🥫 {{ s.nombre }}
+      </span>
+      <div style="display:flex;gap:0.5rem">
+        <form method="POST" action="/salsas/{{ s.id }}/toggle">
+          <button class="btn-xs btn-outline" style="font-size:0.72rem">
+            {% if s.activa %}Desactivar{% else %}Activar{% endif %}
+          </button>
+        </form>
+        <form method="POST" action="/salsas/{{ s.id }}/eliminar"
+              onsubmit="return confirm('¿Eliminar {{ s.nombre }}?')">
+          <button class="btn-danger btn-xs">Eliminar</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div style="text-align:center;padding:3rem 1rem;color:#94A3B8;max-width:480px">
+    <div style="font-size:3rem;margin-bottom:0.75rem">🥫</div>
+    <p style="font-weight:600">Sin salsas todavía</p>
+    <p style="font-size:0.85rem;margin-top:0.35rem">Agrega los sabores de salsa que ofrece tu restaurante y actívalos por plato desde el Menú.</p>
+  </div>
+  {% endif %}
+
+  <div style="margin-top:2rem;padding:1rem;background:#F8FAFC;border-radius:12px;max-width:480px;font-size:0.83rem;color:#64748B">
+    <strong>¿Cómo funciona?</strong><br>
+    1. Agrega aquí los sabores de salsa de tu restaurante.<br>
+    2. En <a href="/menu" style="color:#F97316">Menú</a>, activa el botón <strong>🥫 Salsas</strong> en cada plato que los necesite.<br>
+    3. El cliente verá los chips de sabor y elegirá al agregar al pedido.
+  </div>
+
+</div>
+{% endblock %}

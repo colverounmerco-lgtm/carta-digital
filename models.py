@@ -79,6 +79,7 @@ class Producto(db.Model):
     disponible     = db.Column(db.Boolean, default=True)
     orden_display  = db.Column(db.Integer, default=0)
     terminos_asado = db.Column(db.Boolean, default=False)
+    salsas_activas = db.Column(db.Boolean, default=False)
 
     items = db.relationship("ItemOrden", backref="producto", lazy=True)
 
@@ -129,6 +130,15 @@ class CodigoVerificacion(db.Model):
     tipo   = db.Column(db.String(20), nullable=False)  # 'registro' | 'reset'
     expira = db.Column(db.DateTime, nullable=False)
     usado  = db.Column(db.Boolean, default=False)
+
+
+class Salsa(db.Model):
+    __tablename__ = "salsas"
+    id             = db.Column(db.Integer, primary_key=True)
+    restaurante_id = db.Column(db.Integer, db.ForeignKey("restaurantes.id"), nullable=False)
+    nombre         = db.Column(db.String(80), nullable=False)
+    activa         = db.Column(db.Boolean, default=True)
+    orden_display  = db.Column(db.Integer, default=0)
 
 
 class MetodoPago(db.Model):

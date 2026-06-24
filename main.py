@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 import cloudinary, cloudinary.uploader
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
-from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, slugify
+from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, slugify
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "carta-dev-secret")
@@ -280,6 +280,7 @@ def run_migrations():
     if "productos" in tables:
         add_col("productos", "orden_display",  "INTEGER DEFAULT 0")
         add_col("productos", "terminos_asado", "BOOLEAN DEFAULT FALSE")
+        add_col("productos", "salsas_activas", "BOOLEAN DEFAULT FALSE")
 
     if "restaurantes" in tables:
         add_col("restaurantes", "descripcion",      "TEXT")
@@ -783,6 +784,56 @@ def toggle_terminos_asado(pid):
     return redirect(url_for("menu"))
 
 
+@app.route("/menu/producto/<int:pid>/salsas", methods=["POST"])
+@login_required
+def toggle_salsas_producto(pid):
+    r = restaurante_session()
+    p = Producto.query.filter_by(id=pid, restaurante_id=r.id).first_or_404()
+    p.salsas_activas = not p.salsas_activas
+    db.session.commit()
+    return redirect(url_for("menu"))
+
+
+@app.route("/salsas")
+@login_required
+def salsas():
+    r = restaurante_session()
+    lista = Salsa.query.filter_by(restaurante_id=r.id).order_by(Salsa.orden_display).all()
+    return render_template("restaurante/salsas.html", restaurante=r, salsas=lista)
+
+
+@app.route("/salsas/agregar", methods=["POST"])
+@login_required
+def salsa_agregar():
+    r      = restaurante_session()
+    nombre = request.form.get("nombre", "").strip()
+    if nombre:
+        ultimo = Salsa.query.filter_by(restaurante_id=r.id).count()
+        db.session.add(Salsa(restaurante_id=r.id, nombre=nombre, orden_display=ultimo))
+        db.session.commit()
+    return redirect(url_for("salsas"))
+
+
+@app.route("/salsas/<int:sid>/toggle", methods=["POST"])
+@login_required
+def salsa_toggle(sid):
+    r = restaurante_session()
+    s = Salsa.query.filter_by(id=sid, restaurante_id=r.id).first_or_404()
+    s.activa = not s.activa
+    db.session.commit()
+    return redirect(url_for("salsas"))
+
+
+@app.route("/salsas/<int:sid>/eliminar", methods=["POST"])
+@login_required
+def salsa_eliminar(sid):
+    r = restaurante_session()
+    s = Salsa.query.filter_by(id=sid, restaurante_id=r.id).first_or_404()
+    db.session.delete(s)
+    db.session.commit()
+    return redirect(url_for("salsas"))
+
+
 # ══════════════════════════════════════════════
 #  MESAS
 # ══════════════════════════════════════════════
@@ -888,6 +939,7 @@ def carta(slug, mesa_token):
         items_carrito=items_carrito, max_cantidad=MAX_CANTIDAD,
         mesa_abierta=mesa.abierta,
         terminos_asado=TERMINOS_ASADO,
+        salsas_rest=Salsa.query.filter_by(restaurante_id=r.id, activa=True).order_by(Salsa.orden_display).all(),
     )
 
 
