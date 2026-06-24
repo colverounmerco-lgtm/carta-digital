@@ -807,12 +807,19 @@ def carta(slug, mesa_token):
     r    = Restaurante.query.filter_by(slug=slug, activo=True).first_or_404()
     mesa = Mesa.query.filter_by(token=mesa_token, restaurante_id=r.id, activa=True).first_or_404()
 
-    # Abrir la mesa solo si no hay ordenes activas — indica cliente nuevo que escaneó el QR
+    # Abrir la mesa solo si no hay pedido activo y el último pago fue hace más de 15 min.
+    # Esto evita que el refresh del cliente reabre la mesa justo después del cobro.
+    GRACIA = timedelta(minutes=15)
     orden_activa = Orden.query.filter(
         Orden.mesa_id == mesa.id,
         Orden.estado.in_(["pendiente", "confirmada", "lista"]),
     ).first()
-    if not mesa.abierta and not orden_activa:
+    pago_reciente = Orden.query.filter(
+        Orden.mesa_id == mesa.id,
+        Orden.estado == "pagada",
+        Orden.fecha_pago >= datetime.utcnow() - GRACIA,
+    ).first()
+    if not mesa.abierta and not orden_activa and not pago_reciente:
         mesa.abierta = True
         db.session.commit()
 
