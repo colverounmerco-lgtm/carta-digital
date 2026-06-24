@@ -215,24 +215,21 @@ function actualizarBoton() {
   }
 }
 
-function iniciarAudio() {
-  if (audioCtx) return;
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    sonidoOn = true;
-    actualizarBoton();
-    // Confirmación silenciosa (volumen muy bajo)
-    tocarChime([880, 1047], 0.1);
-  } catch (e) {}
-}
-
 function toggleSonido() {
-  if (!sonidoOn) {
-    iniciarAudio();
-  } else {
+  if (sonidoOn) {
     sonidoOn = false;
     actualizarBoton();
+    return;
   }
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } else {
+      audioCtx.resume();
+    }
+    sonidoOn = true;
+  } catch (e) {}
+  actualizarBoton();
 }
 
 document.getElementById('btn-sonido').onclick = toggleSonido;
