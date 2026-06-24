@@ -31,7 +31,7 @@
           <a href="/planes" class="nav-link" style="font-size:0.78rem;color:#F97316;font-weight:700">
             {{ restaurante_session.plan|upper if restaurante_session.plan else 'TRIAL' }}
           </a>
-          <span class="nav-nombre">{{ restaurante_session.nombre }}</span>
+          <a href="/perfil" class="nav-nombre" style="text-decoration:none">{{ restaurante_session.nombre }}</a>
           <a href="/logout" class="btn-primario btn-sm">Salir</a>
         {% else %}
           <a href="/login" class="nav-link">Iniciar sesión</a>
