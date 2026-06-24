@@ -1230,31 +1230,70 @@ def descargar_reporte():
         ).order_by(Orden.fecha).all()
         nombre_archivo = f"reporte_mensual_{fecha_ref.year}_{fecha_ref.month:02d}.csv"
 
+    # 1. Recopilar todos los productos únicos del período (orden alfabético)
+    productos_map = {}  # producto_id -> nombre
+    for o in ordenes:
+        for item in o.items:
+            if item.producto and item.producto_id not in productos_map:
+                productos_map[item.producto_id] = item.producto.nombre
+    prod_ids = sorted(productos_map, key=lambda pid: productos_map[pid])
+
+    # 2. Construir cabecera dinámica
     output = io.StringIO()
     w = csv.writer(output)
-    w.writerow(["Fecha", "Hora", "# Orden", "Mesa", "Cliente",
-                "Producto", "Cantidad", "Precio Unit.", "Subtotal",
-                "Total Orden", "Método Pago"])
+    cabecera = ["Fecha", "Hora", "# Orden", "Mesa", "Cliente"] \
+             + [productos_map[pid] for pid in prod_ids] \
+             + ["TOTAL", "Método de pago"]
+    w.writerow(cabecera)
+
+    # 3. Una fila por orden
+    totales_qty  = {pid: 0 for pid in prod_ids}
+    total_global = 0.0
 
     for o in ordenes:
         ec_fecha = o.fecha + EC_OFFSET
+
+        # Agrupar items por producto
+        item_map = {}   # producto_id -> (cantidad, notas_item)
         for item in o.items:
-            w.writerow([
-                ec_fecha.strftime("%d/%m/%Y"),
-                ec_fecha.strftime("%H:%M"),
-                o.id,
-                o.mesa.nombre if o.mesa else "—",
-                o.nombre_cliente,
-                item.producto.nombre if item.producto else "—",
-                item.cantidad,
-                f"{item.precio_unitario:.2f}",
-                f"{item.subtotal:.2f}",
-                f"{o.total:.2f}",
-                o.metodo_pago or "—",
-            ])
+            if item.producto:
+                if item.producto_id not in item_map:
+                    item_map[item.producto_id] = {"qty": 0, "notas": []}
+                item_map[item.producto_id]["qty"] += item.cantidad
+                if item.notas_item:
+                    item_map[item.producto_id]["notas"].append(item.notas_item)
+
+        fila = [
+            ec_fecha.strftime("%d/%m/%Y"),
+            ec_fecha.strftime("%H:%M"),
+            o.id,
+            o.mesa.nombre if o.mesa else "—",
+            o.nombre_cliente or "—",
+        ]
+        for pid in prod_ids:
+            if pid in item_map:
+                datos = item_map[pid]
+                celda = str(datos["qty"])
+                if datos["notas"]:
+                    celda += f" ({', '.join(datos['notas'])})"
+                fila.append(celda)
+                totales_qty[pid] += datos["qty"]
+            else:
+                fila.append("")
+        fila.append(f"{o.total:.2f}")
+        fila.append(o.metodo_pago or "—")
+        total_global += o.total
+        w.writerow(fila)
+
+    # 4. Fila de totales
+    w.writerow([])  # línea en blanco
+    fila_total = ["TOTAL", "", "", "", ""] \
+               + [totales_qty[pid] if totales_qty[pid] > 0 else "" for pid in prod_ids] \
+               + [f"{total_global:.2f}", ""]
+    w.writerow(fila_total)
 
     output.seek(0)
-    resp = make_response("﻿" + output.getvalue())  # BOM for Excel
+    resp = make_response("﻿" + output.getvalue())  # BOM para Excel
     resp.headers["Content-Disposition"] = f"attachment; filename={nombre_archivo}"
     resp.headers["Content-Type"] = "text/csv; charset=utf-8"
     return resp
