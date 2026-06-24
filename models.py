@@ -134,7 +134,7 @@ class MetodoPago(db.Model):
     id             = db.Column(db.Integer, primary_key=True)
     restaurante_id = db.Column(db.Integer, db.ForeignKey("restaurantes.id"), nullable=False)
     nombre         = db.Column(db.String(50), nullable=False)
-    icono          = db.Column(db.String(10), default="💳")
+    icono          = db.Column(db.String(300), default="💳")
     activo         = db.Column(db.Boolean, default=True)
     orden_display  = db.Column(db.Integer, default=0)
 

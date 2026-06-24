@@ -252,6 +252,11 @@ def run_migrations():
             db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {definition}"))
             db.session.commit()
 
+    if "metodos_pago" in tables:
+        # Ampliar icono para soportar URLs de imagen además de emojis
+        db.session.execute(text("ALTER TABLE metodos_pago ALTER COLUMN icono TYPE VARCHAR(300)"))
+        db.session.commit()
+
     if "ordenes" in tables:
         add_col("ordenes", "metodo_pago",      "VARCHAR(30)")
         add_col("ordenes", "notas",            "TEXT")
