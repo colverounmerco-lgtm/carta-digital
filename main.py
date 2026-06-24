@@ -95,6 +95,14 @@ def inicio_fin_dia_ec():
     return inicio, fin
 
 
+def get_client_ip():
+    """Devuelve la IP real del cliente, pasando por proxies de Railway/nginx."""
+    xff = request.headers.get("X-Forwarded-For", "")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.remote_addr
+
+
 # ── Email ──
 def enviar_email(destinatario, asunto, cuerpo_html):
     # Prioridad 1: Resend API (funciona en Railway y cualquier cloud)
@@ -272,6 +280,7 @@ def run_migrations():
         add_col("restaurantes", "plan",             "VARCHAR(20) DEFAULT 'trial'")
         add_col("restaurantes", "plan_inicio",      "TIMESTAMP")
         add_col("restaurantes", "plan_vence",       "TIMESTAMP")
+        add_col("restaurantes", "ip_red",           "VARCHAR(50)")
 
     # Crear métodos de pago por defecto para restaurantes existentes
     for r in Restaurante.query.all():
@@ -543,6 +552,11 @@ def recuperar_codigo():
 @plan_requerido
 def dashboard():
     r               = restaurante_session()
+    # Actualizar IP de red del restaurante en cada acceso al dashboard
+    ip_actual = get_client_ip()
+    if r.ip_red != ip_actual:
+        r.ip_red = ip_actual
+        db.session.commit()
     inicio, fin     = inicio_fin_dia_ec()
 
     ordenes_activas = Orden.query.filter(
@@ -806,6 +820,12 @@ def eliminar_mesa(mid):
 def carta(slug, mesa_token):
     r    = Restaurante.query.filter_by(slug=slug, activo=True).first_or_404()
     mesa = Mesa.query.filter_by(token=mesa_token, restaurante_id=r.id, activa=True).first_or_404()
+
+    # Verificar que el cliente esté en la misma red WiFi que el restaurante
+    if r.ip_red and r.email != "demo@cartadigital.app":
+        cliente_ip = get_client_ip()
+        if cliente_ip != r.ip_red:
+            return render_template("carta/red_requerida.html", restaurante=r)
 
     # Abrir la mesa solo si no hay pedido activo y el último pago fue hace más de 15 min.
     # Esto evita que el refresh del cliente reabre la mesa justo después del cobro.

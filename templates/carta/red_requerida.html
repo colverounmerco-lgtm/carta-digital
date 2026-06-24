@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>{{ restaurante.nombre }} — Conexión requerida</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/carta.css">
+  <style>
+    body { background: #F9FAFB; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; }
+    .card {
+      background: #fff; border-radius: 20px; padding: 2.5rem 2rem;
+      text-align: center; max-width: 360px; width: 100%;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    .icono { font-size: 3.5rem; margin-bottom: 1rem; }
+    h2 { font-size: 1.25rem; font-weight: 800; color: #1C1C1E; margin-bottom: 0.5rem; }
+    p  { font-size: 0.88rem; color: #6B7280; line-height: 1.5; margin-bottom: 1.5rem; }
+    .restaurante-nombre { font-weight: 700; color: #F97316; }
+    .pasos {
+      background: #F3F4F6; border-radius: 12px; padding: 1rem 1.25rem;
+      text-align: left; font-size: 0.82rem; color: #374151; line-height: 1.9;
+    }
+    .pasos strong { color: #1C1C1E; }
+    .btn-reintentar {
+      display: block; margin-top: 1.25rem; padding: 0.85rem;
+      background: #F97316; color: #fff; border: none; border-radius: 12px;
+      font-size: 0.95rem; font-weight: 700; cursor: pointer; width: 100%;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="icono">📶</div>
+  <h2>Conéctate al WiFi del restaurante</h2>
+  <p>
+    Para ver el menú de <span class="restaurante-nombre">{{ restaurante.nombre }}</span>
+    necesitas estar conectado a su red WiFi.
+  </p>
+  <div class="pasos">
+    <strong>¿Qué hacer?</strong><br>
+    1. Apaga los datos móviles<br>
+    2. Conéctate al WiFi del local<br>
+    3. Vuelve a escanear el código QR
+  </div>
+  <a href="javascript:location.reload()" class="btn-reintentar">
+    Ya me conecté — reintentar
+  </a>
+</div>
+</body>
+</html>
