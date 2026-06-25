@@ -55,6 +55,7 @@
       <span class="stat-numero">{{ ordenes_activas|length }}</span>
       <span class="stat-label">Pedidos activos</span>
     </div>
+    {% if not es_subusuario %}
     <div class="stat-card stat-naranja">
       <span class="stat-numero">{{ total_hoy }}</span>
       <span class="stat-label">Pedidos pagados hoy</span>
@@ -68,6 +69,7 @@
       <span class="stat-numero" style="color:#D97706">{{ cuentas_solicitadas }}</span>
       <span class="stat-label">Solicitan la cuenta</span>
     </div>
+    {% endif %}
     {% endif %}
   </div>
 
@@ -89,7 +91,7 @@
         {% elif orden.estado == 'lista' %}
           <span class="badge badge-verde">✅ Listo para entregar</span>
         {% endif %}
-        {% if orden.solicita_cuenta %}
+        {% if orden.solicita_cuenta and not es_subusuario %}
           {% if restaurante.modo_cobro %}
             <span class="cuenta-badge" style="background:#D1FAE5;color:#065F46;border-color:#6EE7B7">
               ✅ Ya cobrado
