@@ -6,6 +6,7 @@
   <title>Acceso de personal — {{ restaurante.nombre }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
   <link rel="stylesheet" href="/static/css/styles.css">
   <style>
     .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; background:#F8FAFC; padding:1.5rem; }
@@ -56,6 +57,13 @@
 
     <div class="link-back">
       ¿Eres el dueño? <a href="/login">Iniciar sesión aquí</a>
+    </div>
+
+    <div style="text-align:center;margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid #F1F5F9">
+      <a href="/" style="display:inline-flex;align-items:center;gap:0.4rem;text-decoration:none;opacity:0.55;transition:opacity 0.15s" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='0.55'">
+        <img src="/static/img/logo.svg" style="width:20px;height:20px;border-radius:5px">
+        <span style="font-size:0.75rem;font-weight:700;color:#6B7280">Carta Digital</span>
+      </a>
     </div>
   </div>
 </div>
