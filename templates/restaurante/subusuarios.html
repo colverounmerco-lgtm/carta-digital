@@ -17,13 +17,26 @@
   {% endwith %}
 
   <!-- Información de acceso -->
+  {% set staff_url = request.host_url.rstrip('/') + '/staff/' + restaurante.slug %}
   <div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:0.84rem;color:#92400E">
-    <strong>🔗 URL de acceso para tu personal:</strong><br>
-    <code style="background:#fff;border:1px solid #FED7AA;border-radius:6px;padding:0.2rem 0.5rem;font-size:0.82rem;display:inline-block;margin-top:0.4rem;word-break:break-all">
-      {{ request.host_url }}staff
-    </code>
-    <br><span style="margin-top:0.35rem;display:inline-block">Slug del restaurante: <strong>{{ restaurante.slug }}</strong></span>
+    <strong>🔗 Envía este enlace a tu personal:</strong><br>
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.5rem;flex-wrap:wrap">
+      <code id="staff-url-code" style="background:#fff;border:1px solid #FED7AA;border-radius:6px;padding:0.3rem 0.6rem;font-size:0.82rem;word-break:break-all;flex:1">{{ staff_url }}</code>
+      <button onclick="copiarUrl()" style="padding:0.3rem 0.75rem;background:#F97316;color:#fff;border:none;border-radius:7px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">
+        Copiar
+      </button>
+    </div>
+    <p style="margin-top:0.5rem;margin-bottom:0">Tu personal solo necesita <strong>usuario</strong> y <strong>contraseña</strong> — no hace falta que sepan el slug.</p>
   </div>
+  <script>
+    function copiarUrl() {
+      navigator.clipboard.writeText('{{ staff_url }}').then(() => {
+        const btn = document.querySelector('[onclick="copiarUrl()"]');
+        btn.textContent = '✓ Copiado';
+        setTimeout(() => btn.textContent = 'Copiar', 2000);
+      });
+    }
+  </script>
 
   <!-- Formulario para agregar -->
   <div class="card" style="margin-bottom:1.5rem">

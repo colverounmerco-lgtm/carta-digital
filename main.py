@@ -245,7 +245,7 @@ def ctx():
 _ENDPOINTS_STAFF = {
     "dashboard", "confirmar_orden", "orden_lista", "pagar_orden",
     "cancelar_orden", "api_ordenes_activas", "logout", "staff_logout",
-    "static", "recibo_orden",
+    "static", "recibo_orden", "staff_login", "staff_login_slug",
 }
 
 @app.before_request
@@ -500,25 +500,28 @@ def logout():
 
 # ── Login de staff (cocineros / meseros) ──
 
-@app.route("/staff", methods=["GET", "POST"])
+@app.route("/staff")
 def staff_login():
+    return redirect(url_for("login"))  # fallback: sin slug, redirige al login normal
+
+
+@app.route("/staff/<slug>", methods=["GET", "POST"])
+def staff_login_slug(slug):
     if session.get("subusuario_id"):
         return redirect(url_for("dashboard"))
+    r = Restaurante.query.filter_by(slug=slug, activo=True).first_or_404()
     error = None
     if request.method == "POST":
-        slug     = request.form.get("slug", "").strip().lower()
-        username = request.form.get("username", "").strip()
+        username = request.form.get("username", "").strip().lower()
         pwd      = request.form.get("password", "")
-        r = Restaurante.query.filter_by(slug=slug, activo=True).first()
-        if r:
-            su = SubUsuario.query.filter_by(restaurante_id=r.id, username=username, activo=True).first()
-            if su and su.check_password(pwd):
-                session["restaurante_id"] = r.id
-                session["subusuario_id"]  = su.id
-                session["subusuario_rol"] = su.rol
-                return redirect(url_for("dashboard"))
-        error = "Datos incorrectos. Verifica el restaurante, usuario y contraseña."
-    return render_template("auth/staff_login.html", error=error)
+        su = SubUsuario.query.filter_by(restaurante_id=r.id, username=username, activo=True).first()
+        if su and su.check_password(pwd):
+            session["restaurante_id"] = r.id
+            session["subusuario_id"]  = su.id
+            session["subusuario_rol"] = su.rol
+            return redirect(url_for("dashboard"))
+        error = "Usuario o contraseña incorrectos."
+    return render_template("auth/staff_login.html", restaurante=r, error=error)
 
 
 @app.route("/staff/logout", methods=["POST"])

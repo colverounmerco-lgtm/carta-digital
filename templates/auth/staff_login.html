@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Acceso de personal — Carta Digital</title>
+  <title>Acceso de personal — {{ restaurante.nombre }}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/styles.css">
   <style>
     .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; background:#F8FAFC; padding:1.5rem; }
-    .login-card { background:#fff; border-radius:20px; box-shadow:0 4px 24px rgba(0,0,0,0.08); padding:2.25rem 2rem; width:100%; max-width:400px; }
+    .login-card { background:#fff; border-radius:20px; box-shadow:0 4px 24px rgba(0,0,0,0.08); padding:2.25rem 2rem; width:100%; max-width:380px; }
     .login-logo { text-align:center; margin-bottom:1.75rem; }
     .login-logo .icono { font-size:2.5rem; margin-bottom:0.5rem; }
     .login-logo h1 { font-size:1.3rem; font-weight:800; color:#1C1C1E; }
@@ -29,34 +29,33 @@
 <div class="login-wrap">
   <div class="login-card">
     <div class="login-logo">
-      <div class="icono">👨‍🍳</div>
-      <h1>Acceso de personal</h1>
-      <p>Cocineros y meseros</p>
+      {% if restaurante.logo_url %}
+        <img src="{{ restaurante.logo_url }}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;margin:0 auto 0.6rem;display:block">
+      {% else %}
+        <div class="icono">👨‍🍳</div>
+      {% endif %}
+      <h1>{{ restaurante.nombre }}</h1>
+      <p>Acceso de personal</p>
     </div>
 
     {% if error %}
     <div class="error-msg">{{ error }}</div>
     {% endif %}
 
-    <form method="POST" action="/staff">
-      <div class="campo">
-        <label>Restaurante (slug)</label>
-        <input type="text" name="slug" placeholder="ej: el-sazon-costeno" required autocomplete="off" autofocus>
-        <p style="font-size:0.75rem;color:#9CA3AF;margin-top:0.25rem">El administrador te dará este dato</p>
-      </div>
+    <form method="POST" autocomplete="off">
       <div class="campo">
         <label>Usuario</label>
-        <input type="text" name="username" placeholder="ej: carlos" required autocomplete="username">
+        <input type="text" name="username" placeholder="Ej: carlos" required autocomplete="off" autofocus>
       </div>
       <div class="campo">
         <label>Contraseña</label>
-        <input type="password" name="password" required autocomplete="current-password">
+        <input type="password" name="password" required autocomplete="new-password">
       </div>
       <button type="submit" class="btn-login">Entrar al panel</button>
     </form>
 
     <div class="link-back">
-      ¿Eres el dueño del restaurante? <a href="/login">Iniciar sesión aquí</a>
+      ¿Eres el dueño? <a href="/login">Iniciar sesión aquí</a>
     </div>
   </div>
 </div>
