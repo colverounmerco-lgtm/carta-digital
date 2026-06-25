@@ -89,7 +89,7 @@
       </div></div>
 
       <div class="tip">
-        <strong>💡 Sonido de alerta:</strong> Activa el botón "Activar sonido" en el panel para escuchar una alerta cuando llegue un pedido nuevo.
+        <strong>💡 Sonido de alerta:</strong> El botón 🔕/🔔 está en la barra de navegación superior, visible en <strong>todas las páginas</strong>. Una vez activado, suena sin importar en qué sección estés trabajando — no necesitas estar en el panel para escucharlo.
       </div>
     </div>
   </div>
@@ -178,7 +178,62 @@
     </div>
   </div>
 
-  <!-- 5. MESAS -->
+  <!-- 5. TAMAÑOS Y SABORES -->
+  <div class="seccion">
+    <div class="sec-header" onclick="toggle(this)">
+      <div class="sec-icono" style="background:#EFF6FF">📏</div>
+      <div>
+        <div class="sec-titulo">Tamaños y Sabores por producto</div>
+        <div class="sec-sub">Variantes de tamaño con precio propio y lista de sabores para bebidas</div>
+      </div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
+        Ve a <strong>Menú</strong> → <strong>Editar</strong> en el plato que quieras configurar. Debajo del formulario principal aparecen dos secciones nuevas: <strong>📏 Tamaños</strong> y <strong>🍶 Sabores</strong>.
+      </div></div>
+      <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
+        <strong>Tamaños:</strong> agrega cada tamaño con su nombre y precio (ej: Pequeño $1.50 · Mediano $2.00 · Grande $2.50). El precio del tamaño <em>reemplaza</em> el precio base del plato — no se suma. Activa el toggle <strong>Activo</strong> para que aparezca en la carta.
+      </div></div>
+      <div class="paso"><div class="paso-num">3</div><div class="paso-texto">
+        <strong>Sabores:</strong> agrega los sabores disponibles para ese producto (ej: Naranja, Maracuyá, Fresa). Son específicos de ese plato — cada producto tiene su propia lista. Activa el toggle para mostrarlos al cliente.
+      </div></div>
+      <div class="paso"><div class="paso-num">4</div><div class="paso-texto">
+        El cliente verá chips de selección para elegir tamaño y/o sabor al agregar el plato al pedido. Su elección aparece junto al nombre en el panel y en el recibo (ej: <em>"Grande · Naranja"</em>).
+      </div></div>
+      <div class="tip">
+        <strong>💡 Al crear un plato nuevo</strong> serás redirigido automáticamente a la página de edición para que puedas configurar tamaños y sabores de inmediato, sin pasos adicionales.
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. BEBIDAS GLOBALES -->
+  <div class="seccion">
+    <div class="sec-header" onclick="toggle(this)">
+      <div class="sec-icono" style="background:#F0FDF4">🥤</div>
+      <div>
+        <div class="sec-titulo">Bebidas (secciones por sección)</div>
+        <div class="sec-sub">Sabores agrupados globalmente, ideal para combos</div>
+      </div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
+        Ve a <strong>Bebidas</strong> en el navbar. Aquí defines secciones de sabores que aplican a todos los platos que las activen — ideal cuando un combo incluye bebida a elección.
+      </div></div>
+      <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
+        Crea las secciones que necesites (ej: Colas, Jugos, Hidratantes) y agrega los sabores dentro de cada una (ej: Coca-Cola, Sprite, Fanta dentro de "Colas").
+      </div></div>
+      <div class="paso"><div class="paso-num">3</div><div class="paso-texto">
+        En <strong>Menú</strong>, activa el botón <strong>🥤 Bebidas</strong> en los platos que ofrezcan esas bebidas. El cliente verá los sabores agrupados por sección al pedir.
+      </div></div>
+      <div class="tip">
+        <strong>💡 Diferencia clave:</strong> usa <em>Bebidas globales</em> para combos o platos que comparten la misma oferta de bebidas. Usa <em>Sabores por producto</em> (sección anterior) cuando cada plato tiene sus propios sabores exclusivos.
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. MESAS -->
   <div class="seccion">
     <div class="sec-header" onclick="toggle(this)">
       <div class="sec-icono" style="background:#EFF6FF">🪑</div>
