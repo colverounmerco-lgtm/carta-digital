@@ -1,12 +1,42 @@
 {% extends "base.html" %}
-{% block title %}Agregar plato — {{ restaurante.nombre }}{% endblock %}
+{% block title %}Agregar {{ 'bebida o plato' if restaurante.categoria == 'bar' else ('producto' if restaurante.categoria == 'cafeteria' else 'plato') }} — {{ restaurante.nombre }}{% endblock %}
 {% block contenido %}
+
+{% if restaurante.categoria == 'bar' %}
+  {% set ej_nombre = "Ej: Cóctel de maracuyá, Cerveza artesanal IPA" %}
+  {% set ej_desc   = "Ej: Cóctel preparado con maracuyá fresco, vodka y hielo. Servido en copa larga." %}
+  {% set ej_titulo = "Agregar bebida o plato" %}
+  {% set ej_foto   = "Haz clic para subir la foto de la bebida o plato" %}
+  {% set ej_label  = "Nombre de la bebida o plato *" %}
+  {% set ej_cats   = ['Cócteles','Cervezas','Destilados','Vinos','Bebidas sin alcohol','Picadas','Tapas','Extras'] %}
+  {% set ej_cat_default = 'Cócteles' %}
+  {% set ej_btn    = "Guardar en la carta" %}
+{% elif restaurante.categoria == 'cafeteria' %}
+  {% set ej_nombre = "Ej: Cappuccino, Sanduche de jamón y queso" %}
+  {% set ej_desc   = "Ej: Espresso doble con leche vaporizada, espolvorado con cacao. Disponible en tamaño S y L." %}
+  {% set ej_titulo = "Agregar producto" %}
+  {% set ej_foto   = "Haz clic para subir la foto del producto" %}
+  {% set ej_label  = "Nombre del producto *" %}
+  {% set ej_cats   = ['Cafés calientes','Cafés fríos','Jugos','Batidos','Combos','Snacks','Postres','Extras'] %}
+  {% set ej_cat_default = 'Cafés calientes' %}
+  {% set ej_btn    = "Guardar producto" %}
+{% else %}
+  {% set ej_nombre = "Ej: Seco de pollo con arroz" %}
+  {% set ej_desc   = "Ej: Pollo en salsa de cerveza, acompañado de arroz, papas fritas y ensalada." %}
+  {% set ej_titulo = "Agregar plato al menú" %}
+  {% set ej_foto   = "Haz clic para subir la foto del plato" %}
+  {% set ej_label  = "Nombre del plato *" %}
+  {% set ej_cats   = ['Entradas','Principal','Sopas','Ensaladas','Postres','Bebidas','Extras'] %}
+  {% set ej_cat_default = 'Principal' %}
+  {% set ej_btn    = "Guardar plato" %}
+{% endif %}
+
 <div class="contenedor page-wrap" style="max-width:640px">
 
   <div class="page-header">
     <div>
-      <h1 class="page-titulo">Agregar plato al menú</h1>
-      <p class="page-sub">La foto es obligatoria — los clientes deciden con los ojos</p>
+      <h1 class="page-titulo">{{ ej_titulo }}</h1>
+      <p class="page-sub">La foto es clave — los clientes deciden con los ojos</p>
     </div>
     <a href="/menu" class="btn-outline btn-sm">← Volver</a>
   </div>
@@ -21,10 +51,10 @@
     <form method="POST" action="/menu/agregar" enctype="multipart/form-data">
 
       <div class="campo">
-        <label>Foto real del plato *</label>
+        <label>Foto *</label>
         <div class="upload-area" onclick="document.getElementById('img-input').click()">
           <div style="font-size:2.5rem;margin-bottom:0.5rem">📸</div>
-          <p style="font-size:0.88rem;color:#6B7280">Haz clic para subir la foto del plato</p>
+          <p style="font-size:0.88rem;color:#6B7280">{{ ej_foto }}</p>
           <p style="font-size:0.78rem;color:#9CA3AF;margin-top:0.25rem">JPG, PNG — recomendado 800×600px</p>
           <input type="file" id="img-input" name="imagen" accept="image/*" required style="display:none" data-preview="img-preview">
         </div>
@@ -32,13 +62,13 @@
       </div>
 
       <div class="campo">
-        <label>Nombre del plato *</label>
-        <input type="text" name="nombre" placeholder="Ej: Seco de pollo con arroz" required autofocus>
+        <label>{{ ej_label }}</label>
+        <input type="text" name="nombre" placeholder="{{ ej_nombre }}" required autofocus>
       </div>
 
       <div class="campo">
         <label>Descripción</label>
-        <textarea name="descripcion" rows="3" placeholder="Ej: Pollo en salsa de cerveza, acompañado de arroz, papas fritas y ensalada"></textarea>
+        <textarea name="descripcion" rows="3" placeholder="{{ ej_desc }}"></textarea>
         <small>Describe los ingredientes principales, el tamaño o lo que lo hace especial.</small>
       </div>
 
@@ -50,19 +80,15 @@
         <div class="campo" style="margin-bottom:0">
           <label>Categoría</label>
           <select name="categoria">
-            <option value="Entradas">Entradas</option>
-            <option value="Principal" selected>Principal</option>
-            <option value="Sopas">Sopas</option>
-            <option value="Ensaladas">Ensaladas</option>
-            <option value="Postres">Postres</option>
-            <option value="Bebidas">Bebidas</option>
-            <option value="Extras">Extras</option>
+            {% for cat in ej_cats %}
+              <option value="{{ cat }}" {% if cat == ej_cat_default %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
           </select>
         </div>
       </div>
 
       <div style="display:flex;gap:0.75rem;margin-top:1.5rem">
-        <button type="submit" class="btn-primario" style="flex:1;justify-content:center">Guardar plato</button>
+        <button type="submit" class="btn-primario" style="flex:1;justify-content:center">{{ ej_btn }}</button>
         <a href="/menu" class="btn-outline" style="flex:1;text-align:center;padding:0.55rem">Cancelar</a>
       </div>
     </form>

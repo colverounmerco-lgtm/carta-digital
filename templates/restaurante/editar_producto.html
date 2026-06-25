@@ -1,10 +1,22 @@
 {% extends "base.html" %}
-{% block title %}Editar plato — {{ restaurante.nombre }}{% endblock %}
+{% block title %}Editar — {{ restaurante.nombre }}{% endblock %}
 {% block contenido %}
+
+{% if restaurante.categoria == 'bar' %}
+  {% set ej_cats = ['Cócteles','Cervezas','Destilados','Vinos','Bebidas sin alcohol','Picadas','Tapas','Extras'] %}
+  {% set ej_label = "Nombre de la bebida o plato *" %}
+{% elif restaurante.categoria == 'cafeteria' %}
+  {% set ej_cats = ['Cafés calientes','Cafés fríos','Jugos','Batidos','Combos','Snacks','Postres','Extras'] %}
+  {% set ej_label = "Nombre del producto *" %}
+{% else %}
+  {% set ej_cats = ['Entradas','Principal','Sopas','Ensaladas','Postres','Bebidas','Extras'] %}
+  {% set ej_label = "Nombre del plato *" %}
+{% endif %}
+
 <div class="contenedor page-wrap" style="max-width:640px">
 
   <div class="page-header">
-    <h1 class="page-titulo">Editar plato</h1>
+    <h1 class="page-titulo">Editar {{ 'bebida o plato' if restaurante.categoria == 'bar' else ('producto' if restaurante.categoria == 'cafeteria' else 'plato') }}</h1>
     <a href="/menu" class="btn-outline btn-sm">← Volver al menú</a>
   </div>
 
@@ -33,7 +45,7 @@
       </div>
 
       <div class="campo">
-        <label>Nombre del plato *</label>
+        <label>{{ ej_label }}</label>
         <input type="text" name="nombre" value="{{ producto.nombre }}" required>
       </div>
 
@@ -50,9 +62,13 @@
         <div class="campo" style="margin-bottom:0">
           <label>Categoría</label>
           <select name="categoria">
-            {% for cat in ['Entradas','Principal','Sopas','Ensaladas','Postres','Bebidas','Extras'] %}
+            {% for cat in ej_cats %}
               <option value="{{ cat }}" {% if producto.categoria == cat %}selected{% endif %}>{{ cat }}</option>
             {% endfor %}
+            {# Si la categoría guardada no está en la lista, mostrarla igual #}
+            {% if producto.categoria not in ej_cats %}
+              <option value="{{ producto.categoria }}" selected>{{ producto.categoria }}</option>
+            {% endif %}
           </select>
         </div>
       </div>
