@@ -251,7 +251,8 @@ def run_migrations():
     tables = insp.get_table_names()
 
     def add_col(table, col, definition):
-        cols = [c["name"] for c in insp.get_columns(table)]
+        fresh = sa_inspect(db.engine)
+        cols = [c["name"] for c in fresh.get_columns(table)]
         if col not in cols:
             db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {definition}"))
             db.session.commit()
@@ -269,7 +270,8 @@ def run_migrations():
         add_col("ordenes", "fecha_pago",       "TIMESTAMP")
 
     if "mesas" in tables:
-        add_col("mesas", "abierta", "BOOLEAN DEFAULT FALSE")
+        add_col("mesas", "abierta",        "BOOLEAN DEFAULT FALSE")
+        add_col("mesas", "es_para_llevar", "BOOLEAN DEFAULT FALSE")
         # Cerrar todas las mesas sin orden activa (limpieza de estado inicial)
         db.session.execute(text(
             "UPDATE mesas SET abierta = FALSE "
@@ -319,6 +321,19 @@ def run_migrations():
 with app.app_context():
     db.create_all()
     run_migrations()
+    # Auto-create "Para llevar" mesa for every restaurant that doesn't have one
+    for _r in Restaurante.query.all():
+        if not Mesa.query.filter_by(restaurante_id=_r.id, es_para_llevar=True).first():
+            db.session.add(Mesa(
+                restaurante_id=_r.id,
+                numero=0,
+                nombre="Para llevar",
+                token=Mesa.nuevo_token(),
+                activa=True,
+                abierta=True,
+                es_para_llevar=True,
+            ))
+    db.session.commit()
 
 
 # ══════════════════════════════════════════════
@@ -378,6 +393,15 @@ def register():
         db.session.add(r)
         db.session.flush()
         _crear_metodos_default(r.id)
+        db.session.add(Mesa(
+            restaurante_id=r.id,
+            numero=0,
+            nombre="Para llevar",
+            token=Mesa.nuevo_token(),
+            activa=True,
+            abierta=True,
+            es_para_llevar=True,
+        ))
         db.session.commit()
 
         if skip_verificacion:
@@ -1047,6 +1071,12 @@ def toggle_bebidas_producto(pid):
 @login_required
 def mesas():
     r = restaurante_session()
+    if not Mesa.query.filter_by(restaurante_id=r.id, es_para_llevar=True).first():
+        db.session.add(Mesa(
+            restaurante_id=r.id, numero=0, nombre="Para llevar",
+            token=Mesa.nuevo_token(), activa=True, abierta=True, es_para_llevar=True,
+        ))
+        db.session.commit()
     mesas_list = Mesa.query.filter_by(restaurante_id=r.id).order_by(Mesa.numero).all()
     return render_template("restaurante/mesas.html", restaurante=r, mesas=mesas_list)
 
@@ -1087,14 +1117,40 @@ def toggle_sesion_mesa(mid):
     return redirect(url_for("mesas"))
 
 
+@app.route("/mesas/reiniciar", methods=["POST"])
+@login_required
+def reiniciar_mesas():
+    r = restaurante_session()
+    mesas_list = Mesa.query.filter_by(restaurante_id=r.id).all()
+    for m in mesas_list:
+        ordenes = Orden.query.filter_by(mesa_id=m.id).all()
+        for o in ordenes:
+            db.session.delete(o)
+        if not m.es_para_llevar:
+            db.session.delete(m)
+    db.session.commit()
+    flash("Todo reiniciado. Órdenes y mesas eliminadas.", "success")
+    return redirect(url_for("mesas"))
+
+
 @app.route("/mesas/eliminar/<int:mid>", methods=["POST"])
 @login_required
 def eliminar_mesa(mid):
     r = restaurante_session()
     m = Mesa.query.filter_by(id=mid, restaurante_id=r.id).first_or_404()
-    db.session.delete(m)
-    db.session.commit()
-    flash("Mesa eliminada.", "success")
+    if m.es_para_llevar:
+        flash("La mesa 'Para llevar' no se puede eliminar.", "error")
+        return redirect(url_for("mesas"))
+    if Orden.query.filter_by(mesa_id=m.id).first():
+        flash(f"No se puede eliminar '{m.nombre}' porque tiene historial de pedidos.", "error")
+        return redirect(url_for("mesas"))
+    try:
+        db.session.delete(m)
+        db.session.commit()
+        flash("Mesa eliminada.", "success")
+    except Exception:
+        db.session.rollback()
+        flash(f"No se puede eliminar '{m.nombre}' porque tiene pedidos asociados.", "error")
     return redirect(url_for("mesas"))
 
 
@@ -1260,7 +1316,11 @@ def hacer_pedido(slug, mesa_token):
         flash("Tu carrito está vacío.", "error")
         return redirect(url_for("carta", slug=slug, mesa_token=mesa_token))
 
-    nombre_cliente = request.form.get("nombre_cliente", "Cliente").strip() or "Cliente"
+    nombre_cliente = request.form.get("nombre_cliente", "").strip()
+    if mesa.es_para_llevar and not nombre_cliente:
+        flash("Por favor ingresa tu nombre para el pedido para llevar.", "error")
+        return redirect(url_for("carta", slug=slug, mesa_token=mesa_token))
+    nombre_cliente = nombre_cliente or "Cliente"
     notas          = request.form.get("notas", "").strip()
 
     total, items = 0.0, []

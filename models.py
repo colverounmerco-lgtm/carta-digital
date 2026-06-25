@@ -60,6 +60,7 @@ class Mesa(db.Model):
     token          = db.Column(db.String(40), unique=True, nullable=False)
     activa         = db.Column(db.Boolean, default=True)
     abierta        = db.Column(db.Boolean, default=False)  # False = bloqueada para pedidos; abre al escanear QR
+    es_para_llevar = db.Column(db.Boolean, default=False)
 
     ordenes = db.relationship("Orden", backref="mesa", lazy=True)
 

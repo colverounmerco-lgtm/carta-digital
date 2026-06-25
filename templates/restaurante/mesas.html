@@ -8,10 +8,18 @@
       <h1 class="page-titulo">Mesas</h1>
       <p class="page-sub">Cada mesa tiene su propio QR — el cliente lo escanea para ver la carta</p>
     </div>
-    <form method="POST" action="/mesas/agregar" style="display:flex;gap:0.5rem">
-      <input type="text" name="nombre" placeholder="Ej: Terraza 1" style="padding:0.5rem 0.8rem;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.88rem">
-      <button class="btn-primario btn-sm">+ Agregar mesa</button>
-    </form>
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
+      <form method="POST" action="/mesas/agregar" style="display:flex;gap:0.5rem">
+        <input type="text" name="nombre" placeholder="Ej: Terraza 1" style="padding:0.5rem 0.8rem;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.88rem">
+        <button class="btn-primario btn-sm">+ Agregar mesa</button>
+      </form>
+      <form method="POST" action="/mesas/reiniciar"
+            onsubmit="return confirm('¿Borrar TODAS las mesas y órdenes? Esta acción no se puede deshacer.') && confirm('¿Estás seguro? Se perderá todo el historial de pedidos.')">
+        <button type="submit" style="padding:0.5rem 0.9rem;background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA;border-radius:8px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit">
+          🗑 Reiniciar todo
+        </button>
+      </form>
+    </div>
   </div>
 
   {% with msgs = get_flashed_messages(with_categories=true) %}
@@ -24,10 +32,14 @@
   <div class="mesa-grid">
     {% for m in mesas %}
     {% set carta_url = request.host_url + 'carta/' + restaurante.slug + '/' + m.token %}
-    <div class="mesa-card" style="{% if not m.abierta %}opacity:0.7;border-color:#FCA5A5{% endif %}">
-      <div class="mesa-num">{{ m.numero }}</div>
+    <div class="mesa-card" style="{% if m.es_para_llevar %}border-color:#F97316;background:#FFFBF5{% elif not m.abierta %}opacity:0.7;border-color:#FCA5A5{% endif %}">
+      <div class="mesa-num">{{ '🛵' if m.es_para_llevar else m.numero }}</div>
       <div class="mesa-name">{{ m.nombre }}</div>
-      {% if m.abierta %}
+      {% if m.es_para_llevar %}
+        <span style="font-size:0.72rem;font-weight:700;color:#C2410C;background:#FFF7ED;
+                     border:1px solid #FED7AA;padding:0.2rem 0.6rem;border-radius:999px;
+                     display:inline-block;margin-bottom:0.4rem">🛵 Para llevar</span>
+      {% elif m.abierta %}
         <span style="font-size:0.72rem;font-weight:700;color:#059669;background:#ECFDF5;
                      border:1px solid #A7F3D0;padding:0.2rem 0.6rem;border-radius:999px;
                      display:inline-block;margin-bottom:0.4rem">● Abierta</span>
@@ -59,10 +71,12 @@
         <button class="btn-outline btn-sm" onclick="copiar('{{ carta_url }}', this)">
           Copiar enlace
         </button>
+        {% if not m.es_para_llevar %}
         <form method="POST" action="/mesas/eliminar/{{ m.id }}"
               onsubmit="return confirm('¿Eliminar {{ m.nombre }}?')">
           <button class="btn-danger btn-sm" style="width:100%">Eliminar</button>
         </form>
+        {% endif %}
       </div>
     </div>
     {% endfor %}

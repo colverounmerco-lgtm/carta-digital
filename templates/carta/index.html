@@ -294,8 +294,13 @@
     </div>
 
     <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/pedido" class="form-pedido">
+      {% if mesa.es_para_llevar %}
+      <label>Tu nombre <span style="color:#DC2626">*</span></label>
+      <input type="text" name="nombre_cliente" placeholder="Ej: Juan" required>
+      {% else %}
       <label>Tu nombre (opcional)</label>
       <input type="text" name="nombre_cliente" placeholder="Ej: Juan">
+      {% endif %}
       <label>Notas para la cocina (opcional)</label>
       <textarea name="notas" rows="2" placeholder="Ej: Sin cebolla, alergia a los mariscos..."></textarea>
 
