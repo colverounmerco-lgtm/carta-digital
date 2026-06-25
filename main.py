@@ -321,6 +321,7 @@ def run_migrations():
         add_col("restaurantes", "restringir_red",   "BOOLEAN DEFAULT TRUE")
         add_col("restaurantes", "dia_apertura",     "DATE")
         add_col("restaurantes", "modo_cobro",       "BOOLEAN DEFAULT FALSE")
+        add_col("restaurantes", "categoria",        "VARCHAR(20) DEFAULT 'restaurante'")
 
     # Crear métodos de pago por defecto para restaurantes existentes
     for r in Restaurante.query.all():
@@ -378,9 +379,13 @@ def register():
         whatsapp    = request.form.get("whatsapp", "").strip()
         ciudad      = request.form.get("ciudad", "").strip()
         descripcion = request.form.get("descripcion", "").strip()
+        categoria   = request.form.get("categoria", "").strip()
 
-        if not all([nombre, email, pwd]):
+        if not all([nombre, email, pwd, categoria]):
             flash("Completa todos los campos requeridos.", "error")
+            return redirect(url_for("register"))
+        if categoria not in ("restaurante", "bar", "cafeteria"):
+            flash("Selecciona un tipo de local válido.", "error")
             return redirect(url_for("register"))
         if pwd != pwd2:
             flash("Las contraseñas no coinciden.", "error")
@@ -409,6 +414,7 @@ def register():
         r = Restaurante(nombre=nombre, email=email, slug=slug,
                         whatsapp=whatsapp, ciudad=ciudad,
                         logo_url=logo_url, descripcion=descripcion,
+                        categoria=categoria,
                         email_verificado=skip_verificacion)
         r.set_password(pwd)
         db.session.add(r)
