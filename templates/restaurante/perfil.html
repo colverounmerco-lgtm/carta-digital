@@ -6,7 +6,7 @@
   <div class="page-header">
     <div>
       <h1 class="page-titulo">Configuración</h1>
-      <p class="page-sub">Datos del restaurante y preferencias</p>
+      <p class="page-sub">Datos del local y preferencias</p>
     </div>
   </div>
 
@@ -18,7 +18,7 @@
 
   <!-- ── SECCIÓN 1: Datos del restaurante ── -->
   <div class="card">
-    <h2 style="font-size:0.72rem;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:1.1rem">Datos del restaurante</h2>
+    <h2 style="font-size:0.72rem;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:1.1rem">Datos del local</h2>
 
     <form method="POST" action="/perfil" enctype="multipart/form-data">
 
@@ -37,7 +37,7 @@
       </div>
 
       <div class="campo">
-        <label>Nombre del restaurante</label>
+        <label>Nombre del local</label>
         <input type="text" name="nombre" value="{{ restaurante.nombre }}" required>
       </div>
 
@@ -117,7 +117,7 @@
     <div style="background:#F8FAFC;border-radius:10px;padding:0.85rem 1rem;margin-bottom:1rem;font-size:0.83rem">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem">
         <div>
-          <span style="color:#64748B">IP del restaurante guardada:</span><br>
+          <span style="color:#64748B">IP del local guardada:</span><br>
           <strong style="color:#1C1C1E;font-size:0.9rem">
             {{ restaurante.ip_red or '— aún no registrada' }}
           </strong>

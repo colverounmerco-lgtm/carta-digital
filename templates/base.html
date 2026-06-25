@@ -73,7 +73,7 @@
                           font-size:0.85rem;color:#1C1C1E;text-decoration:none;font-weight:500;
                           transition:background 0.12s"
                    onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background=''">
-                  👤 Perfil del restaurante
+                  👤 Mi local
                 </a>
                 <a href="/subusuarios"
                    style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;
@@ -117,7 +117,7 @@
           {% endif %}
         {% else %}
           <a href="/login" class="nav-link">Iniciar sesión</a>
-          <a href="/register" class="btn-primario btn-sm">Registrar restaurante</a>
+          <a href="/register" class="btn-primario btn-sm">Registrar mi local</a>
         {% endif %}
       </nav>
     </div>
@@ -180,7 +180,7 @@
 
       <form id="form-soporte" onsubmit="enviarSoporte(event)">
         <div style="margin-bottom:0.75rem">
-          <input name="nombre" type="text" placeholder="Nombre del restaurante" required
+          <input name="nombre" type="text" placeholder="Nombre del local" required
             value="{{ restaurante_session.nombre if restaurante_session else '' }}"
             {% if restaurante_session %}readonly style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #E5E7EB;border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none;background:#F9FAFB;color:#6B7280"
             {% else %}style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid #E5E7EB;border-radius:10px;font-size:0.9rem;font-family:inherit;outline:none"{% endif %}>
