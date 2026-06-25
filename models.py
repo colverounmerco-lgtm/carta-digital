@@ -221,6 +221,13 @@ class ItemOrden(db.Model):
     notas_item      = db.Column(db.String(200))
 
 
+class ConfigGlobal(db.Model):
+    __tablename__ = "config_global"
+    id    = db.Column(db.Integer, primary_key=True)
+    clave = db.Column(db.String(100), unique=True, nullable=False)
+    valor = db.Column(db.String(500), nullable=False)
+
+
 class SubUsuario(db.Model):
     __tablename__ = "subusuarios"
     id             = db.Column(db.Integer, primary_key=True)

@@ -17,7 +17,8 @@ from dotenv import load_dotenv
 import cloudinary, cloudinary.uploader
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
-from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, SeccionBebida, VarianteBebida, SaborProducto, SubUsuario, slugify
+from werkzeug.security import generate_password_hash, check_password_hash
+from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, SeccionBebida, VarianteBebida, SaborProducto, SubUsuario, ConfigGlobal, slugify
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "carta-dev-secret")
@@ -588,6 +589,24 @@ def eliminar_subusuario(sid):
     db.session.delete(su)
     db.session.commit()
     flash(f"{su.nombre} eliminado.", "success")
+    return redirect(url_for("subusuarios"))
+
+
+@app.route("/subusuarios/<int:sid>/cambiar-password", methods=["POST"])
+@login_required
+def subusuario_cambiar_password(sid):
+    r    = restaurante_session()
+    su   = SubUsuario.query.filter_by(id=sid, restaurante_id=r.id).first_or_404()
+    pwd  = request.form.get("password", "")
+    pwd2 = request.form.get("password2", "")
+    if pwd != pwd2:
+        flash("Las contraseñas no coinciden.", "error")
+    elif len(pwd) < 6:
+        flash("La contraseña debe tener al menos 6 caracteres.", "error")
+    else:
+        su.set_password(pwd)
+        db.session.commit()
+        flash(f"Contraseña de {su.nombre} actualizada.", "success")
     return redirect(url_for("subusuarios"))
 
 
@@ -1957,12 +1976,36 @@ def admin_required(f):
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
-        if (request.form.get("usuario") == ADMIN_USER and
-                request.form.get("password") == ADMIN_PASS):
-            session["is_admin"] = True
-            return redirect(url_for("admin_panel"))
+        usuario  = request.form.get("usuario", "")
+        password = request.form.get("password", "")
+        if usuario == ADMIN_USER:
+            cfg = ConfigGlobal.query.filter_by(clave="admin_password_hash").first()
+            ok  = check_password_hash(cfg.valor, password) if cfg else (password == ADMIN_PASS)
+            if ok:
+                session["is_admin"] = True
+                return redirect(url_for("admin_panel"))
         return render_template("admin/login.html", error="Credenciales incorrectas")
     return render_template("admin/login.html", error=None)
+
+
+@app.route("/admin/cambiar-password", methods=["POST"])
+@admin_required
+def admin_cambiar_password():
+    pwd  = request.form.get("password", "")
+    pwd2 = request.form.get("password2", "")
+    if pwd != pwd2:
+        flash("Las contraseñas no coinciden.", "error")
+    elif len(pwd) < 6:
+        flash("La contraseña debe tener al menos 6 caracteres.", "error")
+    else:
+        cfg = ConfigGlobal.query.filter_by(clave="admin_password_hash").first()
+        if not cfg:
+            cfg = ConfigGlobal(clave="admin_password_hash", valor="")
+            db.session.add(cfg)
+        cfg.valor = generate_password_hash(pwd)
+        db.session.commit()
+        flash("Contraseña de administrador actualizada.", "success")
+    return redirect(url_for("admin_panel"))
 
 
 @app.route("/admin/logout")
