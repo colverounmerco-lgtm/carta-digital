@@ -4,7 +4,10 @@
 <div class="contenedor page-wrap" style="max-width:580px">
 
   <div class="page-header">
-    <h1 class="page-titulo">Perfil del restaurante</h1>
+    <div>
+      <h1 class="page-titulo">Configuración</h1>
+      <p class="page-sub">Datos del restaurante y preferencias</p>
+    </div>
   </div>
 
   {% with msgs = get_flashed_messages(with_categories=true) %}
@@ -13,17 +16,21 @@
     {% endfor %}
   {% endwith %}
 
+  <!-- ── SECCIÓN 1: Datos del restaurante ── -->
   <div class="card">
+    <h2 style="font-size:0.72rem;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:1.1rem">Datos del restaurante</h2>
+
     <form method="POST" action="/perfil" enctype="multipart/form-data">
 
       <div class="campo" style="text-align:center;margin-bottom:1.5rem">
         {% if restaurante.logo_url %}
-          <img src="{{ restaurante.logo_url }}" id="img-preview" style="width:90px;height:90px;border-radius:50%;object-fit:cover;margin:0 auto 0.75rem;display:block">
+          <img src="{{ restaurante.logo_url }}" id="img-preview"
+               style="width:88px;height:88px;border-radius:50%;object-fit:cover;margin:0 auto 0.75rem;display:block;box-shadow:0 2px 10px rgba(0,0,0,0.1)">
         {% else %}
-          <div style="width:90px;height:90px;border-radius:50%;background:#F1F5F9;display:flex;align-items:center;justify-content:center;font-size:2.5rem;margin:0 auto 0.75rem">🍽️</div>
-          <img id="img-preview" class="upload-preview" style="width:90px;height:90px;border-radius:50%;object-fit:cover;margin:0 auto" alt="">
+          <div style="width:88px;height:88px;border-radius:50%;background:#F1F5F9;display:flex;align-items:center;justify-content:center;font-size:2.5rem;margin:0 auto 0.75rem">🍽️</div>
+          <img id="img-preview" class="upload-preview" style="width:88px;height:88px;border-radius:50%;object-fit:cover;margin:0 auto" alt="">
         {% endif %}
-        <label style="cursor:pointer;color:var(--primario);font-size:0.85rem;font-weight:600">
+        <label style="cursor:pointer;color:var(--primario);font-size:0.84rem;font-weight:600">
           Cambiar logo
           <input type="file" name="logo" accept="image/*" style="display:none" data-preview="img-preview">
         </label>
@@ -66,14 +73,43 @@
     </form>
   </div>
 
-  <!-- Restricción de red WiFi -->
-  <div class="card" style="margin-top:1.25rem">
-    <h2 style="font-size:1rem;font-weight:700;color:#1C1C1E;margin-bottom:0.25rem">📶 Restricción de red WiFi</h2>
-    <p style="font-size:0.83rem;color:#6B7280;margin-bottom:1.25rem">
+  <!-- ── SECCIÓN 2: Modo de cobro ── -->
+  <div class="card" style="margin-top:1rem">
+    <h2 style="font-size:0.72rem;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:0.6rem">Modo de cobro</h2>
+    <p style="font-size:0.83rem;color:#6B7280;margin-bottom:1.1rem">
+      En modo <strong>Cobro anticipado</strong> el cliente paga al hacer el pedido. El pedido llega ya cobrado y la cocina solo prepara y entrega a la mesa indicada.
+    </p>
+    <form method="POST" action="/perfil/modo-cobro">
+      <label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer">
+        <div style="position:relative;width:44px;height:24px;flex-shrink:0">
+          <input type="checkbox" id="toggle-cobro"
+                 {% if restaurante.modo_cobro %}checked{% endif %}
+                 onchange="this.form.submit()"
+                 style="opacity:0;width:0;height:0;position:absolute">
+          <span style="position:absolute;inset:0;border-radius:24px;transition:background 0.2s;
+                       background:{{ '#F97316' if restaurante.modo_cobro else '#D1D5DB' }}"></span>
+          <span style="position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;
+                       transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);
+                       left:{{ '23px' if restaurante.modo_cobro else '3px' }}"></span>
+        </div>
+        <div>
+          <div style="font-size:0.88rem;font-weight:600;color:#1C1C1E">💳 Cobro anticipado (mostrador)</div>
+          <div style="font-size:0.78rem;color:#94A3B8">
+            {% if restaurante.modo_cobro %}Activo — el cliente selecciona método de pago al pedir
+            {% else %}Desactivado — cobro al final (flujo de mesa tradicional){% endif %}
+          </div>
+        </div>
+      </label>
+    </form>
+  </div>
+
+  <!-- ── SECCIÓN 3: Restricción WiFi ── -->
+  <div class="card" style="margin-top:1rem">
+    <h2 style="font-size:0.72rem;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:0.6rem">Restricción de red WiFi</h2>
+    <p style="font-size:0.83rem;color:#6B7280;margin-bottom:1.1rem">
       Cuando está activa, solo los clientes conectados al WiFi del local pueden ver el menú.
     </p>
 
-    <!-- Estado de IP guardada -->
     <div style="background:#F8FAFC;border-radius:10px;padding:0.85rem 1rem;margin-bottom:1rem;font-size:0.83rem">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem">
         <div>
@@ -86,86 +122,76 @@
           {% endif %}
         </div>
         <form method="POST" action="/perfil/actualizar-ip" style="flex-shrink:0">
-          <button type="submit" style="padding:0.45rem 0.9rem;background:#1C1C1E;color:#fff;border:none;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap">
+          <button type="submit" style="padding:0.45rem 0.9rem;background:#1C1C1E;color:#fff;border:none;
+                  border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap">
             Actualizar IP
           </button>
         </form>
       </div>
     </div>
 
-    <!-- Toggle activar/desactivar -->
     <form method="POST" action="/perfil">
       <input type="hidden" name="nombre"      value="{{ restaurante.nombre }}">
       <input type="hidden" name="whatsapp"    value="{{ restaurante.whatsapp or '' }}">
       <input type="hidden" name="ciudad"      value="{{ restaurante.ciudad or '' }}">
       <input type="hidden" name="descripcion" value="{{ restaurante.descripcion or '' }}">
-
       <label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer">
         <div style="position:relative;width:44px;height:24px;flex-shrink:0">
           <input type="checkbox" name="restringir_red" id="toggle-red"
                  {% if restaurante.restringir_red %}checked{% endif %}
                  onchange="this.form.submit()"
                  style="opacity:0;width:0;height:0;position:absolute">
-          <span id="track-red" style="
-            position:absolute;inset:0;border-radius:24px;transition:background 0.2s;
-            background:{{ '#1C1C1E' if restaurante.restringir_red else '#D1D5DB' }}">
-          </span>
-          <span id="thumb-red" style="
-            position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;
-            transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);
-            left:{{ '23px' if restaurante.restringir_red else '3px' }}">
-          </span>
+          <span id="track-red" style="position:absolute;inset:0;border-radius:24px;transition:background 0.2s;
+                       background:{{ '#1C1C1E' if restaurante.restringir_red else '#D1D5DB' }}"></span>
+          <span id="thumb-red" style="position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;
+                       transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);
+                       left:{{ '23px' if restaurante.restringir_red else '3px' }}"></span>
         </div>
         <div>
-          <div style="font-size:0.88rem;font-weight:600;color:#1C1C1E">
-            Restringir menú al WiFi del local
-          </div>
+          <div style="font-size:0.88rem;font-weight:600;color:#1C1C1E">📶 Restringir menú al WiFi del local</div>
           <div style="font-size:0.78rem;color:#94A3B8">
-            {% if restaurante.restringir_red %}Activo — solo clientes en tu WiFi{% else %}Desactivado — menú accesible desde cualquier red{% endif %}
+            {% if restaurante.restringir_red %}Activo — solo clientes en tu WiFi
+            {% else %}Desactivado — menú accesible desde cualquier red{% endif %}
           </div>
         </div>
       </label>
     </form>
   </div>
 
-  <!-- Modo de cobro -->
-  <div class="card" style="margin-top:1.25rem">
-    <h2 style="font-size:1rem;font-weight:700;color:#1C1C1E;margin-bottom:0.25rem">💳 Modo de cobro</h2>
-    <p style="font-size:0.83rem;color:#6B7280;margin-bottom:1.25rem">
-      En modo <strong>Cobro anticipado</strong> el cliente paga al hacer el pedido. El pedido llega ya cobrado y la cocina solo prepara y entrega a la mesa indicada.
-    </p>
-
-    <form method="POST" action="/perfil/modo-cobro">
-      <label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer">
-        <div style="position:relative;width:44px;height:24px;flex-shrink:0">
-          <input type="checkbox" id="toggle-cobro"
-                 {% if restaurante.modo_cobro %}checked{% endif %}
-                 onchange="this.form.submit()"
-                 style="opacity:0;width:0;height:0;position:absolute">
-          <span style="
-            position:absolute;inset:0;border-radius:24px;transition:background 0.2s;
-            background:{{ '#F97316' if restaurante.modo_cobro else '#D1D5DB' }}">
-          </span>
-          <span style="
-            position:absolute;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;
-            transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,.3);
-            left:{{ '23px' if restaurante.modo_cobro else '3px' }}">
-          </span>
-        </div>
-        <div>
-          <div style="font-size:0.88rem;font-weight:600;color:#1C1C1E">
-            Cobro anticipado (mostrador)
-          </div>
-          <div style="font-size:0.78rem;color:#94A3B8">
-            {% if restaurante.modo_cobro %}
-              Activo — el cliente selecciona método de pago al pedir
-            {% else %}
-              Desactivado — cobro al final (flujo de mesa tradicional)
-            {% endif %}
-          </div>
-        </div>
-      </label>
-    </form>
+  <!-- ── SECCIÓN 4: Accesos rápidos ── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:1rem">
+    <a href="/subusuarios" style="display:flex;align-items:center;gap:0.6rem;padding:1rem;background:#fff;border:1.5px solid #E2E8F0;border-radius:12px;text-decoration:none;color:#1C1C1E;font-size:0.85rem;font-weight:600;transition:border-color 0.15s"
+       onmouseover="this.style.borderColor='#F97316'" onmouseout="this.style.borderColor='#E2E8F0'">
+      <span style="font-size:1.4rem">👥</span>
+      <div>
+        <div>Equipo</div>
+        <div style="font-size:0.75rem;color:#94A3B8;font-weight:400">Cocineros y meseros</div>
+      </div>
+    </a>
+    <a href="/metodos-pago" style="display:flex;align-items:center;gap:0.6rem;padding:1rem;background:#fff;border:1.5px solid #E2E8F0;border-radius:12px;text-decoration:none;color:#1C1C1E;font-size:0.85rem;font-weight:600;transition:border-color 0.15s"
+       onmouseover="this.style.borderColor='#F97316'" onmouseout="this.style.borderColor='#E2E8F0'">
+      <span style="font-size:1.4rem">💳</span>
+      <div>
+        <div>Métodos de pago</div>
+        <div style="font-size:0.75rem;color:#94A3B8;font-weight:400">Efectivo, Deuna!, etc.</div>
+      </div>
+    </a>
+    <a href="/planes" style="display:flex;align-items:center;gap:0.6rem;padding:1rem;background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:12px;text-decoration:none;color:#C2410C;font-size:0.85rem;font-weight:600;transition:border-color 0.15s"
+       onmouseover="this.style.borderColor='#F97316'" onmouseout="this.style.borderColor='#FED7AA'">
+      <span style="font-size:1.4rem">✨</span>
+      <div>
+        <div>Mi plan</div>
+        <div style="font-size:0.75rem;color:#F97316;font-weight:700">{{ restaurante.plan|upper if restaurante.plan else 'TRIAL' }}</div>
+      </div>
+    </a>
+    <a href="/guia" style="display:flex;align-items:center;gap:0.6rem;padding:1rem;background:#fff;border:1.5px solid #E2E8F0;border-radius:12px;text-decoration:none;color:#1C1C1E;font-size:0.85rem;font-weight:600;transition:border-color 0.15s"
+       onmouseover="this.style.borderColor='#F97316'" onmouseout="this.style.borderColor='#E2E8F0'">
+      <span style="font-size:1.4rem">❓</span>
+      <div>
+        <div>Guía de uso</div>
+        <div style="font-size:0.75rem;color:#94A3B8;font-weight:400">Cómo usar la plataforma</div>
+      </div>
+    </a>
   </div>
 
 </div>

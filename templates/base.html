@@ -47,20 +47,76 @@
             <a href="/adiciones" class="nav-link">Adiciones</a>
             <a href="/bebidas" class="nav-link">Bebidas</a>
             <a href="/mesas" class="nav-link">Mesas</a>
-            <a href="/subusuarios" class="nav-link">Equipo</a>
-            <a href="/metodos-pago" class="nav-link">Pagos</a>
             <a href="/reportes" class="nav-link">Reportes</a>
-            <a href="/guia" class="nav-link" style="font-size:0.82rem">❓ Guía</a>
-            <a href="/planes" class="nav-link" style="font-size:0.78rem;color:#F97316;font-weight:700">
-              {{ restaurante_session.plan|upper if restaurante_session.plan else 'TRIAL' }}
-            </a>
             <button id="btn-sonido-nav" onclick="toggleSonido()"
               title="Activar/desactivar sonido de notificaciones"
               style="background:none;border:1.5px solid #E2E8F0;border-radius:8px;padding:0.28rem 0.6rem;cursor:pointer;font-size:0.9rem;line-height:1;transition:all 0.15s">
               🔕
             </button>
-            <a href="/perfil" class="nav-nombre" style="text-decoration:none">{{ restaurante_session.nombre }}</a>
-            <a href="/logout" class="btn-primario btn-sm">Salir</a>
+            <!-- Dropdown de configuración -->
+            <div style="position:relative" id="menu-config">
+              <button onclick="toggleDropdownConfig(event)"
+                style="display:flex;align-items:center;gap:0.4rem;padding:0.32rem 0.75rem;
+                       border:1.5px solid #E2E8F0;border-radius:8px;background:#F8FAFC;
+                       cursor:pointer;font-size:0.84rem;font-weight:600;color:#374151;
+                       font-family:inherit;line-height:1.4;transition:border-color 0.15s"
+                title="Configuración y perfil">
+                ⚙️
+                <span style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                  {{ restaurante_session.nombre }}
+                </span>
+                <span style="font-size:0.65rem;color:#94A3B8">▾</span>
+              </button>
+              <div id="dropdown-config"
+                style="display:none;position:absolute;right:0;top:calc(100% + 8px);
+                       background:#fff;border:1.5px solid #E2E8F0;border-radius:14px;
+                       box-shadow:0 8px 28px rgba(0,0,0,0.13);min-width:200px;z-index:500;overflow:hidden">
+                <a href="/perfil"
+                   style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;
+                          font-size:0.85rem;color:#1C1C1E;text-decoration:none;font-weight:500;
+                          transition:background 0.12s"
+                   onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background=''">
+                  👤 Perfil del restaurante
+                </a>
+                <a href="/subusuarios"
+                   style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;
+                          font-size:0.85rem;color:#1C1C1E;text-decoration:none;font-weight:500;
+                          transition:background 0.12s"
+                   onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background=''">
+                  👥 Equipo
+                </a>
+                <a href="/metodos-pago"
+                   style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;
+                          font-size:0.85rem;color:#1C1C1E;text-decoration:none;font-weight:500;
+                          transition:background 0.12s"
+                   onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background=''">
+                  💳 Métodos de pago
+                </a>
+                <a href="/guia"
+                   style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;
+                          font-size:0.85rem;color:#1C1C1E;text-decoration:none;font-weight:500;
+                          transition:background 0.12s"
+                   onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background=''">
+                  ❓ Guía de uso
+                </a>
+                <div style="height:1px;background:#F1F5F9;margin:0.2rem 0"></div>
+                <a href="/planes"
+                   style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;
+                          font-size:0.85rem;color:#F97316;text-decoration:none;font-weight:700;
+                          transition:background 0.12s"
+                   onmouseover="this.style.background='#FFF7ED'" onmouseout="this.style.background=''">
+                  ✨ Plan {{ restaurante_session.plan|upper if restaurante_session.plan else 'TRIAL' }}
+                </a>
+                <div style="height:1px;background:#F1F5F9;margin:0.2rem 0"></div>
+                <a href="/logout"
+                   style="display:flex;align-items:center;gap:0.6rem;padding:0.7rem 1rem;
+                          font-size:0.85rem;color:#DC2626;text-decoration:none;font-weight:600;
+                          transition:background 0.12s"
+                   onmouseover="this.style.background='#FEF2F2'" onmouseout="this.style.background=''">
+                  ↪ Cerrar sesión
+                </a>
+              </div>
+            </div>
           {% endif %}
         {% else %}
           <a href="/login" class="nav-link">Iniciar sesión</a>
@@ -87,6 +143,17 @@
   </footer>
 
   <script src="/static/js/main.js"></script>
+  <script>
+    function toggleDropdownConfig(e) {
+      e.stopPropagation();
+      const d = document.getElementById('dropdown-config');
+      d.style.display = d.style.display === 'none' ? 'block' : 'none';
+    }
+    document.addEventListener('click', function() {
+      const d = document.getElementById('dropdown-config');
+      if (d) d.style.display = 'none';
+    });
+  </script>
 
   <!-- Botón flotante de soporte -->
   <button id="btn-soporte" onclick="abrirSoporte()" aria-label="Contactar soporte"
