@@ -316,6 +316,47 @@
     </div>
   </div>
 
+  <!-- EQUIPO: COCINEROS Y MESEROS -->
+  <div class="seccion">
+    <div class="sec-header" onclick="toggle(this)">
+      <div class="sec-icono" style="background:#F0FDF4">👥</div>
+      <div>
+        <div class="sec-titulo">Equipo (cocineros y meseros)</div>
+        <div class="sec-sub">Acceso limitado al panel para tu personal</div>
+      </div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
+        Ve a <strong>Equipo</strong> en el navbar. Desde ahí crea usuarios para tu personal con: nombre, usuario, contraseña y rol (<em>Cocinero</em> o <em>Mesero</em>). Es completamente opcional.
+      </div></div>
+      <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
+        Copia el <strong>enlace de acceso</strong> que aparece en esa página y envíaselo a tu personal por WhatsApp. Ellos entran a ese enlace y solo necesitan escribir su usuario y contraseña.
+      </div></div>
+      <div class="paso"><div class="paso-num">3</div><div class="paso-texto">
+        Tu personal verá el mismo panel de pedidos pero con <strong>acciones limitadas según su rol</strong>. No pueden ver ingresos ni solicitudes de cuenta.
+      </div></div>
+
+      <table class="tabla-guia" style="margin-top:0.75rem">
+        <thead>
+          <tr><th>Acción</th><th style="text-align:center">👨‍🍳 Cocinero</th><th style="text-align:center">🍽️ Mesero</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Confirmar pedido (flujo normal)</td><td style="text-align:center">✅</td><td style="text-align:center">—</td></tr>
+          <tr><td>Confirmar pedido (cobro anticipado)</td><td style="text-align:center">⏳ espera al dueño</td><td style="text-align:center">—</td></tr>
+          <tr><td>Marcar como listo</td><td style="text-align:center">✅</td><td style="text-align:center">—</td></tr>
+          <tr><td>Cobrar / entregar</td><td style="text-align:center">—</td><td style="text-align:center">✅</td></tr>
+          <tr><td>Cancelar pedidos</td><td style="text-align:center">—</td><td style="text-align:center">—</td></tr>
+          <tr><td>Ver ingresos y cuentas</td><td style="text-align:center">—</td><td style="text-align:center">—</td></tr>
+        </tbody>
+      </table>
+
+      <div class="tip" style="margin-top:0.85rem">
+        <strong>💡 Cobro anticipado + cocinero:</strong> en modo mostrador, el cocinero ve <em>"⏳ Esperando cobro en caja"</em> mientras el pedido está pendiente. Solo puede actuar una vez que el dueño haya confirmado que cobró en caja. En flujo normal puede confirmar de inmediato.
+      </div>
+    </div>
+  </div>
+
   <!-- 4. MÉTODOS DE PAGO -->
   <div class="seccion">
     <div class="sec-header" onclick="toggle(this)">
