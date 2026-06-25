@@ -75,9 +75,9 @@
           </button>
         </form>
         <a href="/menu/editar/{{ p.id }}"
-           title="Gestionar tamaños y sabores"
-           class="btn-xs" style="border:1.5px solid {% if p.tamanos_activos or p.sabores_activos %}#F97316{% else %}#E2E8F0{% endif %};background:{% if p.tamanos_activos or p.sabores_activos %}#FFF7ED{% else %}#fff{% endif %};color:{% if p.tamanos_activos or p.sabores_activos %}#C2410C{% else %}#94A3B8{% endif %};border-radius:6px;padding:0.25rem 0.55rem;font-size:0.72rem;font-weight:700;text-decoration:none">
-          📏 {% if p.tamanos_activos or p.sabores_activos %}Tamaños/Sabores ✓{% else %}Tamaños/Sabores{% endif %}
+           title="Gestionar sabores"
+           class="btn-xs" style="border:1.5px solid {% if p.sabores_activos %}#F97316{% else %}#E2E8F0{% endif %};background:{% if p.sabores_activos %}#FFF7ED{% else %}#fff{% endif %};color:{% if p.sabores_activos %}#C2410C{% else %}#94A3B8{% endif %};border-radius:6px;padding:0.25rem 0.55rem;font-size:0.72rem;font-weight:700;text-decoration:none">
+          🍶 {% if p.sabores_activos %}Sabores ✓{% else %}Sabores{% endif %}
         </a>
         <form method="POST" action="/menu/producto/{{ p.id }}/bebidas"
               title="{% if p.bebidas_activas %}Desactivar variantes de bebida{% else %}Activar variantes de bebida{% endif %}">

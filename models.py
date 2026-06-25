@@ -82,14 +82,10 @@ class Producto(db.Model):
     salsas_activas    = db.Column(db.Boolean, default=False)
     adiciones_activas = db.Column(db.Boolean, default=False)
     bebidas_activas   = db.Column(db.Boolean, default=False)
-    tamanos_activos   = db.Column(db.Boolean, default=False)
     sabores_activos   = db.Column(db.Boolean, default=False)
 
-    items   = db.relationship("ItemOrden",     backref="producto",     lazy=True)
-    tamanos = db.relationship("TamañoProducto", backref="producto_obj", lazy=True,
-                              cascade="all, delete-orphan",
-                              order_by="TamañoProducto.orden_display")
-    sabores = db.relationship("SaborProducto",  backref="producto_obj", lazy=True,
+    items   = db.relationship("ItemOrden",    backref="producto",     lazy=True)
+    sabores = db.relationship("SaborProducto", backref="producto_obj", lazy=True,
                               cascade="all, delete-orphan",
                               order_by="SaborProducto.orden_display")
 
@@ -162,15 +158,6 @@ class SeccionBebida(db.Model):
                                      cascade="all, delete-orphan", order_by="VarianteBebida.orden_display")
 
 
-class TamañoBebida(db.Model):
-    __tablename__ = "tamanos_bebida"
-    id             = db.Column(db.Integer, primary_key=True)
-    restaurante_id = db.Column(db.Integer, db.ForeignKey("restaurantes.id"), nullable=False)
-    nombre         = db.Column(db.String(50), nullable=False)   # "Pequeño", "Mediano", "Grande"
-    precio         = db.Column(db.Float, nullable=False)        # precio absoluto de este tamaño
-    activo         = db.Column(db.Boolean, default=True)
-    orden_display  = db.Column(db.Integer, default=0)
-
 
 class VarianteBebida(db.Model):
     __tablename__ = "variantes_bebida"
@@ -178,16 +165,6 @@ class VarianteBebida(db.Model):
     seccion_id = db.Column(db.Integer, db.ForeignKey("secciones_bebida.id"), nullable=False)
     nombre     = db.Column(db.String(80), nullable=False)       # "Coca-Cola", "Naranja", "Fresa"
     activa     = db.Column(db.Boolean, default=True)
-    orden_display = db.Column(db.Integer, default=0)
-
-
-class TamañoProducto(db.Model):
-    __tablename__ = "tamanos_producto"
-    id            = db.Column(db.Integer, primary_key=True)
-    producto_id   = db.Column(db.Integer, db.ForeignKey("productos.id"), nullable=False)
-    nombre        = db.Column(db.String(50), nullable=False)
-    precio        = db.Column(db.Float, nullable=False)
-    activo        = db.Column(db.Boolean, default=True)
     orden_display = db.Column(db.Integer, default=0)
 
 

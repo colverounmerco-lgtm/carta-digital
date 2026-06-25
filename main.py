@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 import cloudinary, cloudinary.uploader
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
-from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, SeccionBebida, VarianteBebida, TamañoBebida, TamañoProducto, SaborProducto, slugify
+from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, SeccionBebida, VarianteBebida, SaborProducto, slugify
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "carta-dev-secret")
@@ -286,7 +286,6 @@ def run_migrations():
         add_col("productos", "salsas_activas",    "BOOLEAN DEFAULT FALSE")
         add_col("productos", "adiciones_activas", "BOOLEAN DEFAULT FALSE")
         add_col("productos", "bebidas_activas",   "BOOLEAN DEFAULT FALSE")
-        add_col("productos", "tamanos_activos",   "BOOLEAN DEFAULT FALSE")
         add_col("productos", "sabores_activos",   "BOOLEAN DEFAULT FALSE")
 
     if "restaurantes" in tables:
@@ -725,7 +724,7 @@ def agregar_producto():
         )
         db.session.add(p_nuevo)
         db.session.commit()
-        flash("Plato creado. Configura tamaños y sabores aquí si lo necesitas.", "success")
+        flash("Plato creado. Configura sabores aquí si lo necesitas.", "success")
         return redirect(url_for("editar_producto", pid=p_nuevo.id))
 
     return render_template("restaurante/agregar_producto.html", restaurante=r)
@@ -909,8 +908,7 @@ def toggle_adiciones_producto(pid):
 def bebidas():
     r = restaurante_session()
     secciones     = SeccionBebida.query.filter_by(restaurante_id=r.id).order_by(SeccionBebida.orden_display).all()
-    tamanos_lista = TamañoBebida.query.filter_by(restaurante_id=r.id).order_by(TamañoBebida.orden_display).all()
-    return render_template("restaurante/bebidas.html", restaurante=r, secciones=secciones, tamanos_lista=tamanos_lista)
+    return render_template("restaurante/bebidas.html", restaurante=r, secciones=secciones)
 
 
 @app.route("/bebidas/seccion/agregar", methods=["POST"])
@@ -980,51 +978,6 @@ def bebida_variante_eliminar(vid):
     return redirect(url_for("bebidas"))
 
 
-@app.route("/bebidas/tamano/agregar", methods=["POST"])
-@login_required
-def bebida_tamano_agregar():
-    r = restaurante_session()
-    nombre = request.form.get("nombre", "").strip()
-    try:
-        precio = round(float(request.form.get("precio", 0) or 0), 2)
-    except ValueError:
-        precio = 0.0
-    if nombre and precio > 0:
-        orden = TamañoBebida.query.filter_by(restaurante_id=r.id).count()
-        db.session.add(TamañoBebida(restaurante_id=r.id, nombre=nombre, precio=precio, orden_display=orden))
-        db.session.commit()
-    return redirect(url_for("bebidas"))
-
-
-@app.route("/bebidas/tamano/<int:tid>/toggle", methods=["POST"])
-@login_required
-def bebida_tamano_toggle(tid):
-    r = restaurante_session()
-    t = TamañoBebida.query.filter_by(id=tid, restaurante_id=r.id).first_or_404()
-    t.activo = not t.activo
-    db.session.commit()
-    return redirect(url_for("bebidas"))
-
-
-@app.route("/bebidas/tamano/<int:tid>/eliminar", methods=["POST"])
-@login_required
-def bebida_tamano_eliminar(tid):
-    r = restaurante_session()
-    t = TamañoBebida.query.filter_by(id=tid, restaurante_id=r.id).first_or_404()
-    db.session.delete(t)
-    db.session.commit()
-    return redirect(url_for("bebidas"))
-
-
-@app.route("/menu/producto/<int:pid>/tamanos", methods=["POST"])
-@login_required
-def toggle_tamanos_producto(pid):
-    r = restaurante_session()
-    p = Producto.query.filter_by(id=pid, restaurante_id=r.id).first_or_404()
-    p.tamanos_activos = not p.tamanos_activos
-    db.session.commit()
-    return redirect(url_for("editar_producto", pid=pid))
-
 
 @app.route("/menu/producto/<int:pid>/sabores/toggle", methods=["POST"])
 @login_required
@@ -1035,47 +988,6 @@ def toggle_sabores_producto(pid):
     db.session.commit()
     return redirect(url_for("editar_producto", pid=pid))
 
-
-@app.route("/menu/producto/<int:pid>/tamano/agregar", methods=["POST"])
-@login_required
-def agregar_tamano_producto(pid):
-    r = restaurante_session()
-    p = Producto.query.filter_by(id=pid, restaurante_id=r.id).first_or_404()
-    nombre = request.form.get("nombre", "").strip()
-    try:
-        precio = float(request.form.get("precio", "0"))
-    except ValueError:
-        precio = 0.0
-    if nombre:
-        orden = TamañoProducto.query.filter_by(producto_id=pid).count()
-        db.session.add(TamañoProducto(producto_id=pid, nombre=nombre, precio=precio, orden_display=orden))
-        db.session.commit()
-    return redirect(url_for("editar_producto", pid=pid))
-
-
-@app.route("/menu/tamano/<int:tid>/toggle", methods=["POST"])
-@login_required
-def toggle_tamano_producto(tid):
-    r = restaurante_session()
-    t = TamañoProducto.query.join(Producto).filter(
-        TamañoProducto.id == tid, Producto.restaurante_id == r.id
-    ).first_or_404()
-    t.activo = not t.activo
-    db.session.commit()
-    return redirect(url_for("editar_producto", pid=t.producto_id))
-
-
-@app.route("/menu/tamano/<int:tid>/eliminar", methods=["POST"])
-@login_required
-def eliminar_tamano_producto(tid):
-    r = restaurante_session()
-    t = TamañoProducto.query.join(Producto).filter(
-        TamañoProducto.id == tid, Producto.restaurante_id == r.id
-    ).first_or_404()
-    pid = t.producto_id
-    db.session.delete(t)
-    db.session.commit()
-    return redirect(url_for("editar_producto", pid=pid))
 
 
 @app.route("/menu/producto/<int:pid>/sabor/agregar", methods=["POST"])
@@ -1263,22 +1175,6 @@ def carta_agregar(slug, mesa_token):
             if sabor_valido:
                 termino_sabor = sabor_raw
 
-    # Tamaño per-producto: valor compuesto "id:nombre:precio"
-    tamano_raw    = request.form.get("tamano", "").strip()
-    tamano_nombre = ""
-    tamano_precio = None
-    if p.tamanos_activos and tamano_raw:
-        partes_t = tamano_raw.split(":")
-        if len(partes_t) == 3:
-            try:
-                tid_val = int(partes_t[0])
-                t_obj   = TamañoProducto.query.filter_by(id=tid_val, producto_id=p.id, activo=True).first()
-                if t_obj:
-                    tamano_nombre = t_obj.nombre
-                    tamano_precio = t_obj.precio
-            except (ValueError, AttributeError):
-                pass
-
     if p.terminos_asado and termino_asado not in TERMINOS_ASADO:
         return redirect(url_for("carta", slug=slug, mesa_token=mesa_token))
 
@@ -1300,11 +1196,10 @@ def carta_agregar(slug, mesa_token):
                 extra_precio += a.precio
             adicion_key = ",".join(sorted(str(a.id) for a in adic_objs))
 
-    partes  = [t for t in [tamano_nombre, termino_asado, termino_salsa, termino_bebida, termino_sabor] if t] + adicion_partes
+    partes  = [t for t in [termino_asado, termino_salsa, termino_bebida, termino_sabor] if t] + adicion_partes
     termino = " · ".join(partes)
 
-    base_precio  = tamano_precio if tamano_precio is not None else p.precio
-    precio_final = round(base_precio + extra_precio, 2)
+    precio_final = round(p.precio + extra_precio, 2)
 
     cart_key  = f"cart_{mesa_token}"
     carrito   = session.get(cart_key, {})
