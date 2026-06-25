@@ -245,7 +245,7 @@ def ctx():
 # Endpoints accesibles por subusuarios (los demás requieren ser dueño)
 _ENDPOINTS_STAFF = {
     "dashboard", "confirmar_orden", "orden_lista", "pagar_orden",
-    "cancelar_orden", "api_ordenes_activas", "logout", "staff_logout",
+    "cancelar_orden", "cerrar_cuenta_mesa", "api_ordenes_activas", "logout", "staff_logout",
     "static", "recibo_orden", "staff_login", "staff_login_slug",
 }
 
@@ -780,6 +780,17 @@ def dashboard():
         restaurante_id=r.id, activo=True
     ).order_by(MetodoPago.orden_display).all()
 
+    # Para bares: agrupar órdenes activas por mesa para mostrar cuenta acumulada
+    cuentas_abiertas = []
+    if r.categoria == 'bar':
+        grupos = {}
+        for o in ordenes_activas:
+            if o.mesa_id not in grupos:
+                grupos[o.mesa_id] = {"mesa": o.mesa, "ordenes": [], "total": 0.0}
+            grupos[o.mesa_id]["ordenes"].append(o)
+            grupos[o.mesa_id]["total"] += o.total
+        cuentas_abiertas = list(grupos.values())
+
     return render_template("restaurante/dashboard.html",
         restaurante=r,
         ordenes_activas=ordenes_activas,
@@ -790,6 +801,7 @@ def dashboard():
         dias_plan=dias_plan(r),
         es_subusuario=es_sub,
         rol_actual=session.get("subusuario_rol"),
+        cuentas_abiertas=cuentas_abiertas,
     )
 
 
@@ -839,9 +851,29 @@ def pagar_orden(oid):
         o.metodo_pago = request.form.get("metodo", "efectivo")
         o.fecha_pago  = datetime.utcnow()
         mesa = Mesa.query.get(o.mesa_id)
-        if mesa:
+        if mesa and r.categoria != 'bar':
             mesa.abierta = False
         db.session.commit()
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/dashboard/mesa/<int:mid>/cerrar-cuenta", methods=["POST"])
+@login_required
+def cerrar_cuenta_mesa(mid):
+    r    = restaurante_session()
+    mesa = Mesa.query.filter_by(id=mid, restaurante_id=r.id).first_or_404()
+    metodo = request.form.get("metodo", "efectivo")
+    ordenes = Orden.query.filter(
+        Orden.mesa_id == mid,
+        Orden.estado.in_(["pendiente", "confirmada", "lista"]),
+    ).all()
+    for o in ordenes:
+        o.estado      = "pagada"
+        o.metodo_pago = metodo
+        o.fecha_pago  = datetime.utcnow()
+    mesa.abierta = False
+    db.session.commit()
+    flash(f"Cuenta de {mesa.nombre} cerrada.", "success")
     return redirect(url_for("dashboard"))
 
 
@@ -1328,14 +1360,19 @@ def carta(slug, mesa_token):
         if cliente_ip != r.ip_red:
             return render_template("carta/red_requerida.html", restaurante=r)
 
-    # Reabrir mesa al escanear QR si no hay orden activa en curso
-    orden_activa = Orden.query.filter(
-        Orden.mesa_id == mesa.id,
-        Orden.estado.in_(["pendiente", "confirmada", "lista"]),
-    ).first()
-    if not mesa.abierta and not orden_activa:
-        mesa.abierta = True
-        db.session.commit()
+    # En bares la mesa siempre está abierta para nuevos pedidos hasta que el admin cierre la cuenta
+    if r.categoria == 'bar':
+        if not mesa.abierta:
+            mesa.abierta = True
+            db.session.commit()
+    else:
+        orden_activa = Orden.query.filter(
+            Orden.mesa_id == mesa.id,
+            Orden.estado.in_(["pendiente", "confirmada", "lista"]),
+        ).first()
+        if not mesa.abierta and not orden_activa:
+            mesa.abierta = True
+            db.session.commit()
 
     productos = Producto.query.filter_by(
         restaurante_id=r.id, disponible=True

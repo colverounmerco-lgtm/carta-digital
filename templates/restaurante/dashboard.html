@@ -73,6 +73,46 @@
     {% endif %}
   </div>
 
+  {% if restaurante.categoria == 'bar' and cuentas_abiertas %}
+  <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:0.75rem">
+    🍺 Cuentas abiertas por mesa
+  </h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:2rem">
+    {% for grupo in cuentas_abiertas %}
+    <div style="background:#FFFBF5;border:2px solid #FED7AA;border-radius:16px;padding:1.25rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
+        <span style="font-weight:800;font-size:1rem;color:#1C1C1E">{{ grupo.mesa.nombre }}</span>
+        <span style="background:#FFF7ED;color:#C2410C;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:999px">
+          {{ grupo.ordenes|length }} pedido{{ 's' if grupo.ordenes|length != 1 else '' }}
+        </span>
+      </div>
+      <div style="font-size:1.5rem;font-weight:900;color:#F97316;margin-bottom:1rem">
+        ${{ "%.2f"|format(grupo.total) }}
+        <span style="font-size:0.8rem;font-weight:500;color:#9CA3AF">total acumulado</span>
+      </div>
+      {% if not es_subusuario or rol_actual != 'cocinero' %}
+      <form method="POST" action="/dashboard/mesa/{{ grupo.mesa.id }}/cerrar-cuenta"
+            onsubmit="return confirm('¿Cerrar cuenta de {{ grupo.mesa.nombre }}? Se cobrarán todos los pedidos activos.')">
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <select name="metodo" style="flex:1;padding:0.4rem 0.6rem;border:1.5px solid #FED7AA;border-radius:8px;font-size:0.83rem;font-family:inherit;background:#fff">
+            {% for mp in metodos_pago %}
+            <option value="{{ mp.nombre }}">
+              {% if mp.icono and not (mp.icono.startswith('/') or mp.icono.startswith('http')) %}{{ mp.icono }} {% endif %}{{ mp.nombre }}
+            </option>
+            {% endfor %}
+          </select>
+          <button type="submit"
+            style="padding:0.45rem 0.9rem;background:#F97316;color:#fff;border:none;border-radius:8px;font-size:0.82rem;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit">
+            💰 Cerrar cuenta
+          </button>
+        </div>
+      </form>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   {% if ordenes_activas %}
   <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem">
     Pedidos activos
