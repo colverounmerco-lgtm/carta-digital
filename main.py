@@ -1317,7 +1317,8 @@ def estado_orden(token):
         restaurante_id=orden.restaurante_id, activo=True
     ).order_by(MetodoPago.orden_display).all()
     return render_template("carta/orden.html", orden=orden,
-                           restaurante=orden.restaurante, metodos_pago=metodos_pago)
+                           restaurante=orden.restaurante, metodos_pago=metodos_pago,
+                           modo_cobro=orden.restaurante.modo_cobro)
 
 
 @app.route("/orden/<token>/cuenta", methods=["POST"])
