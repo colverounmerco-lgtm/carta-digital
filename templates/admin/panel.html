@@ -392,6 +392,10 @@
     <p style="font-size:0.82rem;color:#64748B;margin-bottom:1.25rem">Contraseña del super administrador</p>
     <form method="POST" action="/admin/cambiar-password">
       <div class="form-group">
+        <label>Contraseña actual</label>
+        <input type="password" name="password_actual" placeholder="Tu contraseña actual" required autocomplete="current-password">
+      </div>
+      <div class="form-group">
         <label>Nueva contraseña</label>
         <input type="password" name="password" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
       </div>

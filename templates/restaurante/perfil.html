@@ -58,8 +58,12 @@
       </div>
 
       <div class="campo" style="margin-top:1rem">
-        <label>Nueva contraseña <small style="font-weight:400;color:#94A3B8">(dejar vacío para no cambiar)</small></label>
-        <input type="password" name="password" placeholder="Mínimo 6 caracteres">
+        <label>Contraseña actual <small style="font-weight:400;color:#94A3B8">(solo si quieres cambiarla)</small></label>
+        <input type="password" name="password_actual" placeholder="Tu contraseña actual" autocomplete="current-password">
+      </div>
+      <div class="campo">
+        <label>Nueva contraseña</label>
+        <input type="password" name="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
       </div>
 
       <div style="background:#F8FAFC;border-radius:8px;padding:0.85rem;margin-top:1rem;font-size:0.83rem;color:#64748B">

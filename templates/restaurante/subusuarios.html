@@ -175,11 +175,15 @@
     <p id="pwd-modal-nombre" style="font-size:0.83rem;color:#6B7280;margin-bottom:1.25rem"></p>
     <form method="POST" id="form-pwd-sub">
       <div class="campo">
-        <label>Nueva contraseña</label>
+        <label>Tu contraseña actual</label>
+        <input type="password" name="password_actual" placeholder="Tu contraseña de dueño" required autocomplete="current-password">
+      </div>
+      <div class="campo">
+        <label>Nueva contraseña para este usuario</label>
         <input type="password" name="password" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
       </div>
       <div class="campo">
-        <label>Repetir contraseña</label>
+        <label>Repetir nueva contraseña</label>
         <input type="password" name="password2" placeholder="••••••••" required minlength="6" autocomplete="new-password">
       </div>
       <div style="display:flex;gap:0.75rem;margin-top:1rem">

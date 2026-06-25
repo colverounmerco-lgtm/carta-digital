@@ -595,11 +595,14 @@ def eliminar_subusuario(sid):
 @app.route("/subusuarios/<int:sid>/cambiar-password", methods=["POST"])
 @login_required
 def subusuario_cambiar_password(sid):
-    r    = restaurante_session()
-    su   = SubUsuario.query.filter_by(id=sid, restaurante_id=r.id).first_or_404()
-    pwd  = request.form.get("password", "")
-    pwd2 = request.form.get("password2", "")
-    if pwd != pwd2:
+    r          = restaurante_session()
+    su         = SubUsuario.query.filter_by(id=sid, restaurante_id=r.id).first_or_404()
+    pwd_actual = request.form.get("password_actual", "")
+    pwd        = request.form.get("password", "")
+    pwd2       = request.form.get("password2", "")
+    if not r.check_password(pwd_actual):
+        flash("Tu contraseña actual es incorrecta.", "error")
+    elif pwd != pwd2:
         flash("Las contraseñas no coinciden.", "error")
     elif len(pwd) < 6:
         flash("La contraseña debe tener al menos 6 caracteres.", "error")
@@ -1753,6 +1756,10 @@ def perfil():
 
         pwd = request.form.get("password", "")
         if pwd:
+            pwd_actual = request.form.get("password_actual", "")
+            if not r.check_password(pwd_actual):
+                flash("La contraseña actual es incorrecta.", "error")
+                return redirect(url_for("perfil"))
             if len(pwd) < 6:
                 flash("La contraseña debe tener al menos 6 caracteres.", "error")
                 return redirect(url_for("perfil"))
@@ -1991,14 +1998,19 @@ def admin_login():
 @app.route("/admin/cambiar-password", methods=["POST"])
 @admin_required
 def admin_cambiar_password():
-    pwd  = request.form.get("password", "")
-    pwd2 = request.form.get("password2", "")
-    if pwd != pwd2:
+    pwd_actual = request.form.get("password_actual", "")
+    pwd        = request.form.get("password", "")
+    pwd2       = request.form.get("password2", "")
+    # Verificar contraseña actual
+    cfg = ConfigGlobal.query.filter_by(clave="admin_password_hash").first()
+    ok  = check_password_hash(cfg.valor, pwd_actual) if cfg else (pwd_actual == ADMIN_PASS)
+    if not ok:
+        flash("La contraseña actual es incorrecta.", "error")
+    elif pwd != pwd2:
         flash("Las contraseñas no coinciden.", "error")
     elif len(pwd) < 6:
         flash("La contraseña debe tener al menos 6 caracteres.", "error")
     else:
-        cfg = ConfigGlobal.query.filter_by(clave="admin_password_hash").first()
         if not cfg:
             cfg = ConfigGlobal(clave="admin_password_hash", valor="")
             db.session.add(cfg)
