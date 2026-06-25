@@ -27,12 +27,16 @@
 
   <!-- Formulario para agregar -->
   <div class="card" style="margin-bottom:1.5rem">
-    <h2 style="font-size:1rem;font-weight:700;color:#1C1C1E;margin-bottom:1rem">+ Agregar usuario</h2>
-    <form method="POST" action="/subusuarios/agregar">
+    <h2 style="font-size:1rem;font-weight:700;color:#1C1C1E;margin-bottom:0.25rem">+ Agregar usuario del equipo</h2>
+    <p style="font-size:0.8rem;color:#9CA3AF;margin-bottom:1rem">Crea credenciales nuevas para este usuario — no afecta tu cuenta.</p>
+    <!-- autocomplete=off en el form y campos con name no-estándar evitan que el navegador autocomplete con tus credenciales -->
+    <form method="POST" action="/subusuarios/agregar" autocomplete="off">
+      <input type="text" name="fake_user" style="display:none" tabindex="-1" aria-hidden="true">
+      <input type="password" name="fake_pass" style="display:none" tabindex="-1" aria-hidden="true">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
         <div class="campo" style="margin:0">
           <label>Nombre completo</label>
-          <input type="text" name="nombre" placeholder="Ej: Carlos López" required>
+          <input type="text" name="nombre" placeholder="Ej: Carlos López" required autocomplete="off">
         </div>
         <div class="campo" style="margin:0">
           <label>Usuario (para iniciar sesión)</label>
@@ -41,8 +45,8 @@
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem">
         <div class="campo" style="margin:0">
-          <label>Contraseña</label>
-          <input type="password" name="password" placeholder="Mínimo 4 caracteres" required>
+          <label>Contraseña del nuevo usuario</label>
+          <input type="password" name="password" placeholder="Ej: cocina123" required autocomplete="new-password">
         </div>
         <div class="campo" style="margin:0">
           <label>Rol</label>
