@@ -297,6 +297,7 @@ def run_migrations():
         add_col("restaurantes", "ip_red",           "VARCHAR(50)")
         add_col("restaurantes", "restringir_red",   "BOOLEAN DEFAULT TRUE")
         add_col("restaurantes", "dia_apertura",     "DATE")
+        add_col("restaurantes", "modo_cobro",       "BOOLEAN DEFAULT FALSE")
 
     # Crear métodos de pago por defecto para restaurantes existentes
     for r in Restaurante.query.all():
@@ -1146,6 +1147,8 @@ def carta(slug, mesa_token):
         salsas_rest=Salsa.query.filter_by(restaurante_id=r.id, activa=True).order_by(Salsa.orden_display).all(),
         adiciones_rest=Adicion.query.filter_by(restaurante_id=r.id, activa=True).order_by(Adicion.orden_display).all(),
         secciones_bebida=SeccionBebida.query.filter_by(restaurante_id=r.id, activa=True).order_by(SeccionBebida.orden_display).all(),
+        modo_cobro=r.modo_cobro,
+        metodos_pago_carta=MetodoPago.query.filter_by(restaurante_id=r.id, activo=True).order_by(MetodoPago.orden_display).all() if r.modo_cobro else [],
     )
 
 
@@ -1287,6 +1290,11 @@ def hacer_pedido(slug, mesa_token):
         nombre_cliente=nombre_cliente,
         total=round(total, 2), notas=notas,
     )
+    if r.modo_cobro:
+        metodo = request.form.get("metodo_preferido", "").strip()
+        orden.solicita_cuenta  = True
+        orden.metodo_preferido = metodo if metodo else None
+
     db.session.add(orden)
     db.session.flush()
     for item in items:
@@ -1560,6 +1568,15 @@ def actualizar_ip_red():
     r.ip_red = get_client_ip()
     db.session.commit()
     flash(f"IP de red actualizada a {r.ip_red}. Los clientes en este WiFi podrán ver el menú.", "success")
+    return redirect(url_for("perfil"))
+
+
+@app.route("/perfil/modo-cobro", methods=["POST"])
+@login_required
+def toggle_modo_cobro():
+    r = restaurante_session()
+    r.modo_cobro = not r.modo_cobro
+    db.session.commit()
     return redirect(url_for("perfil"))
 
 

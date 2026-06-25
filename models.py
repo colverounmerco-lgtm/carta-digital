@@ -38,6 +38,7 @@ class Restaurante(db.Model):
     ip_red           = db.Column(db.String(50))   # IP pública del restaurante
     restringir_red   = db.Column(db.Boolean, default=True)  # False = menú accesible desde cualquier red
     dia_apertura     = db.Column(db.Date)         # Último día en que se auto-abrieron las mesas
+    modo_cobro       = db.Column(db.Boolean, default=False)  # True = cobro anticipado (mostrador)
 
     mesas    = db.relationship("Mesa",     backref="restaurante", lazy=True, cascade="all, delete-orphan")
     productos = db.relationship("Producto", backref="restaurante", lazy=True, cascade="all, delete-orphan")

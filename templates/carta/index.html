@@ -298,8 +298,30 @@
       <input type="text" name="nombre_cliente" placeholder="Ej: Juan">
       <label>Notas para la cocina (opcional)</label>
       <textarea name="notas" rows="2" placeholder="Ej: Sin cebolla, alergia a los mariscos..."></textarea>
-      <button type="submit" class="btn-pedir">
-        🍽️ Enviar pedido — ${{ "%.2f"|format(total_carrito) }}
+
+      {% if modo_cobro and metodos_pago_carta %}
+      <div style="margin-top:0.9rem">
+        <label style="font-size:0.8rem;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:0.5rem">
+          Método de pago
+        </label>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          {% for mp in metodos_pago_carta %}
+          <label style="cursor:pointer">
+            <input type="radio" name="metodo_preferido" value="{{ mp.nombre }}"
+                   {% if loop.first %}checked{% endif %}
+                   style="display:none" class="radio-metodo-pago">
+            <span class="termino-chip metodo-chip"
+                  style="display:inline-flex;align-items:center;gap:0.3rem;padding:0.32rem 0.75rem;border-radius:20px;font-size:0.82rem;font-weight:700;border:1.5px solid #E5E7EB;background:#F9FAFB;color:#6B7280;cursor:pointer;transition:all 0.15s">
+              {% if mp.icono and not (mp.icono.startswith('/') or mp.icono.startswith('http')) %}{{ mp.icono }} {% endif %}{{ mp.nombre }}
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <button type="submit" class="btn-pedir" style="margin-top:1rem">
+        {% if modo_cobro %}💳 Pagar y confirmar — ${{ "%.2f"|format(total_carrito) }}{% else %}🍽️ Enviar pedido — ${{ "%.2f"|format(total_carrito) }}{% endif %}
       </button>
     </form>
 
@@ -359,6 +381,7 @@
   activarChips('input[type="radio"][class^="radio-salsa"]');
   activarChips('input[type="radio"][class^="radio-bebida"]');
   activarChips('input[type="radio"][class^="radio-sabor"]');
+  activarChips('input[type="radio"][class^="radio-metodo"]');
 
 </script>
 </body>

@@ -90,13 +90,23 @@
           <span class="badge badge-verde">✅ Listo para entregar</span>
         {% endif %}
         {% if orden.solicita_cuenta %}
-          <span class="cuenta-badge urgente">
-            💳 Solicita la cuenta
-            {% if orden.metodo_preferido %}
-              · {% for mp in metodos_pago %}{% if mp.nombre == orden.metodo_preferido %}{% if mp.icono and (mp.icono.startswith('/') or mp.icono.startswith('http')) %}<img src="{{ mp.icono }}" style="width:14px;height:14px;object-fit:contain;vertical-align:middle">{% else %}{{ mp.icono }}{% endif %}{% endif %}{% endfor %}
-              {{ orden.metodo_preferido }}
-            {% endif %}
-          </span>
+          {% if restaurante.modo_cobro %}
+            <span class="cuenta-badge" style="background:#D1FAE5;color:#065F46;border-color:#6EE7B7">
+              ✅ Ya cobrado
+              {% if orden.metodo_preferido %}
+                · {% for mp in metodos_pago %}{% if mp.nombre == orden.metodo_preferido %}{% if mp.icono and (mp.icono.startswith('/') or mp.icono.startswith('http')) %}<img src="{{ mp.icono }}" style="width:14px;height:14px;object-fit:contain;vertical-align:middle">{% else %}{{ mp.icono }}{% endif %}{% endif %}{% endfor %}
+                {{ orden.metodo_preferido }}
+              {% endif %}
+            </span>
+          {% else %}
+            <span class="cuenta-badge urgente">
+              💳 Solicita la cuenta
+              {% if orden.metodo_preferido %}
+                · {% for mp in metodos_pago %}{% if mp.nombre == orden.metodo_preferido %}{% if mp.icono and (mp.icono.startswith('/') or mp.icono.startswith('http')) %}<img src="{{ mp.icono }}" style="width:14px;height:14px;object-fit:contain;vertical-align:middle">{% else %}{{ mp.icono }}{% endif %}{% endif %}{% endfor %}
+                {{ orden.metodo_preferido }}
+              {% endif %}
+            </span>
+          {% endif %}
         {% endif %}
       </div>
       <div style="display:flex;align-items:center;gap:0.75rem">
@@ -128,7 +138,9 @@
     <div class="orden-footer">
       {% if orden.estado == 'pendiente' %}
         <form method="POST" action="/dashboard/orden/{{ orden.id }}/confirmar">
-          <button class="btn-primario btn-sm">✓ Confirmar pedido</button>
+          <button class="btn-primario btn-sm">
+            {% if restaurante.modo_cobro %}🍳 Empezar a preparar{% else %}✓ Confirmar pedido{% endif %}
+          </button>
         </form>
         <form method="POST" action="/dashboard/orden/{{ orden.id }}/cancelar"
               onsubmit="return confirm('¿Cancelar este pedido?')">
@@ -141,17 +153,27 @@
         </form>
 
       {% elif orden.estado == 'lista' %}
-        <form method="POST" action="/dashboard/orden/{{ orden.id }}/pagar"
-              style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
-          <select name="metodo" style="padding:0.4rem 0.7rem;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.85rem">
-            {% for mp in metodos_pago %}
-            <option value="{{ mp.nombre }}" {% if orden.metodo_preferido == mp.nombre %}selected{% endif %}>
-              {% if mp.icono and not (mp.icono.startswith('/') or mp.icono.startswith('http')) %}{{ mp.icono }} {% endif %}{{ mp.nombre }}
-            </option>
-            {% endfor %}
-          </select>
-          <button class="btn-primario btn-sm">✓ Cobrado</button>
-        </form>
+        {% if restaurante.modo_cobro %}
+          <form method="POST" action="/dashboard/orden/{{ orden.id }}/pagar"
+                style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+            <input type="hidden" name="metodo" value="{{ orden.metodo_preferido or (metodos_pago[0].nombre if metodos_pago else '') }}">
+            <button class="btn-primario btn-sm">
+              🛵 Entregar a {{ orden.mesa.nombre }}
+            </button>
+          </form>
+        {% else %}
+          <form method="POST" action="/dashboard/orden/{{ orden.id }}/pagar"
+                style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+            <select name="metodo" style="padding:0.4rem 0.7rem;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.85rem">
+              {% for mp in metodos_pago %}
+              <option value="{{ mp.nombre }}" {% if orden.metodo_preferido == mp.nombre %}selected{% endif %}>
+                {% if mp.icono and not (mp.icono.startswith('/') or mp.icono.startswith('http')) %}{{ mp.icono }} {% endif %}{{ mp.nombre }}
+              </option>
+              {% endfor %}
+            </select>
+            <button class="btn-primario btn-sm">✓ Cobrado</button>
+          </form>
+        {% endif %}
         <form method="POST" action="/mesas/{{ orden.mesa_id }}/toggle-sesion" style="margin:0">
           <button class="btn-sm" type="submit"
                   style="background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA;border-radius:8px;padding:0.4rem 0.75rem;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.8rem"
