@@ -774,6 +774,9 @@ def confirmar_orden(oid):
     if rol == "mesero":
         return redirect(url_for("dashboard"))
     r = restaurante_session()
+    # En cobro anticipado solo el dueño confirma (= cobró en caja)
+    if rol == "cocinero" and r.modo_cobro:
+        return redirect(url_for("dashboard"))
     o = Orden.query.filter_by(id=oid, restaurante_id=r.id).first_or_404()
     if o.estado == "pendiente":
         o.estado = "confirmada"

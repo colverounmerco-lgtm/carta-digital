@@ -139,7 +139,10 @@
 
     <div class="orden-footer">
       {% if orden.estado == 'pendiente' %}
-        {% if rol_actual != 'mesero' %}
+        {% if rol_actual == 'cocinero' and restaurante.modo_cobro %}
+          {# En cobro anticipado el cocinero espera que el dueño confirme el pago #}
+          <span style="font-size:0.82rem;color:#9CA3AF;font-style:italic">⏳ Esperando cobro en caja</span>
+        {% elif rol_actual != 'mesero' %}
         <form method="POST" action="/dashboard/orden/{{ orden.id }}/confirmar">
           <button class="btn-primario btn-sm">
             {% if restaurante.modo_cobro %}🍳 Empezar a preparar{% else %}✓ Confirmar pedido{% endif %}
