@@ -65,7 +65,7 @@
         <p style="font-size:0.83rem;color:#6B7280;margin-top:0.2rem">
           {% if modo_cobro %}Lo llevamos a tu mesa en un momento{% else %}El mesero va en camino con tu pedido{% endif %}
         </p>
-        {% if restaurante.categoria == 'bar' %}
+        {% if restaurante.categoria == 'bar' and orden.mesa.abierta %}
         <a href="/carta/{{ restaurante.slug }}/{{ orden.mesa.token }}"
            style="display:inline-block;margin-top:0.75rem;padding:0.5rem 1.25rem;
                   background:#FFF7ED;color:#C2410C;border-radius:10px;font-weight:700;
@@ -74,7 +74,7 @@
         </a>
         {% endif %}
       {% elif orden.estado == 'pagada' %}
-        {% if restaurante.categoria == 'bar' %}
+        {% if restaurante.categoria == 'bar' and orden.mesa.abierta %}
         <div class="pagado-msg">
           <div class="check">🍺</div>
           <h3>¡Pedido entregado!</h3>
@@ -91,7 +91,7 @@
         <div class="pagado-msg">
           <div class="check">✅</div>
           <h3>¡Gracias por tu visita!</h3>
-          <p>Tu pedido fue pagado. ¡Hasta pronto!</p>
+          <p>{% if restaurante.categoria == 'bar' %}Tu cuenta fue cerrada. ¡Hasta pronto!{% else %}Tu pedido fue pagado. ¡Hasta pronto!{% endif %}</p>
         </div>
         {% endif %}
       {% elif orden.estado == 'cancelada' %}
@@ -222,14 +222,34 @@
 
 <script src="/static/js/main.js"></script>
 <script>
-  // Siempre guarda la URL del pedido — el bloqueo solo se libera escaneando el QR
   sessionStorage.setItem('orden_url', window.location.href);
 
-  // Bloquea completamente el botón "atrás" del navegador
+  // Bloquea el botón "atrás" del navegador
   history.pushState(null, null, location.href);
-  window.addEventListener('popstate', function () {
-    history.go(1);
-  });
+  window.addEventListener('popstate', function () { history.go(1); });
+
+  // Polling: detecta cambios de estado o cierre de cuenta y recarga la página
+  const estadoActual   = "{{ orden.estado }}";
+  const mesaAbierta    = {{ 'true' if orden.mesa.abierta else 'false' }};
+  const esBar          = {{ 'true' if restaurante.categoria == 'bar' else 'false' }};
+  const estadoFinal    = estadoActual === 'pagada' || estadoActual === 'cancelada';
+  const cuentaCerrada  = estadoActual === 'pagada' && !mesaAbierta;
+
+  // Si ya está en estado final y la cuenta está cerrada, no necesita polling
+  if (!estadoFinal || (esBar && mesaAbierta)) {
+    const intervalo = setInterval(async () => {
+      try {
+        const res  = await fetch('/api/orden/{{ orden.token }}/estado');
+        const data = await res.json();
+        const cambioEstado = data.estado !== estadoActual;
+        const cuentaCerro  = esBar && !data.mesa_abierta && data.estado === 'pagada';
+        if (cambioEstado || cuentaCerro) {
+          clearInterval(intervalo);
+          location.reload();
+        }
+      } catch(e) {}
+    }, 8000);
+  }
 </script>
 </body>
 </html>

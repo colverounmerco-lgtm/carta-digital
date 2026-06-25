@@ -1591,6 +1591,15 @@ def estado_orden(token):
                            modo_cobro=orden.restaurante.modo_cobro)
 
 
+@app.route("/api/orden/<token>/estado")
+def api_estado_orden(token):
+    orden = Orden.query.filter_by(token=token).first_or_404()
+    return jsonify({
+        "estado":       orden.estado,
+        "mesa_abierta": orden.mesa.abierta if orden.mesa else False,
+    })
+
+
 @app.route("/orden/<token>/cuenta", methods=["POST"])
 def solicitar_cuenta(token):
     orden = Orden.query.filter_by(token=token).first_or_404()
