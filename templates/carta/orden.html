@@ -65,12 +65,35 @@
         <p style="font-size:0.83rem;color:#6B7280;margin-top:0.2rem">
           {% if modo_cobro %}Lo llevamos a tu mesa en un momento{% else %}El mesero va en camino con tu pedido{% endif %}
         </p>
+        {% if restaurante.categoria == 'bar' %}
+        <a href="/carta/{{ restaurante.slug }}/{{ orden.mesa.token }}"
+           style="display:inline-block;margin-top:0.75rem;padding:0.5rem 1.25rem;
+                  background:#FFF7ED;color:#C2410C;border-radius:10px;font-weight:700;
+                  font-size:0.82rem;text-decoration:none;border:1.5px solid #FED7AA">
+          + Pedir otra ronda
+        </a>
+        {% endif %}
       {% elif orden.estado == 'pagada' %}
+        {% if restaurante.categoria == 'bar' %}
+        <div class="pagado-msg">
+          <div class="check">🍺</div>
+          <h3>¡Pedido entregado!</h3>
+          <p>¿Quieres pedir algo más?</p>
+          <a href="/carta/{{ restaurante.slug }}/{{ orden.mesa.token }}"
+             style="display:inline-block;margin-top:1rem;padding:0.75rem 2rem;
+                    background:#F97316;color:#fff;border-radius:12px;font-weight:800;
+                    font-size:0.95rem;text-decoration:none;
+                    box-shadow:0 4px 14px rgba(249,115,22,0.4)">
+            + Pedir de nuevo
+          </a>
+        </div>
+        {% else %}
         <div class="pagado-msg">
           <div class="check">✅</div>
           <h3>¡Gracias por tu visita!</h3>
           <p>Tu pedido fue pagado. ¡Hasta pronto!</p>
         </div>
+        {% endif %}
       {% elif orden.estado == 'cancelada' %}
         <span style="font-size:1.8rem">❌</span>
         <p style="font-weight:700;margin-top:0.4rem;color:#DC2626">Pedido cancelado</p>
