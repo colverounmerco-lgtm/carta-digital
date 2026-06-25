@@ -780,15 +780,26 @@ def dashboard():
         restaurante_id=r.id, activo=True
     ).order_by(MetodoPago.orden_display).all()
 
-    # Para bares: agrupar órdenes activas por mesa para mostrar cuenta acumulada
+    # Para bares: agrupar TODOS los pedidos de hoy por mesa (activos + entregados)
+    # Solo mostramos mesas que tengan al menos un pedido activo (cuenta abierta)
     cuentas_abiertas = []
     if r.categoria == 'bar':
+        mesas_con_activos = {o.mesa_id for o in ordenes_activas}
         grupos = {}
-        for o in ordenes_activas:
-            if o.mesa_id not in grupos:
-                grupos[o.mesa_id] = {"mesa": o.mesa, "ordenes": [], "total": 0.0}
-            grupos[o.mesa_id]["ordenes"].append(o)
-            grupos[o.mesa_id]["total"] += o.total
+        for mid in mesas_con_activos:
+            todas = Orden.query.filter(
+                Orden.mesa_id == mid,
+                Orden.restaurante_id == r.id,
+                Orden.estado != 'cancelada',
+                Orden.fecha >= inicio,
+                Orden.fecha <= fin,
+            ).order_by(Orden.fecha).all()
+            mesa = Mesa.query.get(mid)
+            grupos[mid] = {
+                "mesa":   mesa,
+                "ordenes": todas,
+                "total":  sum(o.total for o in todas),
+            }
         cuentas_abiertas = list(grupos.values())
 
     return render_template("restaurante/dashboard.html",

@@ -74,27 +74,74 @@
   </div>
 
   {% if restaurante.categoria == 'bar' and cuentas_abiertas %}
-  <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:0.75rem">
-    🍺 Cuentas abiertas por mesa
-  </h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:2rem">
+  <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:0.75rem">🍺 Cuentas abiertas</h2>
+  <div style="display:flex;flex-direction:column;gap:1rem;margin-bottom:2rem">
     {% for grupo in cuentas_abiertas %}
-    <div style="background:#FFFBF5;border:2px solid #FED7AA;border-radius:16px;padding:1.25rem">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem">
-        <span style="font-weight:800;font-size:1rem;color:#1C1C1E">{{ grupo.mesa.nombre }}</span>
-        <span style="background:#FFF7ED;color:#C2410C;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:999px">
-          {{ grupo.ordenes|length }} pedido{{ 's' if grupo.ordenes|length != 1 else '' }}
-        </span>
+    <div style="background:#fff;border:2px solid #FED7AA;border-radius:16px;overflow:hidden">
+
+      <!-- Cabecera de la mesa -->
+      <div style="background:#FFF7ED;padding:0.85rem 1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem">
+        <div style="display:flex;align-items:center;gap:0.75rem">
+          <span style="font-weight:800;font-size:1rem;color:#1C1C1E">{{ grupo.mesa.nombre }}</span>
+          <span style="background:#FED7AA;color:#92400E;font-size:0.7rem;font-weight:700;padding:0.15rem 0.55rem;border-radius:999px">
+            {{ grupo.ordenes|length }} pedido{{ 's' if grupo.ordenes|length != 1 else '' }}
+          </span>
+        </div>
+        <div style="font-size:1.2rem;font-weight:900;color:#F97316">
+          ${{ "%.2f"|format(grupo.total) }}
+          <span style="font-size:0.75rem;font-weight:500;color:#9CA3AF">acumulado</span>
+        </div>
       </div>
-      <div style="font-size:1.5rem;font-weight:900;color:#F97316;margin-bottom:1rem">
-        ${{ "%.2f"|format(grupo.total) }}
-        <span style="font-size:0.8rem;font-weight:500;color:#9CA3AF">total acumulado</span>
+
+      <!-- Desglose de pedidos -->
+      <div style="padding:0.75rem 1.25rem;display:flex;flex-direction:column;gap:0.75rem">
+        {% for orden in grupo.ordenes %}
+        <div style="padding:0.75rem;border-radius:10px;
+          {% if orden.estado == 'pagada' %}background:#F9FAFB;opacity:0.7{% else %}background:#FFFBF5;border:1px solid #FED7AA{% endif %}">
+
+          <!-- Encabezado del pedido -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;flex-wrap:wrap;gap:0.3rem">
+            <span style="font-size:0.78rem;color:#9CA3AF">#{{ orden.id }} · {{ orden.fecha|ec_time("%H:%M") }} · {{ orden.nombre_cliente }}</span>
+            {% if orden.estado == 'pagada' %}
+              <span style="background:#D1FAE5;color:#065F46;font-size:0.7rem;font-weight:700;padding:0.15rem 0.55rem;border-radius:999px">✓ Entregado</span>
+            {% elif orden.estado == 'lista' %}
+              <span style="background:#DCFCE7;color:#15803D;font-size:0.7rem;font-weight:700;padding:0.15rem 0.55rem;border-radius:999px">✅ Listo</span>
+            {% elif orden.estado == 'confirmada' %}
+              <span style="background:#FFF7ED;color:#C2410C;font-size:0.7rem;font-weight:700;padding:0.15rem 0.55rem;border-radius:999px">🔥 Preparando</span>
+            {% else %}
+              <span style="background:#FEF9C3;color:#854D0E;font-size:0.7rem;font-weight:700;padding:0.15rem 0.55rem;border-radius:999px">⏳ Nuevo</span>
+            {% endif %}
+          </div>
+
+          <!-- Items del pedido -->
+          <div style="display:flex;flex-direction:column;gap:0.15rem">
+            {% for item in orden.items %}
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;
+              color:{% if orden.estado == 'pagada' %}#9CA3AF{% else %}#374151{% endif %}">
+              <span>{{ item.cantidad }}× {{ item.producto.nombre if item.producto else '—' }}{% if item.notas_item %} <span style="background:#FFF7ED;color:#C2410C;font-size:0.68rem;font-weight:700;padding:0.1rem 0.35rem;border-radius:20px">{{ item.notas_item }}</span>{% endif %}</span>
+              <span style="font-weight:600">${{ "%.2f"|format(item.subtotal) }}</span>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div style="text-align:right;font-size:0.82rem;font-weight:700;
+            color:{% if orden.estado == 'pagada' %}#9CA3AF{% else %}#F97316{% endif %};margin-top:0.35rem">
+            ${{ "%.2f"|format(orden.total) }}
+          </div>
+        </div>
+        {% endfor %}
       </div>
+
+      <!-- Pie: total + cerrar cuenta -->
       {% if not es_subusuario or rol_actual != 'cocinero' %}
-      <form method="POST" action="/dashboard/mesa/{{ grupo.mesa.id }}/cerrar-cuenta"
-            onsubmit="return confirm('¿Cerrar cuenta de {{ grupo.mesa.nombre }}? Se cobrarán todos los pedidos activos.')">
-        <div style="display:flex;gap:0.5rem;align-items:center">
-          <select name="metodo" style="flex:1;padding:0.4rem 0.6rem;border:1.5px solid #FED7AA;border-radius:8px;font-size:0.83rem;font-family:inherit;background:#fff">
+      <div style="border-top:1px solid #FED7AA;padding:0.85rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:0.75rem;flex-wrap:wrap">
+        <span style="font-size:0.9rem;color:#6B7280">
+          Total a cobrar: <strong style="color:#1C1C1E;font-size:1rem">${{ "%.2f"|format(grupo.total) }}</strong>
+        </span>
+        <form method="POST" action="/dashboard/mesa/{{ grupo.mesa.id }}/cerrar-cuenta"
+              onsubmit="return confirm('¿Cerrar cuenta de {{ grupo.mesa.nombre }}?')"
+              style="display:flex;gap:0.5rem;align-items:center">
+          <select name="metodo" style="padding:0.4rem 0.6rem;border:1.5px solid #FED7AA;border-radius:8px;font-size:0.83rem;font-family:inherit;background:#fff">
             {% for mp in metodos_pago %}
             <option value="{{ mp.nombre }}">
               {% if mp.icono and not (mp.icono.startswith('/') or mp.icono.startswith('http')) %}{{ mp.icono }} {% endif %}{{ mp.nombre }}
@@ -102,12 +149,13 @@
             {% endfor %}
           </select>
           <button type="submit"
-            style="padding:0.45rem 0.9rem;background:#F97316;color:#fff;border:none;border-radius:8px;font-size:0.82rem;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit">
+            style="padding:0.5rem 1rem;background:#F97316;color:#fff;border:none;border-radius:8px;font-size:0.85rem;font-weight:800;cursor:pointer;white-space:nowrap;font-family:inherit">
             💰 Cerrar cuenta
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
       {% endif %}
+
     </div>
     {% endfor %}
   </div>
