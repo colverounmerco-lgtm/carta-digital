@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 import cloudinary, cloudinary.uploader
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
-from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, SeccionBebida, VarianteBebida, SaborProducto, slugify
+from models import db, Restaurante, Mesa, Producto, Orden, ItemOrden, MensajeSoporte, CodigoVerificacion, MetodoPago, Salsa, Adicion, SeccionBebida, VarianteBebida, SaborProducto, SubUsuario, slugify
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "carta-dev-secret")
@@ -232,10 +232,30 @@ def plan_requerido(f):
 
 @app.context_processor
 def ctx():
+    sid = session.get("subusuario_id")
+    subusuario = SubUsuario.query.get(sid) if sid else None
     return {
         "restaurante_session": restaurante_session(),
+        "subusuario_actual": subusuario,
         "now": datetime.utcnow,
     }
+
+
+# Endpoints accesibles por subusuarios (los demás requieren ser dueño)
+_ENDPOINTS_STAFF = {
+    "dashboard", "confirmar_orden", "orden_lista", "pagar_orden",
+    "cancelar_orden", "api_ordenes_activas", "logout", "staff_logout",
+    "static", "recibo_orden",
+}
+
+@app.before_request
+def verificar_acceso_subusuario():
+    if not session.get("subusuario_id"):
+        return
+    endpoint = request.endpoint or ""
+    if endpoint not in _ENDPOINTS_STAFF:
+        flash("No tienes acceso a esa sección.", "error")
+        return redirect(url_for("dashboard"))
 
 
 @app.template_filter("ec_time")
@@ -472,8 +492,100 @@ def login():
 
 @app.route("/logout")
 def logout():
-    session.pop("restaurante_id", None)
+    session.pop("restaurante_id",  None)
+    session.pop("subusuario_id",   None)
+    session.pop("subusuario_rol",  None)
     return redirect(url_for("index"))
+
+
+# ── Login de staff (cocineros / meseros) ──
+
+@app.route("/staff", methods=["GET", "POST"])
+def staff_login():
+    if session.get("subusuario_id"):
+        return redirect(url_for("dashboard"))
+    error = None
+    if request.method == "POST":
+        slug     = request.form.get("slug", "").strip().lower()
+        username = request.form.get("username", "").strip()
+        pwd      = request.form.get("password", "")
+        r = Restaurante.query.filter_by(slug=slug, activo=True).first()
+        if r:
+            su = SubUsuario.query.filter_by(restaurante_id=r.id, username=username, activo=True).first()
+            if su and su.check_password(pwd):
+                session["restaurante_id"] = r.id
+                session["subusuario_id"]  = su.id
+                session["subusuario_rol"] = su.rol
+                return redirect(url_for("dashboard"))
+        error = "Datos incorrectos. Verifica el restaurante, usuario y contraseña."
+    return render_template("auth/staff_login.html", error=error)
+
+
+@app.route("/staff/logout", methods=["POST"])
+def staff_logout():
+    session.pop("restaurante_id", None)
+    session.pop("subusuario_id",  None)
+    session.pop("subusuario_rol", None)
+    return redirect(url_for("staff_login"))
+
+
+# ── Gestión de subusuarios (solo dueño) ──
+
+@app.route("/subusuarios")
+@login_required
+@plan_requerido
+def subusuarios():
+    r = restaurante_session()
+    lista = SubUsuario.query.filter_by(restaurante_id=r.id).order_by(SubUsuario.rol, SubUsuario.nombre).all()
+    return render_template("restaurante/subusuarios.html", restaurante=r, subusuarios=lista)
+
+
+@app.route("/subusuarios/agregar", methods=["POST"])
+@login_required
+def agregar_subusuario():
+    r        = restaurante_session()
+    nombre   = request.form.get("nombre", "").strip()
+    username = request.form.get("username", "").strip().lower()
+    pwd      = request.form.get("password", "")
+    rol      = request.form.get("rol", "cocinero")
+    if not all([nombre, username, pwd]):
+        flash("Completa todos los campos.", "error")
+        return redirect(url_for("subusuarios"))
+    if rol not in ("cocinero", "mesero"):
+        flash("Rol inválido.", "error")
+        return redirect(url_for("subusuarios"))
+    if SubUsuario.query.filter_by(restaurante_id=r.id, username=username).first():
+        flash(f"El usuario '{username}' ya existe en tu restaurante.", "error")
+        return redirect(url_for("subusuarios"))
+    su = SubUsuario(restaurante_id=r.id, nombre=nombre, username=username, rol=rol)
+    su.set_password(pwd)
+    db.session.add(su)
+    db.session.commit()
+    flash(f"{nombre} agregado como {rol}.", "success")
+    return redirect(url_for("subusuarios"))
+
+
+@app.route("/subusuarios/<int:sid>/toggle", methods=["POST"])
+@login_required
+def toggle_subusuario(sid):
+    r  = restaurante_session()
+    su = SubUsuario.query.filter_by(id=sid, restaurante_id=r.id).first_or_404()
+    su.activo = not su.activo
+    db.session.commit()
+    estado = "activado" if su.activo else "desactivado"
+    flash(f"{su.nombre} {estado}.", "success")
+    return redirect(url_for("subusuarios"))
+
+
+@app.route("/subusuarios/<int:sid>/eliminar", methods=["POST"])
+@login_required
+def eliminar_subusuario(sid):
+    r  = restaurante_session()
+    su = SubUsuario.query.filter_by(id=sid, restaurante_id=r.id).first_or_404()
+    db.session.delete(su)
+    db.session.commit()
+    flash(f"{su.nombre} eliminado.", "success")
+    return redirect(url_for("subusuarios"))
 
 
 @app.route("/verificar-email", methods=["GET", "POST"])
@@ -596,19 +708,19 @@ def recuperar_codigo():
 @login_required
 @plan_requerido
 def dashboard():
-    r               = restaurante_session()
-    # Actualizar IP de red del restaurante en cada acceso al dashboard
-    ip_actual = get_client_ip()
-    if r.ip_red != ip_actual:
-        r.ip_red = ip_actual
+    r = restaurante_session()
+    es_sub = bool(session.get("subusuario_id"))
 
-    # Primera apertura del día: abrir todas las mesas automáticamente
-    hoy_ec = (datetime.utcnow() + EC_OFFSET).date()
-    if r.dia_apertura != hoy_ec:
-        Mesa.query.filter_by(restaurante_id=r.id, activa=True).update({"abierta": True})
-        r.dia_apertura = hoy_ec
-
-    db.session.commit()
+    if not es_sub:
+        # Solo el dueño actualiza IP y abre mesas al inicio del día
+        ip_actual = get_client_ip()
+        if r.ip_red != ip_actual:
+            r.ip_red = ip_actual
+        hoy_ec = (datetime.utcnow() + EC_OFFSET).date()
+        if r.dia_apertura != hoy_ec:
+            Mesa.query.filter_by(restaurante_id=r.id, activa=True).update({"abierta": True})
+            r.dia_apertura = hoy_ec
+        db.session.commit()
     inicio, fin     = inicio_fin_dia_ec()
 
     ordenes_activas = Orden.query.filter(
@@ -645,6 +757,8 @@ def dashboard():
         cuentas_solicitadas=cuentas_solicitadas,
         metodos_pago=metodos_pago,
         dias_plan=dias_plan(r),
+        es_subusuario=es_sub,
+        rol_actual=session.get("subusuario_rol"),
     )
 
 
@@ -653,6 +767,9 @@ def dashboard():
 @app.route("/dashboard/orden/<int:oid>/confirmar", methods=["POST"])
 @login_required
 def confirmar_orden(oid):
+    rol = session.get("subusuario_rol")
+    if rol == "mesero":
+        return redirect(url_for("dashboard"))
     r = restaurante_session()
     o = Orden.query.filter_by(id=oid, restaurante_id=r.id).first_or_404()
     if o.estado == "pendiente":
@@ -664,6 +781,9 @@ def confirmar_orden(oid):
 @app.route("/dashboard/orden/<int:oid>/lista", methods=["POST"])
 @login_required
 def orden_lista(oid):
+    rol = session.get("subusuario_rol")
+    if rol == "mesero":
+        return redirect(url_for("dashboard"))
     r = restaurante_session()
     o = Orden.query.filter_by(id=oid, restaurante_id=r.id).first_or_404()
     if o.estado == "confirmada":
@@ -675,6 +795,9 @@ def orden_lista(oid):
 @app.route("/dashboard/orden/<int:oid>/pagar", methods=["POST"])
 @login_required
 def pagar_orden(oid):
+    rol = session.get("subusuario_rol")
+    if rol == "cocinero":
+        return redirect(url_for("dashboard"))
     r = restaurante_session()
     o = Orden.query.filter_by(id=oid, restaurante_id=r.id).first_or_404()
     if o.estado == "lista":
@@ -691,6 +814,8 @@ def pagar_orden(oid):
 @app.route("/dashboard/orden/<int:oid>/cancelar", methods=["POST"])
 @login_required
 def cancelar_orden(oid):
+    if session.get("subusuario_id"):
+        return redirect(url_for("dashboard"))
     r = restaurante_session()
     o = Orden.query.filter_by(id=oid, restaurante_id=r.id).first_or_404()
     if o.estado in ("pendiente", "confirmada"):

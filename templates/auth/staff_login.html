@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acceso de personal — Carta Digital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <style>
+    .login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; background:#F8FAFC; padding:1.5rem; }
+    .login-card { background:#fff; border-radius:20px; box-shadow:0 4px 24px rgba(0,0,0,0.08); padding:2.25rem 2rem; width:100%; max-width:400px; }
+    .login-logo { text-align:center; margin-bottom:1.75rem; }
+    .login-logo .icono { font-size:2.5rem; margin-bottom:0.5rem; }
+    .login-logo h1 { font-size:1.3rem; font-weight:800; color:#1C1C1E; }
+    .login-logo p  { font-size:0.83rem; color:#9CA3AF; margin-top:0.2rem; }
+    .campo { margin-bottom:1rem; }
+    .campo label { display:block; font-size:0.78rem; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:0.35rem; }
+    .campo input  { width:100%; padding:0.65rem 0.85rem; border:1.5px solid #E2E8F0; border-radius:10px; font-size:0.9rem; font-family:inherit; outline:none; box-sizing:border-box; transition:border-color 0.15s; }
+    .campo input:focus { border-color:#F97316; }
+    .error-msg { background:#FEF2F2; border:1px solid #FECACA; color:#DC2626; border-radius:10px; padding:0.65rem 0.9rem; font-size:0.83rem; margin-bottom:1rem; }
+    .btn-login { width:100%; padding:0.75rem; background:#F97316; color:#fff; border:none; border-radius:10px; font-size:0.95rem; font-weight:700; cursor:pointer; font-family:inherit; transition:background 0.15s; }
+    .btn-login:hover { background:#EA6A0A; }
+    .link-back { text-align:center; margin-top:1.25rem; font-size:0.82rem; color:#9CA3AF; }
+    .link-back a { color:#F97316; font-weight:600; text-decoration:none; }
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icono">👨‍🍳</div>
+      <h1>Acceso de personal</h1>
+      <p>Cocineros y meseros</p>
+    </div>
+
+    {% if error %}
+    <div class="error-msg">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/staff">
+      <div class="campo">
+        <label>Restaurante (slug)</label>
+        <input type="text" name="slug" placeholder="ej: el-sazon-costeno" required autocomplete="off" autofocus>
+        <p style="font-size:0.75rem;color:#9CA3AF;margin-top:0.25rem">El administrador te dará este dato</p>
+      </div>
+      <div class="campo">
+        <label>Usuario</label>
+        <input type="text" name="username" placeholder="ej: carlos" required autocomplete="username">
+      </div>
+      <div class="campo">
+        <label>Contraseña</label>
+        <input type="password" name="password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn-login">Entrar al panel</button>
+    </form>
+
+    <div class="link-back">
+      ¿Eres el dueño del restaurante? <a href="/login">Iniciar sesión aquí</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

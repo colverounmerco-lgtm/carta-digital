@@ -137,50 +137,64 @@
 
     <div class="orden-footer">
       {% if orden.estado == 'pendiente' %}
+        {% if rol_actual != 'mesero' %}
         <form method="POST" action="/dashboard/orden/{{ orden.id }}/confirmar">
           <button class="btn-primario btn-sm">
             {% if restaurante.modo_cobro %}🍳 Empezar a preparar{% else %}✓ Confirmar pedido{% endif %}
           </button>
         </form>
+        {% endif %}
+        {% if not es_subusuario %}
         <form method="POST" action="/dashboard/orden/{{ orden.id }}/cancelar"
               onsubmit="return confirm('¿Cancelar este pedido?')">
           <button class="btn-danger btn-sm">Cancelar</button>
         </form>
+        {% endif %}
 
       {% elif orden.estado == 'confirmada' %}
+        {% if rol_actual != 'mesero' %}
         <form method="POST" action="/dashboard/orden/{{ orden.id }}/lista">
           <button class="btn-primario btn-sm">🍽️ Marcar como listo</button>
         </form>
+        {% else %}
+        <span style="font-size:0.82rem;color:#9CA3AF;font-style:italic">🔥 En preparación</span>
+        {% endif %}
 
       {% elif orden.estado == 'lista' %}
-        {% if restaurante.modo_cobro %}
-          <form method="POST" action="/dashboard/orden/{{ orden.id }}/pagar"
-                style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
-            <input type="hidden" name="metodo" value="{{ orden.metodo_preferido or (metodos_pago[0].nombre if metodos_pago else '') }}">
-            <button class="btn-primario btn-sm">
-              🛵 Entregar a {{ orden.mesa.nombre }}
+        {% if rol_actual != 'cocinero' %}
+          {% if restaurante.modo_cobro %}
+            <form method="POST" action="/dashboard/orden/{{ orden.id }}/pagar"
+                  style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+              <input type="hidden" name="metodo" value="{{ orden.metodo_preferido or (metodos_pago[0].nombre if metodos_pago else '') }}">
+              <button class="btn-primario btn-sm">
+                🛵 Entregar a {{ orden.mesa.nombre }}
+              </button>
+            </form>
+          {% else %}
+            <form method="POST" action="/dashboard/orden/{{ orden.id }}/pagar"
+                  style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+              <select name="metodo" style="padding:0.4rem 0.7rem;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.85rem">
+                {% for mp in metodos_pago %}
+                <option value="{{ mp.nombre }}" {% if orden.metodo_preferido == mp.nombre %}selected{% endif %}>
+                  {% if mp.icono and not (mp.icono.startswith('/') or mp.icono.startswith('http')) %}{{ mp.icono }} {% endif %}{{ mp.nombre }}
+                </option>
+                {% endfor %}
+              </select>
+              <button class="btn-primario btn-sm">✓ Cobrado</button>
+            </form>
+          {% endif %}
+          {% if not es_subusuario %}
+          <form method="POST" action="/mesas/{{ orden.mesa_id }}/toggle-sesion" style="margin:0">
+            <button class="btn-sm" type="submit"
+                    style="background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA;border-radius:8px;padding:0.4rem 0.75rem;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.8rem"
+                    onclick="return confirm('¿Cerrar {{ orden.mesa.nombre }} para nuevos pedidos?')">
+              🔒 Cerrar mesa
             </button>
           </form>
+          {% endif %}
         {% else %}
-          <form method="POST" action="/dashboard/orden/{{ orden.id }}/pagar"
-                style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
-            <select name="metodo" style="padding:0.4rem 0.7rem;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.85rem">
-              {% for mp in metodos_pago %}
-              <option value="{{ mp.nombre }}" {% if orden.metodo_preferido == mp.nombre %}selected{% endif %}>
-                {% if mp.icono and not (mp.icono.startswith('/') or mp.icono.startswith('http')) %}{{ mp.icono }} {% endif %}{{ mp.nombre }}
-              </option>
-              {% endfor %}
-            </select>
-            <button class="btn-primario btn-sm">✓ Cobrado</button>
-          </form>
+          <span style="font-size:0.82rem;color:#059669;font-weight:700">✅ Listo — esperando mesero</span>
         {% endif %}
-        <form method="POST" action="/mesas/{{ orden.mesa_id }}/toggle-sesion" style="margin:0">
-          <button class="btn-sm" type="submit"
-                  style="background:#FEF2F2;color:#DC2626;border:1.5px solid #FECACA;border-radius:8px;padding:0.4rem 0.75rem;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.8rem"
-                  onclick="return confirm('¿Cerrar {{ orden.mesa.nombre }} para nuevos pedidos?')">
-            🔒 Cerrar mesa
-          </button>
-        </form>
       {% endif %}
     </div>
   </div>

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Equipo — {{ restaurante.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor page-wrap" style="max-width:680px">
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-titulo">Equipo</h1>
+      <p class="page-sub">Cocineros y meseros con acceso limitado al panel</p>
+    </div>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="alerta alerta-{{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Información de acceso -->
+  <div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:12px;padding:1rem 1.25rem;margin-bottom:1.5rem;font-size:0.84rem;color:#92400E">
+    <strong>🔗 URL de acceso para tu personal:</strong><br>
+    <code style="background:#fff;border:1px solid #FED7AA;border-radius:6px;padding:0.2rem 0.5rem;font-size:0.82rem;display:inline-block;margin-top:0.4rem;word-break:break-all">
+      {{ request.host_url }}staff
+    </code>
+    <br><span style="margin-top:0.35rem;display:inline-block">Slug del restaurante: <strong>{{ restaurante.slug }}</strong></span>
+  </div>
+
+  <!-- Formulario para agregar -->
+  <div class="card" style="margin-bottom:1.5rem">
+    <h2 style="font-size:1rem;font-weight:700;color:#1C1C1E;margin-bottom:1rem">+ Agregar usuario</h2>
+    <form method="POST" action="/subusuarios/agregar">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+        <div class="campo" style="margin:0">
+          <label>Nombre completo</label>
+          <input type="text" name="nombre" placeholder="Ej: Carlos López" required>
+        </div>
+        <div class="campo" style="margin:0">
+          <label>Usuario (para iniciar sesión)</label>
+          <input type="text" name="username" placeholder="Ej: carlos" required autocomplete="off">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:1rem">
+        <div class="campo" style="margin:0">
+          <label>Contraseña</label>
+          <input type="password" name="password" placeholder="Mínimo 4 caracteres" required>
+        </div>
+        <div class="campo" style="margin:0">
+          <label>Rol</label>
+          <select name="rol" style="width:100%;padding:0.6rem 0.8rem;border:1.5px solid #E2E8F0;border-radius:8px;font-size:0.88rem;font-family:inherit">
+            <option value="cocinero">👨‍🍳 Cocinero — confirmar + listo</option>
+            <option value="mesero">🍽️ Mesero — cobrar / entregar</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn-primario btn-sm">Agregar usuario</button>
+    </form>
+  </div>
+
+  <!-- Lista de subusuarios -->
+  {% if subusuarios %}
+  <div class="card">
+    <h2 style="font-size:1rem;font-weight:700;color:#1C1C1E;margin-bottom:1rem">Usuarios del equipo</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:0.88rem">
+      <thead>
+        <tr style="border-bottom:2px solid #F1F5F9">
+          <th style="text-align:left;padding:0.5rem 0.75rem;color:#64748B;font-weight:600">Nombre</th>
+          <th style="text-align:left;padding:0.5rem 0.75rem;color:#64748B;font-weight:600">Usuario</th>
+          <th style="text-align:left;padding:0.5rem 0.75rem;color:#64748B;font-weight:600">Rol</th>
+          <th style="text-align:left;padding:0.5rem 0.75rem;color:#64748B;font-weight:600">Estado</th>
+          <th style="padding:0.5rem 0.75rem"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for su in subusuarios %}
+        <tr style="border-bottom:1px solid #F1F5F9;{% if not su.activo %}opacity:0.55{% endif %}">
+          <td style="padding:0.65rem 0.75rem;font-weight:600;color:#1C1C1E">{{ su.nombre }}</td>
+          <td style="padding:0.65rem 0.75rem;color:#64748B;font-family:monospace">{{ su.username }}</td>
+          <td style="padding:0.65rem 0.75rem">
+            {% if su.rol == 'cocinero' %}
+              <span style="background:#FFF7ED;color:#C2410C;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:999px">👨‍🍳 Cocinero</span>
+            {% else %}
+              <span style="background:#EFF6FF;color:#1D4ED8;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:999px">🍽️ Mesero</span>
+            {% endif %}
+          </td>
+          <td style="padding:0.65rem 0.75rem">
+            {% if su.activo %}
+              <span style="background:#D1FAE5;color:#065F46;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:999px">● Activo</span>
+            {% else %}
+              <span style="background:#F3F4F6;color:#9CA3AF;font-size:0.72rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:999px">Inactivo</span>
+            {% endif %}
+          </td>
+          <td style="padding:0.65rem 0.75rem">
+            <div style="display:flex;gap:0.4rem;justify-content:flex-end">
+              <form method="POST" action="/subusuarios/{{ su.id }}/toggle">
+                <button type="submit" style="padding:0.3rem 0.65rem;font-size:0.75rem;font-weight:600;border-radius:7px;cursor:pointer;font-family:inherit;border:1.5px solid #E2E8F0;background:#F8FAFC;color:#374151">
+                  {% if su.activo %}Desactivar{% else %}Activar{% endif %}
+                </button>
+              </form>
+              <form method="POST" action="/subusuarios/{{ su.id }}/eliminar"
+                    onsubmit="return confirm('¿Eliminar a {{ su.nombre }}?')">
+                <button type="submit" style="padding:0.3rem 0.65rem;font-size:0.75rem;font-weight:600;border-radius:7px;cursor:pointer;font-family:inherit;border:1.5px solid #FECACA;background:#FEF2F2;color:#DC2626">
+                  Eliminar
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:3rem 1rem;color:#94A3B8">
+    <div style="font-size:2.5rem;margin-bottom:0.75rem">👥</div>
+    <p style="font-weight:600">Sin usuarios de equipo</p>
+    <p style="font-size:0.84rem;margin-top:0.3rem">Agrega cocineros y meseros para que puedan acceder al panel con permisos limitados.</p>
+  </div>
+  {% endif %}
+
+  <!-- Resumen de permisos -->
+  <div style="background:#F8FAFC;border-radius:12px;padding:1.1rem 1.25rem;margin-top:1.5rem;font-size:0.83rem;color:#64748B">
+    <strong style="color:#1C1C1E;display:block;margin-bottom:0.6rem">Permisos por rol</strong>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+      <div style="background:#FFF7ED;border-radius:8px;padding:0.75rem">
+        <div style="font-weight:700;color:#C2410C;margin-bottom:0.4rem">👨‍🍳 Cocinero</div>
+        <ul style="margin:0;padding-left:1rem;line-height:1.7">
+          <li>✅ Confirmar pedidos</li>
+          <li>✅ Marcar como listo</li>
+          <li>❌ Cobrar / entregar</li>
+          <li>❌ Cancelar pedidos</li>
+        </ul>
+      </div>
+      <div style="background:#EFF6FF;border-radius:8px;padding:0.75rem">
+        <div style="font-weight:700;color:#1D4ED8;margin-bottom:0.4rem">🍽️ Mesero</div>
+        <ul style="margin:0;padding-left:1rem;line-height:1.7">
+          <li>❌ Confirmar pedidos</li>
+          <li>❌ Marcar como listo</li>
+          <li>✅ Cobrar / entregar</li>
+          <li>❌ Cancelar pedidos</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="/static/js/main.js"></script>
+{% endblock %}

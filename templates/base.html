@@ -23,25 +23,45 @@
       </a>
       <nav class="nav">
         {% if restaurante_session %}
-          <a href="/dashboard" class="nav-link">Panel</a>
-          <a href="/menu" class="nav-link">Menú</a>
-          <a href="/salsas" class="nav-link">Salsas</a>
-          <a href="/adiciones" class="nav-link">Adiciones</a>
-          <a href="/bebidas" class="nav-link">Bebidas</a>
-          <a href="/mesas" class="nav-link">Mesas</a>
-          <a href="/metodos-pago" class="nav-link">Pagos</a>
-          <a href="/reportes" class="nav-link">Reportes</a>
-          <a href="/guia" class="nav-link" style="font-size:0.82rem">❓ Guía</a>
-          <a href="/planes" class="nav-link" style="font-size:0.78rem;color:#F97316;font-weight:700">
-            {{ restaurante_session.plan|upper if restaurante_session.plan else 'TRIAL' }}
-          </a>
-          <button id="btn-sonido-nav" onclick="toggleSonido()"
-            title="Activar/desactivar sonido de notificaciones"
-            style="background:none;border:1.5px solid #E2E8F0;border-radius:8px;padding:0.28rem 0.6rem;cursor:pointer;font-size:0.9rem;line-height:1;transition:all 0.15s">
-            🔕
-          </button>
-          <a href="/perfil" class="nav-nombre" style="text-decoration:none">{{ restaurante_session.nombre }}</a>
-          <a href="/logout" class="btn-primario btn-sm">Salir</a>
+          {% if subusuario_actual %}
+            <!-- Nav simplificado para staff -->
+            <a href="/dashboard" class="nav-link">Panel</a>
+            <span style="font-size:0.78rem;font-weight:700;padding:0.2rem 0.65rem;border-radius:999px;
+              {% if subusuario_actual.rol == 'cocinero' %}background:#FFF7ED;color:#C2410C{% else %}background:#EFF6FF;color:#1D4ED8{% endif %}">
+              {% if subusuario_actual.rol == 'cocinero' %}👨‍🍳 Cocinero{% else %}🍽️ Mesero{% endif %}
+            </span>
+            <button id="btn-sonido-nav" onclick="toggleSonido()"
+              title="Activar/desactivar sonido de notificaciones"
+              style="background:none;border:1.5px solid #E2E8F0;border-radius:8px;padding:0.28rem 0.6rem;cursor:pointer;font-size:0.9rem;line-height:1;transition:all 0.15s">
+              🔕
+            </button>
+            <span class="nav-nombre">{{ subusuario_actual.nombre }}</span>
+            <form method="POST" action="/staff/logout" style="margin:0">
+              <button type="submit" class="btn-primario btn-sm">Salir</button>
+            </form>
+          {% else %}
+            <!-- Nav completo para el dueño -->
+            <a href="/dashboard" class="nav-link">Panel</a>
+            <a href="/menu" class="nav-link">Menú</a>
+            <a href="/salsas" class="nav-link">Salsas</a>
+            <a href="/adiciones" class="nav-link">Adiciones</a>
+            <a href="/bebidas" class="nav-link">Bebidas</a>
+            <a href="/mesas" class="nav-link">Mesas</a>
+            <a href="/subusuarios" class="nav-link">Equipo</a>
+            <a href="/metodos-pago" class="nav-link">Pagos</a>
+            <a href="/reportes" class="nav-link">Reportes</a>
+            <a href="/guia" class="nav-link" style="font-size:0.82rem">❓ Guía</a>
+            <a href="/planes" class="nav-link" style="font-size:0.78rem;color:#F97316;font-weight:700">
+              {{ restaurante_session.plan|upper if restaurante_session.plan else 'TRIAL' }}
+            </a>
+            <button id="btn-sonido-nav" onclick="toggleSonido()"
+              title="Activar/desactivar sonido de notificaciones"
+              style="background:none;border:1.5px solid #E2E8F0;border-radius:8px;padding:0.28rem 0.6rem;cursor:pointer;font-size:0.9rem;line-height:1;transition:all 0.15s">
+              🔕
+            </button>
+            <a href="/perfil" class="nav-nombre" style="text-decoration:none">{{ restaurante_session.nombre }}</a>
+            <a href="/logout" class="btn-primario btn-sm">Salir</a>
+          {% endif %}
         {% else %}
           <a href="/login" class="nav-link">Iniciar sesión</a>
           <a href="/register" class="btn-primario btn-sm">Registrar restaurante</a>

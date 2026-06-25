@@ -40,9 +40,10 @@ class Restaurante(db.Model):
     dia_apertura     = db.Column(db.Date)         # Último día en que se auto-abrieron las mesas
     modo_cobro       = db.Column(db.Boolean, default=False)  # True = cobro anticipado (mostrador)
 
-    mesas    = db.relationship("Mesa",     backref="restaurante", lazy=True, cascade="all, delete-orphan")
-    productos = db.relationship("Producto", backref="restaurante", lazy=True, cascade="all, delete-orphan")
-    ordenes  = db.relationship("Orden",    backref="restaurante", lazy=True)
+    mesas        = db.relationship("Mesa",        backref="restaurante", lazy=True, cascade="all, delete-orphan")
+    productos    = db.relationship("Producto",    backref="restaurante", lazy=True, cascade="all, delete-orphan")
+    ordenes      = db.relationship("Orden",       backref="restaurante", lazy=True)
+    subusuarios  = db.relationship("SubUsuario",  backref="restaurante", lazy=True, cascade="all, delete-orphan")
 
     def set_password(self, pwd):
         self.password_hash = generate_password_hash(pwd)
@@ -218,3 +219,20 @@ class ItemOrden(db.Model):
     precio_unitario = db.Column(db.Float, nullable=False)
     subtotal        = db.Column(db.Float, nullable=False)
     notas_item      = db.Column(db.String(200))
+
+
+class SubUsuario(db.Model):
+    __tablename__ = "subusuarios"
+    id             = db.Column(db.Integer, primary_key=True)
+    restaurante_id = db.Column(db.Integer, db.ForeignKey("restaurantes.id"), nullable=False)
+    nombre         = db.Column(db.String(100), nullable=False)
+    username       = db.Column(db.String(50), nullable=False)
+    password_hash  = db.Column(db.String(256), nullable=False)
+    rol            = db.Column(db.String(20), nullable=False)  # 'cocinero' | 'mesero'
+    activo         = db.Column(db.Boolean, default=True)
+
+    def set_password(self, pwd):
+        self.password_hash = generate_password_hash(pwd)
+
+    def check_password(self, pwd):
+        return check_password_hash(self.password_hash, pwd)
