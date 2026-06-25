@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Carta Digital{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/styles.css">
@@ -13,12 +14,8 @@
   <header class="header">
     <div class="contenedor header-inner">
       <a href="/" class="logo">
-        {% if restaurante_session and restaurante_session.logo_url %}
-          <img src="{{ restaurante_session.logo_url }}"
-               style="width:32px;height:32px;border-radius:8px;object-fit:cover;flex-shrink:0">
-        {% else %}
-          <div class="logo-icon">🍽️</div>
-        {% endif %}
+        <img src="/static/img/logo.svg"
+             style="width:32px;height:32px;border-radius:8px;object-fit:cover;flex-shrink:0">
         Carta Digital
       </a>
       <nav class="nav">
