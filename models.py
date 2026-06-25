@@ -63,6 +63,7 @@ class Mesa(db.Model):
     activa         = db.Column(db.Boolean, default=True)
     abierta        = db.Column(db.Boolean, default=False)  # False = bloqueada para pedidos; abre al escanear QR
     es_para_llevar = db.Column(db.Boolean, default=False)
+    tab_inicio     = db.Column(db.DateTime)  # Momento en que se abrió la tab actual (solo bares)
 
     ordenes = db.relationship("Orden", backref="mesa", lazy=True)
 

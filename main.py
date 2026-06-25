@@ -293,6 +293,7 @@ def run_migrations():
     if "mesas" in tables:
         add_col("mesas", "abierta",        "BOOLEAN DEFAULT FALSE")
         add_col("mesas", "es_para_llevar", "BOOLEAN DEFAULT FALSE")
+        add_col("mesas", "tab_inicio",     "TIMESTAMP")
         # Cerrar todas las mesas sin orden activa (limpieza de estado inicial)
         db.session.execute(text(
             "UPDATE mesas SET abierta = FALSE "
@@ -787,18 +788,18 @@ def dashboard():
         mesas_con_activos = {o.mesa_id for o in ordenes_activas}
         grupos = {}
         for mid in mesas_con_activos:
+            mesa       = Mesa.query.get(mid)
+            desde      = mesa.tab_inicio if mesa and mesa.tab_inicio else inicio
             todas = Orden.query.filter(
                 Orden.mesa_id == mid,
                 Orden.restaurante_id == r.id,
                 Orden.estado != 'cancelada',
-                Orden.fecha >= inicio,
-                Orden.fecha <= fin,
+                Orden.fecha >= desde,
             ).order_by(Orden.fecha).all()
-            mesa = Mesa.query.get(mid)
             grupos[mid] = {
-                "mesa":   mesa,
+                "mesa":    mesa,
                 "ordenes": todas,
-                "total":  sum(o.total for o in todas),
+                "total":   sum(o.total for o in todas),
             }
         cuentas_abiertas = list(grupos.values())
 
@@ -882,7 +883,8 @@ def cerrar_cuenta_mesa(mid):
         o.estado      = "pagada"
         o.metodo_pago = metodo
         o.fecha_pago  = datetime.utcnow()
-    mesa.abierta = False
+    mesa.abierta    = False
+    mesa.tab_inicio = None
     db.session.commit()
     flash(f"Cuenta de {mesa.nombre} cerrada.", "success")
     return redirect(url_for("dashboard"))
@@ -1374,7 +1376,8 @@ def carta(slug, mesa_token):
     # En bares la mesa siempre está abierta para nuevos pedidos hasta que el admin cierre la cuenta
     if r.categoria == 'bar':
         if not mesa.abierta:
-            mesa.abierta = True
+            mesa.abierta   = True
+            mesa.tab_inicio = datetime.utcnow()
             db.session.commit()
     else:
         orden_activa = Orden.query.filter(
