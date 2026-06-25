@@ -75,7 +75,7 @@
 
   {% if restaurante.categoria == 'bar' and cuentas_abiertas %}
   <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:0.75rem">🍺 Cuentas abiertas</h2>
-  <div style="display:flex;flex-direction:column;gap:1rem;margin-bottom:2rem">
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem;margin-bottom:2rem">
     {% for grupo in cuentas_abiertas %}
     <div style="background:#fff;border:2px solid #FED7AA;border-radius:16px;overflow:hidden">
 
