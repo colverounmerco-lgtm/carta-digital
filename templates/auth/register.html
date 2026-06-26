@@ -69,6 +69,26 @@
     <form method="POST" action="/register" enctype="multipart/form-data">
 
       <div class="campo">
+        <label>País *</label>
+        <div class="cat-grid" style="grid-template-columns:1fr 1fr">
+          <label class="cat-label">
+            <input type="radio" name="pais" value="ecuador" required>
+            <div class="cat-inner">
+              <span class="cat-emoji">🇪🇨</span>
+              Ecuador
+            </div>
+          </label>
+          <label class="cat-label">
+            <input type="radio" name="pais" value="colombia">
+            <div class="cat-inner">
+              <span class="cat-emoji">🇨🇴</span>
+              Colombia
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="campo">
         <label>Tipo de local *</label>
         <div class="cat-grid">
           <label class="cat-label">

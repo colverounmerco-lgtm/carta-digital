@@ -267,6 +267,10 @@
       <span class="chip" data-filtro="restaurante" data-tipo="cat" onclick="setFiltro(this)">🍽️ Restaurante</span>
       <span class="chip" data-filtro="bar" data-tipo="cat" onclick="setFiltro(this)">🍺 Bar</span>
       <span class="chip" data-filtro="cafeteria" data-tipo="cat" onclick="setFiltro(this)">☕ Cafetería</span>
+      <span style="width:1px;background:#334155;align-self:stretch;margin:0 0.25rem"></span>
+      <span class="chip activo" data-filtro="todos" data-tipo="pais" onclick="setFiltro(this)">Todos</span>
+      <span class="chip" data-filtro="ecuador" data-tipo="pais" onclick="setFiltro(this)">🇪🇨 Ecuador</span>
+      <span class="chip" data-filtro="colombia" data-tipo="pais" onclick="setFiltro(this)">🇨🇴 Colombia</span>
     </div>
     <span class="count-badge" id="count-badge"></span>
   </div>
@@ -295,7 +299,8 @@
         <tr data-nombre="{{ r.nombre|lower }}" data-email="{{ r.email|lower }}"
             data-ciudad="{{ (r.ciudad or '')|lower }}"
             data-plan="{{ plan_key }}" data-estado="{{ estado_key }}"
-            data-categoria="{{ r.categoria or 'restaurante' }}">
+            data-categoria="{{ r.categoria or 'restaurante' }}"
+            data-pais="{{ r.pais or 'ecuador' }}">
           <td>
             <div style="display:flex;align-items:center;gap:0.65rem">
               {% if r.logo_url %}
@@ -312,6 +317,11 @@
                     <span style="font-size:0.65rem;font-weight:700;background:rgba(249,115,22,0.15);color:#FB923C;border:1px solid rgba(249,115,22,0.25);padding:0.1rem 0.45rem;border-radius:999px">Bar</span>
                   {% elif r.categoria == 'cafeteria' %}
                     <span style="font-size:0.65rem;font-weight:700;background:rgba(139,92,246,0.15);color:#C4B5FD;border:1px solid rgba(139,92,246,0.25);padding:0.1rem 0.45rem;border-radius:999px">Cafetería</span>
+                  {% endif %}
+                  {% if r.pais == 'colombia' %}
+                    <span style="font-size:0.65rem;font-weight:700;background:rgba(250,204,21,0.15);color:#FCD34D;border:1px solid rgba(250,204,21,0.25);padding:0.1rem 0.45rem;border-radius:999px">🇨🇴</span>
+                  {% else %}
+                    <span style="font-size:0.65rem;font-weight:700;background:rgba(52,211,153,0.15);color:#6EE7B7;border:1px solid rgba(52,211,153,0.25);padding:0.1rem 0.45rem;border-radius:999px">🇪🇨</span>
                   {% endif %}
                 </div>
                 <div style="font-size:0.75rem;color:#64748B;margin-top:1px">
@@ -494,6 +504,7 @@
   const modalPlan = document.getElementById('modal-plan');
   let filtroPlan = 'todos';
   let filtroCat  = 'todos';
+  let filtroPais = 'todos';
 
   function abrirModalPlan(rid, nombre, planActual) {
     document.getElementById('modal-nombre-rest').textContent = nombre;
@@ -509,8 +520,9 @@
     const tipo = chip.dataset.tipo;
     document.querySelectorAll(`.chip[data-tipo="${tipo}"]`).forEach(c => c.classList.remove('activo'));
     chip.classList.add('activo');
-    if (tipo === 'plan') filtroPlan = chip.dataset.filtro;
-    else                 filtroCat  = chip.dataset.filtro;
+    if (tipo === 'plan')      filtroPlan = chip.dataset.filtro;
+    else if (tipo === 'cat') filtroCat  = chip.dataset.filtro;
+    else                     filtroPais = chip.dataset.filtro;
     filtrar();
   }
 
@@ -525,14 +537,16 @@
       const plan   = tr.dataset.plan      || '';
       const estado = tr.dataset.estado    || '';
       const cat    = tr.dataset.categoria || '';
+      const pais   = tr.dataset.pais      || '';
 
       const matchTexto = !q || nombre.includes(q) || email.includes(q) || ciudad.includes(q);
       const matchPlan  = filtroPlan === 'todos'
         || (filtroPlan === 'inactivo' && estado === 'inactivo')
         || (filtroPlan !== 'inactivo' && plan === filtroPlan);
-      const matchCat   = filtroCat === 'todos' || cat === filtroCat;
+      const matchCat   = filtroCat  === 'todos' || cat  === filtroCat;
+      const matchPais  = filtroPais === 'todos' || pais === filtroPais;
 
-      if (matchTexto && matchPlan && matchCat) {
+      if (matchTexto && matchPlan && matchCat && matchPais) {
         tr.classList.remove('oculto');
         visibles++;
       } else {
