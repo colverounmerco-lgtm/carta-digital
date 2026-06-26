@@ -44,24 +44,23 @@ cloudinary.config(
 MAX_CANTIDAD    = 10
 TERMINOS_ASADO  = ["Blue", "Medio", "Tres cuartos", "Bien cocido"]
 CODIGO_TTL   = 15  # minutos
-TRIAL_DIAS   = 8
+TRIAL_DIAS   = 8   # Ecuador
+
+TRIAL_DIAS_POR_PAIS = {"ecuador": 8, "colombia": 30}
 
 PLANES = {
-    "mensual": {
-        "nombre": "Mensual",
-        "base":   40.00,
-        "iva":     6.00,
-        "total":  46.00,
-        "dias":   30,
-        "desc":   "Facturado cada mes",
+    "mensual": {"nombre": "Mensual", "dias": 30},
+    "anual":   {"nombre": "Anual",   "dias": 365},
+}
+
+PRECIOS = {
+    "ecuador": {
+        "mensual": {"base": 40.00,    "iva": 6.00,    "total": 46.00,    "simbolo": "$",    "moneda": "USD", "desc": "Facturado cada mes",          "desc_mes": "$35.41/mes"},
+        "anual":   {"base": 365.00,   "iva": 54.75,   "total": 419.75,   "simbolo": "$",    "moneda": "USD", "desc": "Pagas solo $35.41/mes",        "desc_mes": "$35.41/mes"},
     },
-    "anual": {
-        "nombre": "Anual",
-        "base":   365.00,
-        "iva":    54.75,
-        "total":  419.75,
-        "dias":   365,
-        "desc":   "Pagas solo $35.41/mes",
+    "colombia": {
+        "mensual": {"base": 160000,   "iva": 30400,   "total": 190400,   "simbolo": "COP",  "moneda": "COP", "desc": "Facturado cada mes",           "desc_mes": "COP 190.400/mes"},
+        "anual":   {"base": 1500000,  "iva": 285000,  "total": 1785000,  "simbolo": "COP",  "moneda": "COP", "desc": "Pagas solo COP 148.750/mes",   "desc_mes": "COP 148.750/mes"},
     },
 }
 
@@ -230,7 +229,8 @@ def plan_requerido(f):
         if r and not plan_vigente(r):
             vencido_hace = (datetime.utcnow() - r.plan_vence).days if r.plan_vence else 0
             return render_template("auth/plan_vencido.html",
-                                   restaurante=r, vencido_hace=vencido_hace)
+                                   restaurante=r, vencido_hace=vencido_hace,
+                                   precios=PRECIOS.get(r.pais or 'ecuador', PRECIOS['ecuador']))
         return f(*args, **kwargs)
     return decorated
 
@@ -341,8 +341,9 @@ def run_migrations():
         if not r.plan:
             r.plan = 'trial'
         if not r.plan_vence:
-            base = r.fecha_registro or datetime.utcnow()
-            r.plan_vence = base + timedelta(days=TRIAL_DIAS)
+            base  = r.fecha_registro or datetime.utcnow()
+            dias  = TRIAL_DIAS_POR_PAIS.get(r.pais or 'ecuador', TRIAL_DIAS)
+            r.plan_vence = base + timedelta(days=dias)
     db.session.commit()
 
 
@@ -421,10 +422,14 @@ def register():
 
         skip_verificacion = os.getenv("SKIP_EMAIL_VERIFICATION", "false").lower() == "true"
 
+        trial_dias = TRIAL_DIAS_POR_PAIS.get(pais, TRIAL_DIAS)
         r = Restaurante(nombre=nombre, email=email, slug=slug,
                         whatsapp=whatsapp, ciudad=ciudad,
                         logo_url=logo_url, descripcion=descripcion,
                         categoria=categoria, pais=pais,
+                        plan='trial',
+                        plan_inicio=datetime.utcnow(),
+                        plan_vence=datetime.utcnow() + timedelta(days=trial_dias),
                         email_verificado=skip_verificacion)
         r.set_password(pwd)
         db.session.add(r)
@@ -2215,7 +2220,8 @@ def admin_set_plan(rid):
     r.plan        = plan_tipo
     r.plan_inicio = fecha_inicio
     if plan_tipo == "trial":
-        r.plan_vence = fecha_inicio + timedelta(days=TRIAL_DIAS)
+        dias = TRIAL_DIAS_POR_PAIS.get(r.pais or 'ecuador', TRIAL_DIAS)
+        r.plan_vence = fecha_inicio + timedelta(days=dias)
     else:
         r.plan_vence = fecha_inicio + timedelta(days=PLANES[plan_tipo]["dias"])
     db.session.commit()
