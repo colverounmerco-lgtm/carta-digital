@@ -150,6 +150,33 @@
     .btn-plan { background: #1E3A5F; color: #93C5FD; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid #1D4ED8; cursor: pointer; font-family: inherit; }
     .btn-plan:hover { background: #1D4ED8; color: #fff; }
 
+    /* Buscador y filtros */
+    .toolbar {
+      display: flex; align-items: center; gap: 0.75rem;
+      flex-wrap: wrap; margin-bottom: 1rem;
+    }
+    .search-input {
+      background: #1E293B; border: 1px solid #334155; border-radius: 10px;
+      padding: 0.5rem 0.9rem; color: #F1F5F9; font-family: inherit;
+      font-size: 0.86rem; outline: none; width: 240px;
+      transition: border-color 0.15s;
+    }
+    .search-input::placeholder { color: #475569; }
+    .search-input:focus { border-color: #F97316; }
+    .filtros { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .chip {
+      font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.75rem;
+      border-radius: 999px; cursor: pointer; border: 1px solid #334155;
+      background: #1E293B; color: #64748B; transition: all 0.15s; user-select: none;
+    }
+    .chip:hover { border-color: #64748B; color: #F1F5F9; }
+    .chip.activo { background: #F97316; color: #fff; border-color: #F97316; }
+    .count-badge {
+      font-size: 0.75rem; color: #64748B; margin-left: auto;
+      padding: 0.3rem 0.75rem;
+    }
+    tr.oculto { display: none; }
+
     @media (max-width: 700px) {
       th:nth-child(3), td:nth-child(3),
       th:nth-child(5), td:nth-child(5) { display: none; }
@@ -224,6 +251,20 @@
     </div>
   </div>
 
+  <!-- Buscador y filtros -->
+  <div class="toolbar">
+    <input class="search-input" type="text" id="buscador" placeholder="🔍  Buscar por nombre, correo o ciudad…" oninput="filtrar()">
+    <div class="filtros">
+      <span class="chip activo" data-filtro="todos" onclick="setFiltro(this)">Todos</span>
+      <span class="chip" data-filtro="trial" onclick="setFiltro(this)">Trial</span>
+      <span class="chip" data-filtro="mensual" onclick="setFiltro(this)">Mensual</span>
+      <span class="chip" data-filtro="anual" onclick="setFiltro(this)">Anual</span>
+      <span class="chip" data-filtro="vencido" onclick="setFiltro(this)">Vencido</span>
+      <span class="chip" data-filtro="inactivo" onclick="setFiltro(this)">Inactivos</span>
+    </div>
+    <span class="count-badge" id="count-badge"></span>
+  </div>
+
   <!-- Tabla -->
   <div class="tabla-wrap">
     {% if restaurantes %}
@@ -242,16 +283,30 @@
       </thead>
       <tbody>
         {% for r in restaurantes %}
-        <tr>
+        {% set ahora2 = now() %}
+        {% set plan_key = 'vencido' if (r.plan_vence and r.plan_vence <= ahora2) else (r.plan or 'trial') %}
+        {% set estado_key = 'inactivo' if not r.activo else 'activo' %}
+        <tr data-nombre="{{ r.nombre|lower }}" data-email="{{ r.email|lower }}"
+            data-ciudad="{{ (r.ciudad or '')|lower }}"
+            data-plan="{{ plan_key }}" data-estado="{{ estado_key }}">
           <td>
             <div style="display:flex;align-items:center;gap:0.65rem">
               {% if r.logo_url %}
                 <img src="{{ r.logo_url }}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid #334155">
               {% else %}
-                <div style="width:36px;height:36px;border-radius:50%;background:#1E293B;border:1.5px solid #334155;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">🍽️</div>
+                <div style="width:36px;height:36px;border-radius:50%;background:#1E293B;border:1.5px solid #334155;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">
+                  {% if r.categoria == 'bar' %}🍺{% elif r.categoria == 'cafeteria' %}☕{% else %}🍽️{% endif %}
+                </div>
               {% endif %}
               <div>
-                <div style="font-weight:700">{{ r.nombre }}</div>
+                <div style="font-weight:700;display:flex;align-items:center;gap:0.4rem">
+                  {{ r.nombre }}
+                  {% if r.categoria == 'bar' %}
+                    <span style="font-size:0.65rem;font-weight:700;background:rgba(249,115,22,0.15);color:#FB923C;border:1px solid rgba(249,115,22,0.25);padding:0.1rem 0.45rem;border-radius:999px">Bar</span>
+                  {% elif r.categoria == 'cafeteria' %}
+                    <span style="font-size:0.65rem;font-weight:700;background:rgba(139,92,246,0.15);color:#C4B5FD;border:1px solid rgba(139,92,246,0.25);padding:0.1rem 0.45rem;border-radius:999px">Cafetería</span>
+                  {% endif %}
+                </div>
                 <div style="font-size:0.75rem;color:#64748B;margin-top:1px">
                   Registro: {{ r.fecha_registro|ec_time("%d/%m/%Y") }}
                 </div>
@@ -430,20 +485,55 @@
 
 <script>
   const modalPlan = document.getElementById('modal-plan');
+  let filtroActual = 'todos';
 
   function abrirModalPlan(rid, nombre, planActual) {
     document.getElementById('modal-nombre-rest').textContent = nombre;
     document.getElementById('form-plan').action = `/admin/restaurante/${rid}/plan`;
     document.getElementById('modal-select-plan').value = planActual;
-    // Fecha de hoy en formato yyyy-mm-dd
-    const hoy = new Date().toISOString().slice(0, 10);
-    document.getElementById('modal-fecha').value = hoy;
+    document.getElementById('modal-fecha').value = new Date().toISOString().slice(0, 10);
     modalPlan.style.display = 'flex';
   }
 
-  function cerrarModal() {
-    modalPlan.style.display = 'none';
+  function cerrarModal() { modalPlan.style.display = 'none'; }
+
+  function setFiltro(chip) {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('activo'));
+    chip.classList.add('activo');
+    filtroActual = chip.dataset.filtro;
+    filtrar();
   }
+
+  function filtrar() {
+    const q = document.getElementById('buscador').value.toLowerCase().trim();
+    const filas = document.querySelectorAll('tbody tr');
+    let visibles = 0;
+    filas.forEach(tr => {
+      const nombre  = tr.dataset.nombre  || '';
+      const email   = tr.dataset.email   || '';
+      const ciudad  = tr.dataset.ciudad  || '';
+      const plan    = tr.dataset.plan    || '';
+      const estado  = tr.dataset.estado  || '';
+
+      const matchTexto = !q || nombre.includes(q) || email.includes(q) || ciudad.includes(q);
+      const matchFiltro = filtroActual === 'todos'
+        || (filtroActual === 'inactivo' && estado === 'inactivo')
+        || (filtroActual !== 'inactivo' && plan === filtroActual);
+
+      if (matchTexto && matchFiltro) {
+        tr.classList.remove('oculto');
+        visibles++;
+      } else {
+        tr.classList.add('oculto');
+      }
+    });
+    const total = filas.length;
+    document.getElementById('count-badge').textContent =
+      visibles === total ? `${total} locales` : `${visibles} de ${total}`;
+  }
+
+  // Inicializar contador
+  filtrar();
 </script>
 </body>
 </html>
