@@ -108,7 +108,7 @@
     <span class="topbar-tip">
       <strong>Haz un pedido</strong> a la izquierda · Aparece en el panel a la derecha
     </span>
-    <a href="/register" class="btn-registrar">Crear mi restaurante →</a>
+    <a href="/register" class="btn-registrar">Crear mi local →</a>
   </div>
 
   <div class="layout">
@@ -116,7 +116,7 @@
     <!-- Tabs mobile -->
     <div class="tabs">
       <button class="tab-btn activa" onclick="cambiarTab('cliente', this)">📱 Cliente</button>
-      <button class="tab-btn"        onclick="cambiarTab('admin',   this)">🖥️ Restaurante</button>
+      <button class="tab-btn"        onclick="cambiarTab('admin',   this)">🖥️ Local</button>
     </div>
 
     <!-- Split desktop -->
@@ -136,7 +136,7 @@
       <div class="panel" id="panel-admin">
         <div class="panel-label admin">
           <span class="dot"></span>
-          🖥️ Panel del restaurante — El Rincón Criollo
+          🖥️ Panel del local — El Rincón Criollo
           <span style="margin-left:auto;opacity:0.7;font-weight:400">Los pedidos aparecen aquí</span>
         </div>
         <iframe src="{{ dashboard_url }}" id="frame-admin" title="Panel del restaurante"></iframe>
