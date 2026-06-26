@@ -244,9 +244,18 @@
         {% for r in restaurantes %}
         <tr>
           <td>
-            <div style="font-weight:700">{{ r.nombre }}</div>
-            <div style="font-size:0.75rem;color:#64748B;margin-top:1px">
-              Registro: {{ r.fecha_registro|ec_time("%d/%m/%Y") }}
+            <div style="display:flex;align-items:center;gap:0.65rem">
+              {% if r.logo_url %}
+                <img src="{{ r.logo_url }}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1.5px solid #334155">
+              {% else %}
+                <div style="width:36px;height:36px;border-radius:50%;background:#1E293B;border:1.5px solid #334155;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">🍽️</div>
+              {% endif %}
+              <div>
+                <div style="font-weight:700">{{ r.nombre }}</div>
+                <div style="font-size:0.75rem;color:#64748B;margin-top:1px">
+                  Registro: {{ r.fecha_registro|ec_time("%d/%m/%Y") }}
+                </div>
+              </div>
             </div>
           </td>
           <td style="color:#94A3B8">
