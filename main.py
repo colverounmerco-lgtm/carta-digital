@@ -46,7 +46,7 @@ TERMINOS_ASADO  = ["Blue", "Medio", "Tres cuartos", "Bien cocido"]
 CODIGO_TTL   = 15  # minutos
 TRIAL_DIAS   = 8   # Ecuador
 
-TRIAL_DIAS_POR_PAIS = {"ecuador": 8, "colombia": 30}
+TRIAL_DIAS_POR_PAIS = {"ecuador": 8, "colombia": 8}
 
 PLANES = {
     "mensual": {"nombre": "Mensual", "dias": 30},
@@ -340,10 +340,15 @@ def run_migrations():
         # Asignar trial a restaurantes sin plan/vencimiento
         if not r.plan:
             r.plan = 'trial'
+        dias_correctos = TRIAL_DIAS_POR_PAIS.get(r.pais or 'ecuador', TRIAL_DIAS)
         if not r.plan_vence:
-            base  = r.fecha_registro or datetime.utcnow()
-            dias  = TRIAL_DIAS_POR_PAIS.get(r.pais or 'ecuador', TRIAL_DIAS)
-            r.plan_vence = base + timedelta(days=dias)
+            base = r.fecha_registro or datetime.utcnow()
+            r.plan_vence = base + timedelta(days=dias_correctos)
+        elif r.plan == 'trial' and r.plan_inicio:
+            # Corregir si el trial tiene días incorrectos para el país
+            dias_actuales = (r.plan_vence - r.plan_inicio).days
+            if dias_actuales != dias_correctos:
+                r.plan_vence = r.plan_inicio + timedelta(days=dias_correctos)
     db.session.commit()
 
 

@@ -375,7 +375,7 @@
             {% endif %}
             {% if r.email != 'demo@cartadigital.app' %}
             <button class="btn-plan" style="margin-top:4px"
-              onclick="abrirModalPlan({{ r.id }}, '{{ r.nombre }}', '{{ r.plan or 'trial' }}')">
+              onclick="abrirModalPlan({{ r.id }}, '{{ r.nombre }}', '{{ r.plan or 'trial' }}', '{{ r.pais or 'ecuador' }}', '{{ (r.plan_inicio or r.fecha_registro).strftime('%Y-%m-%d') if (r.plan_inicio or r.fecha_registro) else '' }}')">
               🔄 Plan
             </button>
             {% endif %}
@@ -506,11 +506,26 @@
   let filtroCat  = 'todos';
   let filtroPais = 'todos';
 
-  function abrirModalPlan(rid, nombre, planActual) {
+  const PLAN_LABELS = {
+    ecuador:  { trial: 'Trial (8 días gratis)',  mensual: 'Mensual — $46.00/mes (IVA incl.)',           anual: 'Anual — $419.75/año (IVA incl.)' },
+    colombia: { trial: 'Trial (8 días gratis)',  mensual: 'Mensual — COP 190.400/mes (IVA incl.)',      anual: 'Anual — COP 1.785.000/año (IVA incl.)' },
+  };
+
+  function abrirModalPlan(rid, nombre, planActual, pais, fechaInicio) {
+    pais = pais || 'ecuador';
     document.getElementById('modal-nombre-rest').textContent = nombre;
     document.getElementById('form-plan').action = `/admin/restaurante/${rid}/plan`;
-    document.getElementById('modal-select-plan').value = planActual;
-    document.getElementById('modal-fecha').value = new Date().toISOString().slice(0, 10);
+
+    // Actualizar labels del select según país
+    const labels = PLAN_LABELS[pais] || PLAN_LABELS.ecuador;
+    const sel = document.getElementById('modal-select-plan');
+    sel.querySelector('option[value="trial"]').textContent   = labels.trial;
+    sel.querySelector('option[value="mensual"]').textContent = labels.mensual;
+    sel.querySelector('option[value="anual"]').textContent   = labels.anual;
+    sel.value = planActual;
+
+    // Fecha de inicio: usar plan_inicio/fecha_registro del restaurante, no hoy
+    document.getElementById('modal-fecha').value = fechaInicio || new Date().toISOString().slice(0, 10);
     modalPlan.style.display = 'flex';
   }
 
