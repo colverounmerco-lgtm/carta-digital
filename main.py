@@ -1028,6 +1028,9 @@ def editar_producto(pid):
 def eliminar_producto(pid):
     r = restaurante_session()
     p = Producto.query.filter_by(id=pid, restaurante_id=r.id).first_or_404()
+    if p.items:
+        flash("Este plato tiene pedidos anteriores y no puede eliminarse. Usa 'Pausar' para ocultarlo de la carta.", "error")
+        return redirect(url_for("menu"))
     db.session.delete(p)
     db.session.commit()
     flash("Plato eliminado.", "success")
