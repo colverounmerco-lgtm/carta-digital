@@ -223,6 +223,10 @@ def plan_requerido(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         r = restaurante_session()
+        if r and not r.activo:
+            session.clear()
+            flash("Tu cuenta está desactivada. Contacta al administrador.", "error")
+            return redirect(url_for("login"))
         if r and not plan_vigente(r):
             vencido_hace = (datetime.utcnow() - r.plan_vence).days if r.plan_vence else 0
             return render_template("auth/plan_vencido.html",
@@ -1590,7 +1594,7 @@ def hacer_pedido(slug, mesa_token):
 @app.route("/orden/<token>")
 def estado_orden(token):
     orden = Orden.query.filter_by(token=token).first_or_404()
-    if not plan_vigente(orden.restaurante):
+    if not orden.restaurante.activo or not plan_vigente(orden.restaurante):
         return render_template("auth/plan_vencido_cliente.html", restaurante=orden.restaurante), 403
     metodos_pago = MetodoPago.query.filter_by(
         restaurante_id=orden.restaurante_id, activo=True
@@ -1603,8 +1607,8 @@ def estado_orden(token):
 @app.route("/api/orden/<token>/estado")
 def api_estado_orden(token):
     orden = Orden.query.filter_by(token=token).first_or_404()
-    if not plan_vigente(orden.restaurante):
-        return jsonify({"error": "plan_vencido"}), 403
+    if not orden.restaurante.activo or not plan_vigente(orden.restaurante):
+        return jsonify({"error": "no_disponible"}), 403
     return jsonify({
         "estado":       orden.estado,
         "mesa_abierta": orden.mesa.abierta if orden.mesa else False,
@@ -1614,7 +1618,7 @@ def api_estado_orden(token):
 @app.route("/orden/<token>/cuenta", methods=["POST"])
 def solicitar_cuenta(token):
     orden = Orden.query.filter_by(token=token).first_or_404()
-    if not plan_vigente(orden.restaurante):
+    if not orden.restaurante.activo or not plan_vigente(orden.restaurante):
         return render_template("auth/plan_vencido_cliente.html", restaurante=orden.restaurante), 403
     if orden.estado == "lista":
         orden.solicita_cuenta  = True
