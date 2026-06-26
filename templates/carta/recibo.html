@@ -72,6 +72,28 @@
       margin-top: 18px;
     }
 
+    /* Datos de factura */
+    .factura-label {
+      font-size: 11px; font-weight: bold; color: #555;
+      text-transform: uppercase; letter-spacing: 0.3px;
+      margin-bottom: 4px;
+    }
+    .factura-textarea {
+      width: 100%;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      border: 1px dashed #bbb;
+      border-radius: 4px;
+      padding: 6px 7px;
+      resize: none;
+      outline: none;
+      background: #fafafa;
+      color: #000;
+      line-height: 1.6;
+      min-height: 72px;
+    }
+    .factura-textarea:focus { border-color: #F97316; background: #fff; }
+
     /* Botones — solo pantalla */
     .acciones {
       display: flex;
@@ -108,35 +130,9 @@
       text-decoration: none;
     }
 
-    /* Datos de factura */
-    .factura-form {
-      max-width: 340px; margin: 14px auto 0;
-      background: #fff; border-radius: 10px;
-      padding: 14px 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.10);
-    }
-    .factura-form h4 {
-      font-family: 'Courier New', monospace;
-      font-size: 13px; font-weight: bold;
-      margin-bottom: 10px; text-transform: uppercase;
-      border-bottom: 1px dashed #ccc; padding-bottom: 6px;
-    }
-    .factura-field { margin-bottom: 8px; }
-    .factura-field label {
-      display: block; font-size: 11px; font-weight: 700;
-      color: #555; margin-bottom: 3px; font-family: sans-serif;
-    }
-    .factura-field input {
-      width: 100%; border: 1px solid #D1D5DB; border-radius: 6px;
-      padding: 6px 8px; font-size: 13px; font-family: 'Courier New', monospace;
-      outline: none; color: #1C1C1E;
-    }
-    .factura-field input:focus { border-color: #F97316; }
-    .factura-print { display: none; }
-
     @media print {
       body { background: #fff; }
       .acciones { display: none !important; }
-      .factura-form { display: none !important; }
       .recibo-wrapper {
         margin: 0;
         padding: 4px 6px 12px;
@@ -144,8 +140,14 @@
         max-width: 100%;
       }
       .corte { display: none; }
-      .factura-print { display: block !important; }
-      .factura-print.vacio { display: none !important; }
+      .factura-label { color: #000; }
+      .factura-textarea {
+        border: none;
+        background: transparent;
+        padding: 2px 0;
+        min-height: unset;
+      }
+      .factura-bloque.vacio { display: none !important; }
     }
   </style>
 </head>
@@ -155,31 +157,6 @@
 <div class="acciones">
   <button class="btn-print" onclick="window.print()">🖨 Imprimir recibo</button>
   <a href="javascript:history.back()" class="btn-volver">← Volver</a>
-</div>
-
-<!-- Formulario datos de factura (pantalla) -->
-<div class="factura-form">
-  <h4>📄 Datos para factura <span style="font-size:10px;font-weight:400;color:#9CA3AF">(opcional)</span></h4>
-  <div class="factura-field">
-    <label>Nombres completos</label>
-    <input type="text" id="f-nombre" placeholder="Ej: Juan Pérez" oninput="syncFactura()">
-  </div>
-  <div class="factura-field">
-    <label>Cédula o RUC</label>
-    <input type="text" id="f-cedula" placeholder="Ej: 1712345678" oninput="syncFactura()">
-  </div>
-  <div class="factura-field">
-    <label>Dirección</label>
-    <input type="text" id="f-direccion" placeholder="Ej: Av. Amazonas N23-45" oninput="syncFactura()">
-  </div>
-  <div class="factura-field">
-    <label>Ciudad</label>
-    <input type="text" id="f-ciudad" placeholder="Ej: Quito" oninput="syncFactura()">
-  </div>
-  <div class="factura-field">
-    <label>Teléfono</label>
-    <input type="text" id="f-telefono" placeholder="Ej: 0991234567" oninput="syncFactura()">
-  </div>
 </div>
 
 <div class="recibo-wrapper">
@@ -249,15 +226,13 @@
   </div>
   {% endif %}
 
-  <!-- Datos de factura (solo impresión, se llena desde el form abajo) -->
-  <div class="factura-print vacio" id="factura-print-block">
+  <!-- Datos de factura -->
+  <div class="factura-bloque vacio" id="factura-bloque">
     <hr class="sep">
-    <div class="bold" style="margin-bottom:4px">DATOS PARA FACTURA</div>
-    <div id="fp-nombre"></div>
-    <div id="fp-cedula"></div>
-    <div id="fp-direccion"></div>
-    <div id="fp-ciudad"></div>
-    <div id="fp-telefono"></div>
+    <div class="factura-label">Datos para factura</div>
+    <textarea class="factura-textarea" id="factura-texto"
+      placeholder="Nombre, cédula/RUC, dirección, ciudad, teléfono…"
+      oninput="toggleFactura(this)" rows="4"></textarea>
   </div>
 
   <hr class="sep">
@@ -280,23 +255,17 @@
     window.addEventListener('load', () => setTimeout(() => window.print(), 500));
   }
 
-  function syncFactura() {
-    const nombre    = document.getElementById('f-nombre').value.trim();
-    const cedula    = document.getElementById('f-cedula').value.trim();
-    const direccion = document.getElementById('f-direccion').value.trim();
-    const ciudad    = document.getElementById('f-ciudad').value.trim();
-    const telefono  = document.getElementById('f-telefono').value.trim();
-
-    document.getElementById('fp-nombre').textContent    = nombre    ? 'Nombre: '    + nombre    : '';
-    document.getElementById('fp-cedula').textContent    = cedula    ? 'Ced/RUC: '  + cedula    : '';
-    document.getElementById('fp-direccion').textContent = direccion ? 'Dirección: ' + direccion : '';
-    document.getElementById('fp-ciudad').textContent    = ciudad    ? 'Ciudad: '    + ciudad    : '';
-    document.getElementById('fp-telefono').textContent  = telefono  ? 'Teléfono: '  + telefono  : '';
-
-    const bloque = document.getElementById('factura-print-block');
-    const hayDatos = nombre || cedula || direccion || ciudad || telefono;
-    bloque.classList.toggle('vacio', !hayDatos);
+  function toggleFactura(ta) {
+    document.getElementById('factura-bloque').classList.toggle('vacio', !ta.value.trim());
   }
+
+  // Mostrar bloque al hacer foco aunque esté vacío
+  document.getElementById('factura-texto').addEventListener('focus', function() {
+    document.getElementById('factura-bloque').classList.remove('vacio');
+  });
+  document.getElementById('factura-texto').addEventListener('blur', function() {
+    if (!this.value.trim()) document.getElementById('factura-bloque').classList.add('vacio');
+  });
 </script>
 </body>
 </html>
