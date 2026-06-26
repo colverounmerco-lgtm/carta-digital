@@ -1,3 +1,4 @@
+{%- macro fp(val) -%}{%- if restaurante.pais == 'colombia' -%}COP {{ "%.0f"|format(val) }}{%- else -%}${{ "%.2f"|format(val) }}{%- endif -%}{%- endmacro -%}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -111,7 +112,7 @@
       {% for item in orden.items %}
       <div class="orden-det-item">
         <span>{{ item.cantidad }}× {{ item.producto.nombre if item.producto else '—' }}{% if item.notas_item %} <span style="background:#FFF7ED;color:#C2410C;font-size:0.7rem;font-weight:700;padding:0.1rem 0.4rem;border-radius:20px;margin-left:0.3rem">{{ item.notas_item }}</span>{% endif %}</span>
-        <span>${{ "%.2f"|format(item.subtotal) }}</span>
+        <span>{{ fp(item.subtotal) }}</span>
       </div>
       {% endfor %}
       {% if orden.notas %}
@@ -119,7 +120,7 @@
       {% endif %}
       <div class="orden-det-total">
         <span>Total</span>
-        <span>${{ "%.2f"|format(orden.total) }}</span>
+        <span>{{ fp(orden.total) }}</span>
       </div>
     </div>
 

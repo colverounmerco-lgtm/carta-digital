@@ -1,3 +1,4 @@
+{%- macro fp(val) -%}{%- if restaurante.pais == 'colombia' -%}COP {{ "%.0f"|format(val) }}{%- else -%}${{ "%.2f"|format(val) }}{%- endif -%}{%- endmacro -%}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -197,9 +198,9 @@
           {% if item.notas_item %}
           <div style="font-size:11px;font-style:italic">{{ item.notas_item }}</div>
           {% endif %}
-          <div style="font-size:11px;color:#555">${{ "%.2f"|format(item.precio_unitario) }} c/u</div>
+          <div style="font-size:11px;color:#555">{{ fp(item.precio_unitario) }} c/u</div>
         </td>
-        <td class="col-price">${{ "%.2f"|format(item.subtotal) }}</td>
+        <td class="col-price">{{ fp(item.subtotal) }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -216,7 +217,7 @@
   <!-- Total -->
   <div class="total-row">
     <span>TOTAL</span>
-    <span>${{ "%.2f"|format(orden.total) }}</span>
+    <span>{{ fp(orden.total) }}</span>
   </div>
 
   {% set metodo = orden.metodo_pago or orden.metodo_preferido %}

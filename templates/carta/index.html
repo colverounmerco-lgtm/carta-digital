@@ -1,3 +1,4 @@
+{%- macro fp(val) -%}{%- if restaurante.pais == 'colombia' -%}COP {{ "%.0f"|format(val) }}{%- else -%}${{ "%.2f"|format(val) }}{%- endif -%}{%- endmacro -%}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -80,7 +81,7 @@
           </div>
           {% set tiene_opciones = p.terminos_asado or (p.salsas_activas and salsas_rest) or (p.adiciones_activas and adiciones_rest) or (p.bebidas_activas and secciones_bebida) or (p.sabores_activos and p.sabores) %}
           <div class="plato-footer" style="{% if tiene_opciones %}flex-direction:column;align-items:flex-start;gap:0.5rem{% endif %}">
-            <span class="plato-precio">${{ "%.2f"|format(p.precio) }}</span>
+            <span class="plato-precio">{{ fp(p.precio) }}</span>
 
             {% if tiene_opciones %}
               <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/agregar" style="width:100%">
@@ -176,7 +177,7 @@
                              style="width:16px;height:16px;accent-color:#F97316;cursor:pointer;flex-shrink:0">
                       <span>{{ a.nombre }}</span>
                       {% if a.precio > 0 %}
-                      <span style="color:#F97316;font-weight:700;font-size:0.78rem;margin-left:auto">+${{ "%.2f"|format(a.precio) }}</span>
+                      <span style="color:#F97316;font-weight:700;font-size:0.78rem;margin-left:auto">+{{ fp(a.precio) }}</span>
                       {% else %}
                       <span style="color:#9CA3AF;font-size:0.75rem;margin-left:auto">gratis</span>
                       {% endif %}
@@ -242,7 +243,7 @@
       <div class="carrito-count">{{ items_carrito }}</div>
       <span class="carrito-label">en tu pedido</span>
     </div>
-    <span class="carrito-total">${{ "%.2f"|format(total_carrito) }}</span>
+    <span class="carrito-total">{{ fp(total_carrito) }}</span>
     <button class="btn-ver-carrito" id="btn-ver-carrito">Ver pedido →</button>
   </div>
 </div>
@@ -262,7 +263,7 @@
       {% endif %}
       <div class="carrito-item-info">
         <div class="carrito-item-nombre">{{ item.nombre }}</div>
-        <div class="carrito-item-precio">${{ "%.2f"|format(item.precio) }} c/u</div>
+        <div class="carrito-item-precio">{{ fp(item.precio) }} c/u</div>
         <div style="display:flex;align-items:center;gap:0.4rem;margin-top:0.4rem">
           <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/cambiar" style="display:inline">
             <input type="hidden" name="item_key" value="{{ pid }}">
@@ -284,13 +285,13 @@
           </form>
         </div>
       </div>
-      <span class="carrito-item-subtotal">${{ "%.2f"|format(item.precio * item.cantidad) }}</span>
+      <span class="carrito-item-subtotal">{{ fp(item.precio * item.cantidad) }}</span>
     </div>
     {% endfor %}
 
     <div class="carrito-total-row">
       <span class="carrito-total-label">Total</span>
-      <span class="carrito-total-monto">${{ "%.2f"|format(total_carrito) }}</span>
+      <span class="carrito-total-monto">{{ fp(total_carrito) }}</span>
     </div>
 
     <form method="POST" action="/carta/{{ restaurante.slug }}/{{ mesa.token }}/pedido" class="form-pedido">
@@ -326,7 +327,7 @@
       {% endif %}
 
       <button type="submit" class="btn-pedir" style="margin-top:1rem">
-        {% if modo_cobro %}💳 Pagar y confirmar — ${{ "%.2f"|format(total_carrito) }}{% else %}🍽️ Enviar pedido — ${{ "%.2f"|format(total_carrito) }}{% endif %}
+        {% if modo_cobro %}💳 Pagar y confirmar — {{ fp(total_carrito) }}{% else %}🍽️ Enviar pedido — {{ fp(total_carrito) }}{% endif %}
       </button>
     </form>
 
