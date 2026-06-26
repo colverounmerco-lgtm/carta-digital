@@ -82,7 +82,7 @@
         Haz clic en <strong>Confirmar</strong> para que el cliente sepa que la cocina recibió su pedido.
       </div></div>
       <div class="paso"><div class="paso-num">3</div><div class="paso-texto">
-        Cuando el plato está listo, clic en <strong>Listo</strong>. El cliente verá "¡Listo para entregar!" en su pantalla y puede solicitar la cuenta eligiendo su método de pago.
+        Cuando el plato está listo, clic en <strong>Listo</strong>. El pedido <strong>desaparece de "Pedidos activos"</strong> — ya sale de la cocina. El cliente ve "¡Listo para entregar!" en su pantalla y puede solicitar la cuenta eligiendo su método de pago.
       </div></div>
       <div class="paso"><div class="paso-num">4</div><div class="paso-texto">
         Selecciona el método de pago en el selector y haz clic en <strong>✓ Cobrado</strong>. La mesa se cierra automáticamente.
@@ -118,7 +118,7 @@
         Arrastra los platos para cambiar el orden en que aparecen en la carta.
       </div></div>
       <div class="tip">
-        <strong>💡 Categorías:</strong> Organiza tu menú por secciones. Las categorías se crean automáticamente según el texto que escribas en el campo "Categoría".
+        <strong>💡 Categorías adaptadas:</strong> Las categorías del formulario cambian según el tipo de local. Restaurante: Entradas, Principal, Sopas… Bar: Cócteles, Cervezas, Destilados, Tapas… Cafetería: Cafés calientes, Cafés fríos, Jugos, Snacks… Puedes escribir cualquier categoría personalizada.
       </div>
     </div>
   </div>
@@ -296,7 +296,7 @@
       </div>
 
       <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
-        Haz clic en <strong>⚙️ [tu restaurante]</strong> → <strong>Perfil del restaurante</strong> y activa el toggle <strong>Cobro anticipado (mostrador)</strong>. El indicador se pone naranja cuando está activo.
+        Haz clic en <strong>⚙️ [tu local]</strong> → <strong>Mi local</strong> y activa el toggle <strong>Cobro anticipado (mostrador)</strong>. El indicador se pone naranja cuando está activo.
       </div></div>
       <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
         Cuando el cliente hace el pedido desde la carta, aparece un selector de <strong>método de pago</strong> antes de confirmar. El cliente elige cómo va a pagar en ese momento.
@@ -316,6 +316,46 @@
     </div>
   </div>
 
+  <!-- MODO BAR -->
+  <div class="seccion">
+    <div class="sec-header" onclick="toggle(this)">
+      <div class="sec-icono" style="background:#FFF7ED">🍺</div>
+      <div>
+        <div class="sec-titulo">Modo Bar — Cuentas acumuladas</div>
+        <div class="sec-sub">Varios pedidos en la misma mesa hasta que el admin cierra la cuenta</div>
+      </div>
+      <span class="sec-arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <div class="flujo">
+        <span class="flujo-paso">Cliente escanea QR</span><span class="flujo-arr">→</span>
+        <span class="flujo-paso">Pide rondas</span><span class="flujo-arr">→</span>
+        <span class="flujo-paso">Admin cierra cuenta</span><span class="flujo-arr">→</span>
+        <span class="flujo-paso">Cliente ve gracias</span>
+      </div>
+
+      <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
+        En bares la mesa <strong>nunca se cierra sola</strong> al entregar un pedido. El cliente puede seguir pidiendo rondas desde el mismo QR — cada pedido se acumula en la cuenta de esa mesa.
+      </div></div>
+      <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
+        En el panel aparece la sección <strong>🍺 Cuentas abiertas</strong> con una tarjeta por cada mesa activa. Cada tarjeta muestra el desglose de todos los pedidos de la sesión y el <strong>total acumulado</strong>.
+      </div></div>
+      <div class="paso"><div class="paso-num">3</div><div class="paso-texto">
+        Cuando el cliente solicita la cuenta, aparece el badge <strong>💳 Solicita la cuenta</strong> en la cabecera de la tarjeta de su mesa (con fondo amarillo). El aviso <em>no</em> aparece en "Pedidos activos" — solo en Cuentas abiertas.
+      </div></div>
+      <div class="paso"><div class="paso-num">4</div><div class="paso-texto">
+        Para cobrar, selecciona el método de pago en el selector de la tarjeta y haz clic en <strong>💰 Cerrar cuenta</strong>. Todos los pedidos de la mesa quedan cerrados de una vez.
+      </div></div>
+      <div class="paso"><div class="paso-num">5</div><div class="paso-texto">
+        Al cerrar la cuenta el cliente ve automáticamente <strong>"¡Gracias por tu visita!"</strong> en su pantalla — sin necesidad de que recargue la página. Si el mismo QR se escanea de nuevo, comienza una cuenta nueva desde cero.
+      </div></div>
+
+      <div class="tip">
+        <strong>💡 Después de cada entrega</strong> el cliente ve el botón <strong>"+ Pedir de nuevo"</strong> para agregar otra ronda. Solo cuando la cuenta está cerrada ve el mensaje de despedida y el botón desaparece.
+      </div>
+    </div>
+  </div>
+
   <!-- EQUIPO: COCINEROS Y MESEROS -->
   <div class="seccion">
     <div class="sec-header" onclick="toggle(this)">
@@ -328,7 +368,7 @@
     </div>
     <div class="sec-body">
       <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
-        Haz clic en el botón <strong>⚙️ [nombre de tu restaurante]</strong> en la esquina superior derecha y selecciona <strong>Equipo</strong>. Desde ahí crea usuarios para tu personal con: nombre, usuario, contraseña y rol (<em>Cocinero</em> o <em>Mesero</em>). Es completamente opcional.
+        Haz clic en el botón <strong>⚙️ [nombre de tu local]</strong> en la esquina superior derecha y selecciona <strong>Equipo</strong>. Desde ahí crea usuarios para tu personal con: nombre, usuario, contraseña y rol (<em>Cocinero</em> o <em>Mesero</em>). Es completamente opcional.
       </div></div>
       <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
         Copia el <strong>enlace de acceso</strong> que aparece en esa página y envíaselo a tu personal por WhatsApp. Ellos entran a ese enlace y solo necesitan escribir su usuario y contraseña.
@@ -369,7 +409,7 @@
     </div>
     <div class="sec-body">
       <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
-        Haz clic en <strong>⚙️ [tu restaurante]</strong> → <strong>Métodos de pago</strong>. Por defecto tienes: Efectivo, Tarjeta, Transferencia y Deuna!
+        Haz clic en <strong>⚙️ [tu local]</strong> → <strong>Métodos de pago</strong>. Por defecto tienes: Efectivo, Tarjeta, Transferencia y Deuna!
       </div></div>
       <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
         Puedes agregar métodos propios (ej: "PayPhone", "Nequi") con su emoji o icono. Desactiva los que no uses para que no aparezcan al cliente.
@@ -415,7 +455,7 @@
     </div>
     <div class="sec-body">
       <div class="paso"><div class="paso-num">1</div><div class="paso-texto">
-        Haz clic en el botón <strong>⚙️ [nombre de tu restaurante]</strong> en la esquina superior derecha y selecciona <strong>Perfil del restaurante</strong>. Desde ahí puedes cambiar el nombre, descripción, ciudad, WhatsApp, logo y contraseña.
+        Haz clic en el botón <strong>⚙️ [nombre de tu local]</strong> en la esquina superior derecha y selecciona <strong>Mi local</strong>. Desde ahí puedes cambiar el nombre, descripción, ciudad, WhatsApp, logo y contraseña.
       </div></div>
       <div class="paso"><div class="paso-num">2</div><div class="paso-texto">
         <strong>Restricción de red WiFi:</strong> cuando está activa, solo los clientes conectados al WiFi del local pueden ver el menú. Los que usan datos móviles ven una pantalla pidiéndoles que se conecten al WiFi.
