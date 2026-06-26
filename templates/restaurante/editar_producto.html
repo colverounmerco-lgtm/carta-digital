@@ -57,7 +57,10 @@
       <div class="campo-row">
         <div class="campo" style="margin-bottom:0">
           <label>Precio ({{ 'COP' if restaurante.pais == 'colombia' else 'USD' }}) *</label>
-          <input type="number" name="precio" value="{{ producto.precio }}" step="0.01" min="0.01" required>
+          <input type="number" name="precio"
+                 value="{{ producto.precio|int if restaurante.pais == 'colombia' else producto.precio }}"
+                 step="{{ '1' if restaurante.pais == 'colombia' else '0.01' }}"
+                 min="{{ '1' if restaurante.pais == 'colombia' else '0.01' }}" required>
         </div>
         <div class="campo" style="margin-bottom:0">
           <label>Categoría</label>
