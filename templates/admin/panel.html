@@ -256,12 +256,16 @@
   <div class="toolbar">
     <input class="search-input" type="text" id="buscador" placeholder="🔍  Buscar por nombre, correo o ciudad…" oninput="filtrar()">
     <div class="filtros">
-      <span class="chip activo" data-filtro="todos" onclick="setFiltro(this)">Todos</span>
-      <span class="chip" data-filtro="trial" onclick="setFiltro(this)">Trial</span>
-      <span class="chip" data-filtro="mensual" onclick="setFiltro(this)">Mensual</span>
-      <span class="chip" data-filtro="anual" onclick="setFiltro(this)">Anual</span>
-      <span class="chip" data-filtro="vencido" onclick="setFiltro(this)">Vencido</span>
-      <span class="chip" data-filtro="inactivo" onclick="setFiltro(this)">Inactivos</span>
+      <span class="chip activo" data-filtro="todos" data-tipo="plan" onclick="setFiltro(this)">Todos</span>
+      <span class="chip" data-filtro="trial" data-tipo="plan" onclick="setFiltro(this)">Trial</span>
+      <span class="chip" data-filtro="mensual" data-tipo="plan" onclick="setFiltro(this)">Mensual</span>
+      <span class="chip" data-filtro="anual" data-tipo="plan" onclick="setFiltro(this)">Anual</span>
+      <span class="chip" data-filtro="vencido" data-tipo="plan" onclick="setFiltro(this)">Vencido</span>
+      <span class="chip" data-filtro="inactivo" data-tipo="plan" onclick="setFiltro(this)">Inactivos</span>
+      <span style="width:1px;background:#334155;align-self:stretch;margin:0 0.25rem"></span>
+      <span class="chip" data-filtro="restaurante" data-tipo="cat" onclick="setFiltro(this)">🍽️ Restaurante</span>
+      <span class="chip" data-filtro="bar" data-tipo="cat" onclick="setFiltro(this)">🍺 Bar</span>
+      <span class="chip" data-filtro="cafeteria" data-tipo="cat" onclick="setFiltro(this)">☕ Cafetería</span>
     </div>
     <span class="count-badge" id="count-badge"></span>
   </div>
@@ -289,7 +293,8 @@
         {% set estado_key = 'inactivo' if not r.activo else 'activo' %}
         <tr data-nombre="{{ r.nombre|lower }}" data-email="{{ r.email|lower }}"
             data-ciudad="{{ (r.ciudad or '')|lower }}"
-            data-plan="{{ plan_key }}" data-estado="{{ estado_key }}">
+            data-plan="{{ plan_key }}" data-estado="{{ estado_key }}"
+            data-categoria="{{ r.categoria or 'restaurante' }}">
           <td>
             <div style="display:flex;align-items:center;gap:0.65rem">
               {% if r.logo_url %}
@@ -486,7 +491,8 @@
 
 <script>
   const modalPlan = document.getElementById('modal-plan');
-  let filtroActual = 'todos';
+  let filtroPlan = 'todos';
+  let filtroCat  = 'todos';
 
   function abrirModalPlan(rid, nombre, planActual) {
     document.getElementById('modal-nombre-rest').textContent = nombre;
@@ -499,9 +505,11 @@
   function cerrarModal() { modalPlan.style.display = 'none'; }
 
   function setFiltro(chip) {
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('activo'));
+    const tipo = chip.dataset.tipo;
+    document.querySelectorAll(`.chip[data-tipo="${tipo}"]`).forEach(c => c.classList.remove('activo'));
     chip.classList.add('activo');
-    filtroActual = chip.dataset.filtro;
+    if (tipo === 'plan') filtroPlan = chip.dataset.filtro;
+    else                 filtroCat  = chip.dataset.filtro;
     filtrar();
   }
 
@@ -510,18 +518,20 @@
     const filas = document.querySelectorAll('tbody tr');
     let visibles = 0;
     filas.forEach(tr => {
-      const nombre  = tr.dataset.nombre  || '';
-      const email   = tr.dataset.email   || '';
-      const ciudad  = tr.dataset.ciudad  || '';
-      const plan    = tr.dataset.plan    || '';
-      const estado  = tr.dataset.estado  || '';
+      const nombre = tr.dataset.nombre    || '';
+      const email  = tr.dataset.email     || '';
+      const ciudad = tr.dataset.ciudad    || '';
+      const plan   = tr.dataset.plan      || '';
+      const estado = tr.dataset.estado    || '';
+      const cat    = tr.dataset.categoria || '';
 
       const matchTexto = !q || nombre.includes(q) || email.includes(q) || ciudad.includes(q);
-      const matchFiltro = filtroActual === 'todos'
-        || (filtroActual === 'inactivo' && estado === 'inactivo')
-        || (filtroActual !== 'inactivo' && plan === filtroActual);
+      const matchPlan  = filtroPlan === 'todos'
+        || (filtroPlan === 'inactivo' && estado === 'inactivo')
+        || (filtroPlan !== 'inactivo' && plan === filtroPlan);
+      const matchCat   = filtroCat === 'todos' || cat === filtroCat;
 
-      if (matchTexto && matchFiltro) {
+      if (matchTexto && matchPlan && matchCat) {
         tr.classList.remove('oculto');
         visibles++;
       } else {
@@ -533,7 +543,6 @@
       visibles === total ? `${total} locales` : `${visibles} de ${total}`;
   }
 
-  // Inicializar contador
   filtrar();
 </script>
 </body>
