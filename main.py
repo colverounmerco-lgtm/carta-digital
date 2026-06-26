@@ -755,9 +755,10 @@ def dashboard():
         db.session.commit()
     inicio, fin     = inicio_fin_dia_ec()
 
+    estados_activos = ["pendiente", "confirmada"] if r.categoria == 'bar' else ["pendiente", "confirmada", "lista"]
     ordenes_activas = Orden.query.filter(
         Orden.restaurante_id == r.id,
-        Orden.estado.in_(["pendiente", "confirmada"]),
+        Orden.estado.in_(estados_activos),
         Orden.fecha >= inicio,
         Orden.fecha <= fin,
     ).order_by(Orden.fecha.desc()).all()
