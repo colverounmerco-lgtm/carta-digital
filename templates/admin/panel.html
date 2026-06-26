@@ -47,7 +47,8 @@
     .btn-logout:hover { color: #F1F5F9; border-color: #64748B; }
 
     /* Contenido */
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .wrap { max-width: 1280px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .tabla-wrap { overflow-x: auto; }
 
     .page-header {
       display: flex; align-items: flex-end;
@@ -313,8 +314,8 @@
               </div>
             </div>
           </td>
-          <td style="color:#94A3B8">
-            {{ r.email }}
+          <td style="color:#94A3B8;max-width:220px">
+            <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px" title="{{ r.email }}">{{ r.email }}</div>
             {% if not r.email_verificado %}
               <div style="margin-top:3px">
                 <span style="font-size:0.68rem;color:#F87171;font-weight:700">✗ Sin verificar</span>
