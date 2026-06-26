@@ -757,7 +757,7 @@ def dashboard():
 
     ordenes_activas = Orden.query.filter(
         Orden.restaurante_id == r.id,
-        Orden.estado.in_(["pendiente", "confirmada", "lista"]),
+        Orden.estado.in_(["pendiente", "confirmada"]),
         Orden.fecha >= inicio,
         Orden.fecha <= fin,
     ).order_by(Orden.fecha.desc()).all()
@@ -782,10 +782,16 @@ def dashboard():
     ).order_by(MetodoPago.orden_display).all()
 
     # Para bares: agrupar TODOS los pedidos de hoy por mesa (activos + entregados)
-    # Solo mostramos mesas que tengan al menos un pedido activo (cuenta abierta)
+    # Solo mostramos mesas que tengan al menos un pedido no cerrado (pendiente/confirmada/lista)
     cuentas_abiertas = []
     if r.categoria == 'bar':
-        mesas_con_activos = {o.mesa_id for o in ordenes_activas}
+        ordenes_bar_abiertas = Orden.query.filter(
+            Orden.restaurante_id == r.id,
+            Orden.estado.in_(["pendiente", "confirmada", "lista"]),
+            Orden.fecha >= inicio,
+            Orden.fecha <= fin,
+        ).all()
+        mesas_con_activos = {o.mesa_id for o in ordenes_bar_abiertas}
         grupos = {}
         for mid in mesas_con_activos:
             mesa       = Mesa.query.get(mid)
