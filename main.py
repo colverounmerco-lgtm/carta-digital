@@ -239,10 +239,18 @@ def plan_requerido(f):
 def ctx():
     sid = session.get("subusuario_id")
     subusuario = SubUsuario.query.get(sid) if sid else None
+
+    def fp(val, restaurante=None):
+        pais = getattr(restaurante, 'pais', None) if restaurante else None
+        if pais == 'colombia':
+            return "COP " + "{:,.0f}".format(val).replace(",", ".")
+        return "${:.2f}".format(val)
+
     return {
         "restaurante_session": restaurante_session(),
         "subusuario_actual": subusuario,
         "now": datetime.utcnow,
+        "fp": fp,
     }
 
 

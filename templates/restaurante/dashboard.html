@@ -61,7 +61,7 @@
       <span class="stat-label">Pedidos pagados hoy</span>
     </div>
     <div class="stat-card stat-verde">
-      <span class="stat-numero">${{ "%.2f"|format(ingresos_hoy) }}</span>
+      <span class="stat-numero">{{ fp(ingresos_hoy, restaurante) }}</span>
       <span class="stat-label">Ingresos de hoy</span>
     </div>
     {% if cuentas_solicitadas > 0 and restaurante.categoria != 'bar' %}
@@ -97,7 +97,7 @@
           {% endif %}
         </div>
         <div style="font-size:1.2rem;font-weight:900;color:#F97316">
-          ${{ "%.2f"|format(grupo.total) }}
+          {{ fp(grupo.total, restaurante) }}
           <span style="font-size:0.75rem;font-weight:500;color:#9CA3AF">acumulado</span>
         </div>
       </div>
@@ -128,14 +128,14 @@
             <div style="display:flex;justify-content:space-between;font-size:0.82rem;
               color:{% if orden.estado == 'pagada' %}#9CA3AF{% else %}#374151{% endif %}">
               <span>{{ item.cantidad }}× {{ item.producto.nombre if item.producto else '—' }}{% if item.notas_item %} <span style="background:#FFF7ED;color:#C2410C;font-size:0.68rem;font-weight:700;padding:0.1rem 0.35rem;border-radius:20px">{{ item.notas_item }}</span>{% endif %}</span>
-              <span style="font-weight:600">${{ "%.2f"|format(item.subtotal) }}</span>
+              <span style="font-weight:600">{{ fp(item.subtotal, restaurante) }}</span>
             </div>
             {% endfor %}
           </div>
 
           <div style="text-align:right;font-size:0.82rem;font-weight:700;
             color:{% if orden.estado == 'pagada' %}#9CA3AF{% else %}#F97316{% endif %};margin-top:0.35rem">
-            ${{ "%.2f"|format(orden.total) }}
+            {{ fp(orden.total, restaurante) }}
           </div>
         </div>
         {% endfor %}
@@ -145,7 +145,7 @@
       {% if not es_subusuario or rol_actual != 'cocinero' %}
       <div style="border-top:1px solid #FED7AA;padding:0.85rem 1.25rem;display:flex;align-items:center;justify-content:space-between;gap:0.75rem;flex-wrap:wrap">
         <span style="font-size:0.9rem;color:#6B7280">
-          Total a cobrar: <strong style="color:#1C1C1E;font-size:1rem">${{ "%.2f"|format(grupo.total) }}</strong>
+          Total a cobrar: <strong style="color:#1C1C1E;font-size:1rem">{{ fp(grupo.total, restaurante) }}</strong>
         </span>
         <form method="POST" action="/dashboard/mesa/{{ grupo.mesa.id }}/cerrar-cuenta"
               onsubmit="return confirm('¿Cerrar cuenta de {{ grupo.mesa.nombre }}?')"
@@ -227,11 +227,11 @@
         {% for item in orden.items %}
         <li>
           <span>{{ item.cantidad }}× {{ item.producto.nombre if item.producto else '—' }}{% if item.notas_item %} <span style="background:#FFF7ED;color:#C2410C;font-size:0.72rem;font-weight:700;padding:0.1rem 0.45rem;border-radius:20px;margin-left:0.3rem">{{ item.notas_item }}</span>{% endif %}</span>
-          <span>${{ "%.2f"|format(item.subtotal) }}</span>
+          <span>{{ fp(item.subtotal, restaurante) }}</span>
         </li>
         {% endfor %}
       </ul>
-      <div style="text-align:right" class="orden-total">Total: ${{ "%.2f"|format(orden.total) }}</div>
+      <div style="text-align:right" class="orden-total">Total: {{ fp(orden.total, restaurante) }}</div>
     </div>
 
     <div class="orden-footer">

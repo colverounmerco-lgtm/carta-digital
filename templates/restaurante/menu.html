@@ -40,7 +40,7 @@
           <div class="prod-desc">{{ p.descripcion }}</div>
         {% endif %}
         <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.4rem">
-          <span class="prod-precio">${{ "%.2f"|format(p.precio) }}</span>
+          <span class="prod-precio">{{ fp(p.precio, restaurante) }}</span>
           {% if p.disponible %}
             <span class="badge badge-verde" style="font-size:0.72rem">Disponible</span>
           {% else %}

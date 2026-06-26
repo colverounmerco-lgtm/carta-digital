@@ -46,7 +46,7 @@
         {% set meses = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'] %}
         {{ meses[row.mes|int] }} {{ row.anio|int }}
       </div>
-      <div class="mes-monto">${{ "%.2f"|format(row.total or 0) }}</div>
+      <div class="mes-monto">{{ fp(row.total or 0, restaurante) }}</div>
       <div class="mes-count">{{ row.ordenes }} pedido{% if row.ordenes != 1 %}s{% endif %} pagados</div>
     </div>
     {% endfor %}

@@ -41,7 +41,7 @@
           🍳 {{ a.nombre }}
         </span>
         {% if a.precio > 0 %}
-        <span style="font-size:0.8rem;color:#F97316;font-weight:700;margin-left:0.5rem">+${{ "%.2f"|format(a.precio) }}</span>
+        <span style="font-size:0.8rem;color:#F97316;font-weight:700;margin-left:0.5rem">+{{ fp(a.precio, restaurante) }}</span>
         {% else %}
         <span style="font-size:0.78rem;color:#9CA3AF;margin-left:0.5rem">gratis</span>
         {% endif %}
