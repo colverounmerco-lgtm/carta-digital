@@ -1590,6 +1590,8 @@ def hacer_pedido(slug, mesa_token):
 @app.route("/orden/<token>")
 def estado_orden(token):
     orden = Orden.query.filter_by(token=token).first_or_404()
+    if not plan_vigente(orden.restaurante):
+        return render_template("auth/plan_vencido_cliente.html", restaurante=orden.restaurante), 403
     metodos_pago = MetodoPago.query.filter_by(
         restaurante_id=orden.restaurante_id, activo=True
     ).order_by(MetodoPago.orden_display).all()
@@ -1601,6 +1603,8 @@ def estado_orden(token):
 @app.route("/api/orden/<token>/estado")
 def api_estado_orden(token):
     orden = Orden.query.filter_by(token=token).first_or_404()
+    if not plan_vigente(orden.restaurante):
+        return jsonify({"error": "plan_vencido"}), 403
     return jsonify({
         "estado":       orden.estado,
         "mesa_abierta": orden.mesa.abierta if orden.mesa else False,
@@ -1610,6 +1614,8 @@ def api_estado_orden(token):
 @app.route("/orden/<token>/cuenta", methods=["POST"])
 def solicitar_cuenta(token):
     orden = Orden.query.filter_by(token=token).first_or_404()
+    if not plan_vigente(orden.restaurante):
+        return render_template("auth/plan_vencido_cliente.html", restaurante=orden.restaurante), 403
     if orden.estado == "lista":
         orden.solicita_cuenta  = True
         orden.metodo_preferido = request.form.get("metodo_preferido", "efectivo")
