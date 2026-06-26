@@ -1,4 +1,4 @@
-{%- macro fp(val) -%}{%- if restaurante.pais == 'colombia' -%}COP {{ "%.0f"|format(val) }}{%- else -%}${{ "%.2f"|format(val) }}{%- endif -%}{%- endmacro -%}
+{%- macro fp(val) -%}{%- if restaurante.pais == 'colombia' -%}COP {{ "{:,.0f}".format(val).replace(",", ".") }}{%- else -%}${{ "%.2f"|format(val) }}{%- endif -%}{%- endmacro -%}
 <!DOCTYPE html>
 <html lang="es">
 <head>
