@@ -64,7 +64,7 @@
       <span class="stat-numero">${{ "%.2f"|format(ingresos_hoy) }}</span>
       <span class="stat-label">Ingresos de hoy</span>
     </div>
-    {% if cuentas_solicitadas > 0 %}
+    {% if cuentas_solicitadas > 0 and restaurante.categoria != 'bar' %}
     <div class="stat-card" style="border-color:#FDE68A;background:#FFFBEB">
       <span class="stat-numero" style="color:#D97706">{{ cuentas_solicitadas }}</span>
       <span class="stat-label">Solicitan la cuenta</span>
@@ -80,12 +80,21 @@
     <div style="background:#fff;border:2px solid #FED7AA;border-radius:16px;overflow:hidden">
 
       <!-- Cabecera de la mesa -->
-      <div style="background:#FFF7ED;padding:0.85rem 1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem">
-        <div style="display:flex;align-items:center;gap:0.75rem">
+      {% set solicita = grupo.ordenes | selectattr('solicita_cuenta') | list %}
+      <div style="background:{% if solicita %}#FEF3C7{% else %}#FFF7ED{% endif %};padding:0.85rem 1.25rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;
+        {% if solicita %}border-bottom:2px solid #FDE68A{% endif %}">
+        <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap">
           <span style="font-weight:800;font-size:1rem;color:#1C1C1E">{{ grupo.mesa.nombre }}</span>
           <span style="background:#FED7AA;color:#92400E;font-size:0.7rem;font-weight:700;padding:0.15rem 0.55rem;border-radius:999px">
             {{ grupo.ordenes|length }} pedido{{ 's' if grupo.ordenes|length != 1 else '' }}
           </span>
+          {% if solicita %}
+          <span style="background:#FEF08A;color:#854D0E;font-size:0.72rem;font-weight:800;padding:0.2rem 0.65rem;border-radius:999px;border:1px solid #FDE047;animation:blink-dot 1.5s infinite">
+            💳 Solicita la cuenta
+            {% set mp_pref = solicita[0].metodo_preferido %}
+            {% if mp_pref %}· {{ mp_pref }}{% endif %}
+          </span>
+          {% endif %}
         </div>
         <div style="font-size:1.2rem;font-weight:900;color:#F97316">
           ${{ "%.2f"|format(grupo.total) }}
@@ -179,7 +188,7 @@
         {% elif orden.estado == 'lista' %}
           <span class="badge badge-verde">✅ Listo para entregar</span>
         {% endif %}
-        {% if orden.solicita_cuenta and not es_subusuario %}
+        {% if orden.solicita_cuenta and not es_subusuario and restaurante.categoria != 'bar' %}
           {% if restaurante.modo_cobro %}
             <span class="cuenta-badge" style="background:#D1FAE5;color:#065F46;border-color:#6EE7B7">
               ✅ Ya cobrado
