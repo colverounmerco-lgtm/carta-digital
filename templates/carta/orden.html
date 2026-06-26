@@ -51,14 +51,18 @@
       {% if orden.estado == 'pendiente' %}
         <span style="font-size:1.8rem">⏳</span>
         <p style="font-weight:700;margin-top:0.4rem">Tu pedido fue recibido</p>
-        <p style="font-size:0.83rem;color:#6B7280;margin-top:0.2rem">El restaurante lo confirmará en breve</p>
+        <p style="font-size:0.83rem;color:#6B7280;margin-top:0.2rem">
+          {% if restaurante.categoria == 'bar' %}La barra lo preparará en breve{% else %}El restaurante lo confirmará en breve{% endif %}
+        </p>
         <div style="margin-top:0.5rem;font-size:0.78rem;color:#9CA3AF">
           <span class="refresh-dot"></span> actualizando cada 30s
         </div>
       {% elif orden.estado == 'confirmada' %}
         <span style="font-size:1.8rem">🔥</span>
         <p style="font-weight:700;margin-top:0.4rem">¡Tu pedido está en preparación!</p>
-        <p style="font-size:0.83rem;color:#6B7280;margin-top:0.2rem">La cocina ya lo tiene</p>
+        <p style="font-size:0.83rem;color:#6B7280;margin-top:0.2rem">
+          {% if restaurante.categoria == 'bar' %}El bartender ya lo tiene{% else %}La cocina ya lo tiene{% endif %}
+        </p>
       {% elif orden.estado == 'lista' %}
         <span style="font-size:1.8rem">✅</span>
         <p style="font-weight:700;margin-top:0.4rem;color:#059669">¡Listo para entregar!</p>
