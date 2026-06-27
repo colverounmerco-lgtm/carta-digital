@@ -390,5 +390,49 @@
   activarChips('input[type="radio"][class^="radio-metodo"]');
 
 </script>
+
+{% if mesa_abierta and not mesa.es_para_llevar and restaurante.email != 'demo@cartadigital.app' %}
+<!-- Botón llamar mesero -->
+<button id="btn-mesero"
+  onclick="llamarMesero()"
+  style="position:fixed;bottom:{% if items_carrito > 0 %}80px{% else %}1.5rem{% endif %};right:1.25rem;z-index:200;
+         background:#1C1C1E;color:#fff;border:none;border-radius:999px;
+         padding:0.6rem 1.1rem;font-size:0.88rem;font-weight:700;
+         box-shadow:0 4px 16px rgba(0,0,0,0.25);cursor:pointer;
+         display:flex;align-items:center;gap:0.4rem;transition:all 0.2s">
+  🔔 Llamar al mesero
+</button>
+
+<script>
+  function llamarMesero() {
+    const btn = document.getElementById('btn-mesero');
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    fetch('/carta/{{ restaurante.slug }}/{{ mesa.token }}/llamar-mesero', { method: 'POST' })
+      .then(() => {
+        btn.innerHTML = '✅ Mesero en camino';
+        btn.style.background = '#059669';
+        btn.style.opacity = '1';
+        setTimeout(() => {
+          btn.innerHTML = '🔔 Llamar al mesero';
+          btn.style.background = '#1C1C1E';
+          btn.disabled = false;
+        }, 8000);
+      })
+      .catch(() => { btn.disabled = false; btn.style.opacity = '1'; });
+  }
+
+  // Ajustar posición del botón cuando aparece la barra del carrito
+  const carritoBar = document.getElementById('carrito-bar');
+  if (carritoBar) {
+    const observer = new MutationObserver(() => {
+      document.getElementById('btn-mesero').style.bottom =
+        carritoBar.offsetHeight > 0 ? '80px' : '1.5rem';
+    });
+    observer.observe(carritoBar, { attributes: true, attributeFilter: ['style'] });
+  }
+</script>
+{% endif %}
+
 </body>
 </html>

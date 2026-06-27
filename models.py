@@ -66,9 +66,10 @@ class Mesa(db.Model):
     nombre         = db.Column(db.String(50))
     token          = db.Column(db.String(40), unique=True, nullable=False)
     activa         = db.Column(db.Boolean, default=True)
-    abierta        = db.Column(db.Boolean, default=False)  # False = bloqueada para pedidos; abre al escanear QR
-    es_para_llevar = db.Column(db.Boolean, default=False)
-    tab_inicio     = db.Column(db.DateTime)  # Momento en que se abrió la tab actual (solo bares)
+    abierta            = db.Column(db.Boolean, default=False)
+    es_para_llevar     = db.Column(db.Boolean, default=False)
+    tab_inicio         = db.Column(db.DateTime)
+    mesero_solicitado  = db.Column(db.Boolean, default=False)
 
     ordenes = db.relationship("Orden", backref="mesa", lazy=True)
 

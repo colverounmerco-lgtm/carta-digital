@@ -70,8 +70,32 @@
       <span class="stat-label">Solicitan la cuenta</span>
     </div>
     {% endif %}
+    {% if meseros_solicitados %}
+    <div class="stat-card" style="border-color:#BFDBFE;background:#EFF6FF">
+      <span class="stat-numero" style="color:#1D4ED8">{{ meseros_solicitados|length }}</span>
+      <span class="stat-label">🔔 Llaman al mesero</span>
+    </div>
+    {% endif %}
     {% endif %}
   </div>
+
+  {% if meseros_solicitados %}
+  <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:14px;padding:0.85rem 1.25rem;margin-bottom:1.25rem;display:flex;flex-direction:column;gap:0.5rem">
+    <div style="font-size:0.85rem;font-weight:800;color:#1D4ED8;margin-bottom:0.25rem">🔔 Mesas que llaman al mesero</div>
+    <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
+      {% for m in meseros_solicitados %}
+      <form method="POST" action="/dashboard/mesa/{{ m.id }}/atiende-mesero" style="display:inline">
+        <button type="submit"
+          style="background:#1D4ED8;color:#fff;border:none;border-radius:999px;
+                 padding:0.35rem 1rem;font-size:0.82rem;font-weight:700;cursor:pointer;
+                 display:inline-flex;align-items:center;gap:0.35rem">
+          {{ m.nombre }} · <span style="font-weight:400;font-size:0.75rem">Atendido ✓</span>
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
   {% if restaurante.categoria == 'bar' and cuentas_abiertas %}
   <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:0.75rem">🍺 Cuentas abiertas</h2>

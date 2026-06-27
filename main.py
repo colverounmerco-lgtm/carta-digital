@@ -324,9 +324,10 @@ def run_migrations():
         add_col("ordenes", "fecha_pago",       "TIMESTAMP")
 
     if "mesas" in tables:
-        add_col("mesas", "abierta",        "BOOLEAN DEFAULT FALSE")
-        add_col("mesas", "es_para_llevar", "BOOLEAN DEFAULT FALSE")
-        add_col("mesas", "tab_inicio",     "TIMESTAMP")
+        add_col("mesas", "abierta",           "BOOLEAN DEFAULT FALSE")
+        add_col("mesas", "es_para_llevar",   "BOOLEAN DEFAULT FALSE")
+        add_col("mesas", "tab_inicio",       "TIMESTAMP")
+        add_col("mesas", "mesero_solicitado","BOOLEAN DEFAULT FALSE")
         # Cerrar todas las mesas sin orden activa (limpieza de estado inicial)
         db.session.execute(text(
             "UPDATE mesas SET abierta = FALSE "
@@ -837,7 +838,8 @@ def dashboard():
         Orden.fecha <= fin,
     ).scalar() or 0.0
 
-    cuentas_solicitadas = sum(1 for o in ordenes_activas if o.solicita_cuenta)
+    cuentas_solicitadas  = sum(1 for o in ordenes_activas if o.solicita_cuenta)
+    meseros_solicitados  = Mesa.query.filter_by(restaurante_id=r.id, mesero_solicitado=True).all()
     metodos_pago = MetodoPago.query.filter_by(
         restaurante_id=r.id, activo=True
     ).order_by(MetodoPago.orden_display).all()
@@ -876,6 +878,7 @@ def dashboard():
         total_hoy=total_hoy,
         ingresos_hoy=ingresos_hoy,
         cuentas_solicitadas=cuentas_solicitadas,
+        meseros_solicitados=meseros_solicitados,
         metodos_pago=metodos_pago,
         dias_plan=dias_plan(r),
         es_subusuario=es_sub,
@@ -954,6 +957,16 @@ def cerrar_cuenta_mesa(mid):
     mesa.tab_inicio = None
     db.session.commit()
     flash(f"Cuenta de {mesa.nombre} cerrada.", "success")
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/dashboard/mesa/<int:mid>/atiende-mesero", methods=["POST"])
+@login_required
+def atiende_mesero(mid):
+    r    = restaurante_session()
+    mesa = Mesa.query.filter_by(id=mid, restaurante_id=r.id).first_or_404()
+    mesa.mesero_solicitado = False
+    db.session.commit()
     return redirect(url_for("dashboard"))
 
 
@@ -1558,6 +1571,15 @@ def carta_agregar(slug, mesa_token):
     }
     session[cart_key] = carrito
     return redirect(url_for("carta", slug=slug, mesa_token=mesa_token) + "#carrito")
+
+
+@app.route("/carta/<slug>/<mesa_token>/llamar-mesero", methods=["POST"])
+def llamar_mesero(slug, mesa_token):
+    mesa = Mesa.query.filter_by(token=mesa_token).first_or_404()
+    if not mesa.es_para_llevar:
+        mesa.mesero_solicitado = True
+        db.session.commit()
+    return {"ok": True}, 200
 
 
 @app.route("/carta/<slug>/<mesa_token>/cambiar", methods=["POST"])
