@@ -355,8 +355,12 @@ def run_migrations():
         add_col("restaurantes", "restringir_red",   "BOOLEAN DEFAULT TRUE")
         add_col("restaurantes", "dia_apertura",     "DATE")
         add_col("restaurantes", "modo_cobro",       "BOOLEAN DEFAULT FALSE")
-        add_col("restaurantes", "categoria",        "VARCHAR(20) DEFAULT 'restaurante'")
-        add_col("restaurantes", "pais",             "VARCHAR(20) DEFAULT 'ecuador'")
+        add_col("restaurantes", "categoria",         "VARCHAR(20) DEFAULT 'restaurante'")
+        add_col("restaurantes", "pais",              "VARCHAR(20) DEFAULT 'ecuador'")
+        add_col("restaurantes", "fact_tipo_id",      "VARCHAR(20)")
+        add_col("restaurantes", "fact_numero_id",    "VARCHAR(30)")
+        add_col("restaurantes", "fact_razon_social", "VARCHAR(150)")
+        add_col("restaurantes", "fact_direccion",    "VARCHAR(200)")
 
     # Crear métodos de pago por defecto para restaurantes existentes
     for r in Restaurante.query.all():
@@ -420,8 +424,12 @@ def register():
         whatsapp    = request.form.get("whatsapp", "").strip()
         ciudad      = request.form.get("ciudad", "").strip()
         descripcion = request.form.get("descripcion", "").strip()
-        categoria   = request.form.get("categoria", "").strip()
-        pais        = request.form.get("pais", "").strip()
+        categoria         = request.form.get("categoria", "").strip()
+        pais              = request.form.get("pais", "").strip()
+        fact_tipo_id      = request.form.get("fact_tipo_id", "").strip()
+        fact_numero_id    = request.form.get("fact_numero_id", "").strip()
+        fact_razon_social = request.form.get("fact_razon_social", "").strip()
+        fact_direccion    = request.form.get("fact_direccion", "").strip()
 
         if not all([nombre, email, pwd, categoria, pais]):
             flash("Completa todos los campos requeridos.", "error")
@@ -464,7 +472,11 @@ def register():
                         plan='trial',
                         plan_inicio=datetime.utcnow(),
                         plan_vence=datetime.utcnow() + timedelta(days=trial_dias),
-                        email_verificado=skip_verificacion)
+                        email_verificado=skip_verificacion,
+                        fact_tipo_id=fact_tipo_id or None,
+                        fact_numero_id=fact_numero_id or None,
+                        fact_razon_social=fact_razon_social or None,
+                        fact_direccion=fact_direccion or None)
         r.set_password(pwd)
         db.session.add(r)
         db.session.flush()

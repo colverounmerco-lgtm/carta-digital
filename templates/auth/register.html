@@ -162,6 +162,34 @@
         </div>
       </div>
 
+      <!-- Datos de facturación -->
+      <div style="margin-top:1.5rem;border:1px solid #E2E8F0;border-radius:14px;padding:1.25rem 1.25rem 0.75rem;background:#F8FAFC">
+        <div style="font-size:0.9rem;font-weight:700;color:#374151;margin-bottom:0.1rem">Datos de facturación <span style="font-weight:400;color:#9CA3AF">(opcional)</span></div>
+        <div style="font-size:0.78rem;color:#9CA3AF;margin-bottom:1rem">Para emitir facturas a tu nombre o empresa</div>
+
+        <div class="campo" style="margin-bottom:0.75rem">
+          <label>Tipo de identificación</label>
+          <select name="fact_tipo_id" id="fact_tipo_id" style="width:100%;padding:0.6rem 0.75rem;border:1.5px solid #E2E8F0;border-radius:10px;font-size:0.9rem;background:#fff;color:#374151">
+            <option value="">— Seleccionar —</option>
+          </select>
+        </div>
+
+        <div class="campo" style="margin-bottom:0.75rem">
+          <label id="lbl-numero-id">Número</label>
+          <input type="text" name="fact_numero_id" id="fact_numero_id" placeholder="">
+        </div>
+
+        <div class="campo" style="margin-bottom:0.75rem">
+          <label>Razón social / Nombre completo</label>
+          <input type="text" name="fact_razon_social" placeholder="Nombre o empresa tal como aparece en documentos">
+        </div>
+
+        <div class="campo" style="margin-bottom:0.5rem">
+          <label>Dirección</label>
+          <input type="text" name="fact_direccion" id="fact_direccion" placeholder="Calle principal, ciudad">
+        </div>
+      </div>
+
       <button type="submit" class="btn-primario" style="width:100%;padding:0.8rem;font-size:0.95rem;justify-content:center;margin-top:1.5rem">
         Crear mi local
       </button>
@@ -172,14 +200,51 @@
 </div>
 <script src="/static/js/main.js"></script>
 <script>
+  const FACT_DATA = {
+    ecuador: {
+      tipos: [
+        { val: 'ruc',       label: 'RUC',       placeholder: '1753446341001' },
+        { val: 'cedula',    label: 'Cédula',     placeholder: '1753446341' },
+        { val: 'pasaporte', label: 'Pasaporte',  placeholder: 'A1234567' },
+      ],
+    },
+    colombia: {
+      tipos: [
+        { val: 'nit',    label: 'NIT',                  placeholder: '900123456-7' },
+        { val: 'cedula', label: 'Cédula de ciudadanía', placeholder: '12345678' },
+      ],
+    },
+  };
+
+  function actualizarFact(pais) {
+    const sel = document.getElementById('fact_tipo_id');
+    const numInput = document.getElementById('fact_numero_id');
+    const data = FACT_DATA[pais];
+    if (!data) return;
+    sel.innerHTML = '<option value="">— Seleccionar —</option>';
+    data.tipos.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.val;
+      opt.textContent = t.label;
+      sel.appendChild(opt);
+    });
+    numInput.placeholder = data.tipos[0].placeholder;
+    sel.addEventListener('change', function() {
+      const tipo = data.tipos.find(t => t.val === this.value);
+      numInput.placeholder = tipo ? tipo.placeholder : '';
+    });
+  }
+
   // Pre-seleccionar país desde URL ?pais=
   const params = new URLSearchParams(window.location.search);
   const paisParam = params.get('pais');
+  const paisInicial = paisParam === 'colombia' ? 'colombia' : 'ecuador';
   if (paisParam === 'colombia') {
     document.getElementById('radio-colombia').checked = true;
   } else {
     document.getElementById('radio-ecuador').checked = true;
   }
+  actualizarFact(paisInicial);
 
   const PAIS_DATA = {
     ecuador:  { whatsapp: '0991234567', ciudad: 'Quito',  descripcion: 'Ej: Cócteles artesanales, música en vivo, abierto de 5pm a 2am' },
@@ -190,9 +255,10 @@
     radio.addEventListener('change', function() {
       const d = PAIS_DATA[this.value];
       if (!d) return;
-      document.querySelector('input[name="whatsapp"]').placeholder    = d.whatsapp;
-      document.querySelector('input[name="ciudad"]').placeholder      = d.ciudad;
+      document.querySelector('input[name="whatsapp"]').placeholder       = d.whatsapp;
+      document.querySelector('input[name="ciudad"]').placeholder         = d.ciudad;
       document.querySelector('textarea[name="descripcion"]').placeholder = d.descripcion;
+      actualizarFact(this.value);
     });
   });
 </script>

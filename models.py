@@ -41,6 +41,10 @@ class Restaurante(db.Model):
     modo_cobro       = db.Column(db.Boolean, default=False)  # True = cobro anticipado (mostrador)
     categoria        = db.Column(db.String(20), default='restaurante')  # restaurante | bar | cafeteria
     pais             = db.Column(db.String(20), default='ecuador')      # ecuador | colombia
+    fact_tipo_id     = db.Column(db.String(20))    # ruc | cedula | pasaporte | nit
+    fact_numero_id   = db.Column(db.String(30))
+    fact_razon_social = db.Column(db.String(150))
+    fact_direccion   = db.Column(db.String(200))
 
     mesas        = db.relationship("Mesa",        backref="restaurante", lazy=True, cascade="all, delete-orphan")
     productos    = db.relationship("Producto",    backref="restaurante", lazy=True, cascade="all, delete-orphan")
