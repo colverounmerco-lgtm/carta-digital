@@ -75,8 +75,8 @@ PLANES = {
 
 PRECIOS = {
     "ecuador": {
-        "mensual": {"total": 32.48,    "simbolo": "$",   "moneda": "USD", "desc": "$32.48/mes · IVA incluido",         "desc_mes": "$32.48/mes"},
-        "anual":   {"total": 324.80,   "simbolo": "$",   "moneda": "USD", "desc": "$324.80/año · IVA incluido",        "desc_mes": "$27.07/mes"},
+        "mensual": {"total": 33.35,    "simbolo": "$",   "moneda": "USD", "desc": "$33.35/mes · IVA incluido",         "desc_mes": "$33.35/mes"},
+        "anual":   {"total": 333.50,   "simbolo": "$",   "moneda": "USD", "desc": "$333.50/año · IVA incluido",        "desc_mes": "$27.79/mes"},
     },
     "colombia": {
         "mensual": {"total": 117810,   "simbolo": "COP", "moneda": "COP", "desc": "COP 117.810/mes · IVA incluido",    "desc_mes": "COP 117.810/mes"},
