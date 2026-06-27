@@ -2277,5 +2277,19 @@ def planes_page():
     return render_template("planes.html", planes=PLANES)
 
 
+@app.route("/preview/plan-vencido")
+@admin_required
+def preview_plan_vencido():
+    class MockRestaurante:
+        nombre = "Mi Local Demo"
+        whatsapp = "0991234567"
+        pais = request.args.get("pais", "ecuador")
+    return render_template("auth/plan_vencido.html",
+                           restaurante=MockRestaurante(),
+                           vencido_hace=3,
+                           precios=PRECIOS.get(request.args.get("pais", "ecuador"), PRECIOS["ecuador"]),
+                           pago_ecuador=PAGO_ECUADOR)
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
