@@ -632,8 +632,20 @@
     <p style="color:#6B7280;font-size:1rem;max-width:460px;margin:0 auto 1rem">
       Sin comisiones por pedido. Pagas solo la suscripción y listo.
     </p>
-    <div style="display:inline-block;background:#ECFDF5;color:#065F46;font-size:0.82rem;font-weight:700;padding:0.35rem 1.1rem;border-radius:999px;border:1px solid #6EE7B7;margin-bottom:2.5rem">
+    <div style="display:inline-block;background:#ECFDF5;color:#065F46;font-size:0.82rem;font-weight:700;padding:0.35rem 1.1rem;border-radius:999px;border:1px solid #6EE7B7;margin-bottom:1.25rem">
       ✓ 8 días de prueba gratis al registrarte
+    </div>
+
+    <!-- Toggle país -->
+    <div style="display:flex;justify-content:center;gap:0.5rem;margin-bottom:2rem">
+      <button onclick="setPaisL('ecuador')" id="l-btn-ec"
+        style="padding:0.4rem 1rem;border-radius:999px;border:2px solid #059669;background:rgba(5,150,105,0.1);color:#059669;font-weight:700;font-size:0.83rem;cursor:pointer">
+        🇪🇨 Ecuador
+      </button>
+      <button onclick="setPaisL('colombia')" id="l-btn-co"
+        style="padding:0.4rem 1rem;border-radius:999px;border:2px solid #9CA3AF;background:transparent;color:#9CA3AF;font-weight:700;font-size:0.83rem;cursor:pointer">
+        🇨🇴 Colombia
+      </button>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:680px;margin:0 auto">
@@ -641,7 +653,7 @@
         <div style="font-size:1rem;font-weight:800;margin-bottom:0.25rem">Mensual</div>
         <div style="font-size:0.8rem;color:#9CA3AF;margin-bottom:1.25rem">Facturado cada mes</div>
         <div style="font-size:2.5rem;font-weight:900;line-height:1;margin-bottom:0.25rem">
-          <span style="font-size:1.1rem;vertical-align:super;font-weight:700">$</span>32.48
+          <span id="l-sim-m" style="font-size:1.1rem;vertical-align:super;font-weight:700">$</span><span id="l-val-m">32.48</span>
         </div>
         <div style="font-size:0.75rem;color:#9CA3AF;margin-bottom:1.5rem">IVA incluido · por mes</div>
         <ul style="list-style:none;display:flex;flex-direction:column;gap:0.4rem;margin-bottom:1.5rem">
@@ -650,7 +662,7 @@
           <li style="font-size:0.85rem;color:#374151;display:flex;align-items:center;gap:0.4rem"><span style="color:#059669;font-weight:800">✓</span> Equipo con roles incluido</li>
           <li style="font-size:0.85rem;color:#374151;display:flex;align-items:center;gap:0.4rem"><span style="color:#059669;font-weight:800">✓</span> Soporte incluido</li>
         </ul>
-        <a href="/register" style="display:block;text-align:center;padding:0.75rem;border:2px solid #E5E7EB;border-radius:12px;font-weight:700;font-size:0.9rem;color:#1C1C1E;transition:background 0.15s" onmouseover="this.style.background='#F9FAFB'" onmouseout="this.style.background='transparent'">
+        <a id="l-btn-mensual" href="/register?pais=ecuador" style="display:block;text-align:center;padding:0.75rem;border:2px solid #E5E7EB;border-radius:12px;font-weight:700;font-size:0.9rem;color:#1C1C1E;transition:background 0.15s" onmouseover="this.style.background='#F9FAFB'" onmouseout="this.style.background='transparent'">
           Contratar plan →
         </a>
       </div>
@@ -658,18 +670,18 @@
       <div style="border:2px solid #F97316;border-radius:20px;padding:2rem 1.5rem;text-align:left;background:#FFF7ED;position:relative">
         <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#F97316;color:#fff;font-size:0.7rem;font-weight:800;padding:3px 12px;border-radius:999px;white-space:nowrap">MEJOR VALOR</div>
         <div style="font-size:1rem;font-weight:800;margin-bottom:0.25rem">Anual</div>
-        <div style="font-size:0.8rem;color:#9CA3AF;margin-bottom:1.25rem">Pagas $27.07/mes efectivo</div>
+        <div id="l-desc-a" style="font-size:0.8rem;color:#9CA3AF;margin-bottom:1.25rem">Pagas $27.07/mes efectivo</div>
         <div style="font-size:2.5rem;font-weight:900;line-height:1;margin-bottom:0.25rem">
-          <span style="font-size:1.1rem;vertical-align:super;font-weight:700">$</span>324.80
+          <span id="l-sim-a" style="font-size:1.1rem;vertical-align:super;font-weight:700">$</span><span id="l-val-a">324.80</span>
         </div>
         <div style="font-size:0.75rem;color:#9CA3AF;margin-bottom:1.5rem">IVA incluido · por año</div>
         <ul style="list-style:none;display:flex;flex-direction:column;gap:0.4rem;margin-bottom:1.5rem">
           <li style="font-size:0.85rem;color:#374151;display:flex;align-items:center;gap:0.4rem"><span style="color:#059669;font-weight:800">✓</span> Todo lo del plan Mensual</li>
-          <li style="font-size:0.85rem;color:#374151;display:flex;align-items:center;gap:0.4rem"><span style="color:#F97316;font-weight:800">★</span> Ahorras $64.96 al año</li>
+          <li id="l-ahorro" style="font-size:0.85rem;color:#374151;display:flex;align-items:center;gap:0.4rem"><span style="color:#F97316;font-weight:800">★</span> Ahorras $64.96 al año</li>
           <li style="font-size:0.85rem;color:#374151;display:flex;align-items:center;gap:0.4rem"><span style="color:#F97316;font-weight:800">★</span> Acceso garantizado 12 meses</li>
           <li style="font-size:0.85rem;color:#374151;display:flex;align-items:center;gap:0.4rem"><span style="color:#F97316;font-weight:800">★</span> Prioridad en soporte</li>
         </ul>
-        <a href="/register" style="display:block;text-align:center;padding:0.75rem;background:#F97316;border-radius:12px;font-weight:700;font-size:0.9rem;color:#fff;transition:background 0.15s" onmouseover="this.style.background='#EA580C'" onmouseout="this.style.background='#F97316'">
+        <a id="l-btn-anual" href="/register?pais=ecuador" style="display:block;text-align:center;padding:0.75rem;background:#F97316;border-radius:12px;font-weight:700;font-size:0.9rem;color:#fff;transition:background 0.15s" onmouseover="this.style.background='#EA580C'" onmouseout="this.style.background='#F97316'">
           Contratar plan →
         </a>
       </div>
@@ -677,6 +689,28 @@
     <p style="margin-top:1.5rem;font-size:0.8rem;color:#9CA3AF">
       Pago por transferencia bancaria · Sin tarjeta al registrarte.
     </p>
+
+    <script>
+      const PRECIOS_L = {
+        ecuador:  { sim: '$',    valM: '32.48',    valA: '324.80',      descA: 'Pagas $27.07/mes efectivo',         ahorro: '★ Ahorras $64.96 al año' },
+        colombia: { sim: 'COP ', valM: '117.810',  valA: '1.178.100',   descA: 'Pagas COP 98.175/mes efectivo',    ahorro: '★ Ahorras COP 235.620 al año' },
+      };
+      function setPaisL(pais) {
+        const d = PRECIOS_L[pais];
+        document.getElementById('l-sim-m').textContent  = d.sim;
+        document.getElementById('l-val-m').textContent  = d.valM;
+        document.getElementById('l-sim-a').textContent  = d.sim;
+        document.getElementById('l-val-a').textContent  = d.valA;
+        document.getElementById('l-desc-a').textContent = d.descA;
+        document.getElementById('l-ahorro').innerHTML   = `<span style="color:#F97316;font-weight:800">${d.ahorro.split(' ')[0]}</span> ${d.ahorro.split(' ').slice(1).join(' ')}`;
+        document.getElementById('l-btn-mensual').href   = `/register?pais=${pais}`;
+        document.getElementById('l-btn-anual').href     = `/register?pais=${pais}`;
+        const on  = 'padding:0.4rem 1rem;border-radius:999px;border:2px solid #059669;background:rgba(5,150,105,0.1);color:#059669;font-weight:700;font-size:0.83rem;cursor:pointer';
+        const off = 'padding:0.4rem 1rem;border-radius:999px;border:2px solid #9CA3AF;background:transparent;color:#9CA3AF;font-weight:700;font-size:0.83rem;cursor:pointer';
+        document.getElementById('l-btn-ec').style.cssText = pais==='ecuador' ? on : off;
+        document.getElementById('l-btn-co').style.cssText = pais==='colombia' ? on : off;
+      }
+    </script>
   </div>
 </section>
 

@@ -117,6 +117,18 @@
   <h1>Elige tu plan</h1>
   <p>Todos los planes incluyen todas las funcionalidades. Sin comisiones por pedido.</p>
   <div class="trial-badge">✓ 8 días de prueba gratis al registrarte</div>
+
+  <!-- Toggle país -->
+  <div style="display:flex;justify-content:center;gap:0.5rem;margin-top:1.5rem">
+    <button onclick="setPais('ecuador')" id="btn-ec"
+      style="padding:0.45rem 1.1rem;border-radius:999px;border:2px solid #34D399;background:rgba(16,185,129,0.15);color:#34D399;font-weight:700;font-size:0.85rem;cursor:pointer">
+      🇪🇨 Ecuador
+    </button>
+    <button onclick="setPais('colombia')" id="btn-co"
+      style="padding:0.45rem 1.1rem;border-radius:999px;border:2px solid #475569;background:transparent;color:#94A3B8;font-weight:700;font-size:0.85rem;cursor:pointer">
+      🇨🇴 Colombia
+    </button>
+  </div>
 </div>
 
 <div class="cards-wrap">
@@ -128,7 +140,7 @@
       <div style="font-size:0.82rem;color:#9CA3AF;margin-top:2px">Facturado cada mes</div>
     </div>
     <div>
-      <div class="plan-precio-base"><span>$</span>32.48</div>
+      <div class="plan-precio-base" id="precio-mensual"><span id="sim-mensual">$</span><span id="val-mensual">32.48</span></div>
       <div style="font-size:0.78rem;color:#9CA3AF;margin-top:4px">IVA incluido · por mes</div>
     </div>
     <ul class="plan-features">
@@ -140,7 +152,7 @@
       <li>Métodos de pago personalizados</li>
       <li>Soporte por chat</li>
     </ul>
-    <a href="/register" class="plan-btn plan-btn-outline">Contratar plan →</a>
+    <a id="btn-mensual" href="/register?pais=ecuador" class="plan-btn plan-btn-outline">Contratar plan →</a>
   </div>
 
   <!-- Plan Anual -->
@@ -148,23 +160,47 @@
     <div>
       <div class="plan-badge">MEJOR VALOR</div>
       <div class="plan-nombre" style="margin-top:0.5rem">Anual</div>
-      <div style="font-size:0.82rem;color:#9CA3AF;margin-top:2px">Pagas $27.07/mes efectivo</div>
+      <div style="font-size:0.82rem;color:#9CA3AF;margin-top:2px" id="desc-anual">Pagas $27.07/mes efectivo</div>
     </div>
     <div>
-      <div class="plan-precio-base"><span>$</span>324.80</div>
+      <div class="plan-precio-base" id="precio-anual"><span id="sim-anual">$</span><span id="val-anual">324.80</span></div>
       <div style="font-size:0.78rem;color:#9CA3AF;margin-top:4px">IVA incluido · por año</div>
     </div>
     <ul class="plan-features">
       <li>Todo lo del plan Mensual</li>
-      <li>Ahorras $64.96 al año</li>
+      <li id="ahorro-li">Ahorras $64.96 al año</li>
       <li>Acceso garantizado 12 meses</li>
       <li>Prioridad en soporte</li>
       <li>Acceso a funciones beta</li>
     </ul>
-    <a href="/register" class="plan-btn plan-btn-primary">Contratar plan →</a>
+    <a id="btn-anual" href="/register?pais=ecuador" class="plan-btn plan-btn-primary">Contratar plan →</a>
   </div>
 
 </div>
+
+<script>
+  const PRECIOS = {
+    ecuador:  { sim: '$',    mensual: '32.48',       anual: '324.80',         descAnual: 'Pagas $27.07/mes efectivo',           ahorro: 'Ahorras $64.96 al año' },
+    colombia: { sim: 'COP ', mensual: '117.810',     anual: '1.178.100',      descAnual: 'Pagas COP 98.175/mes efectivo',       ahorro: 'Ahorras COP 235.620 al año' },
+  };
+
+  function setPais(pais) {
+    const d = PRECIOS[pais];
+    document.getElementById('sim-mensual').textContent = d.sim;
+    document.getElementById('val-mensual').textContent = d.mensual;
+    document.getElementById('sim-anual').textContent   = d.sim;
+    document.getElementById('val-anual').textContent   = d.anual;
+    document.getElementById('desc-anual').textContent  = d.descAnual;
+    document.getElementById('ahorro-li').textContent   = d.ahorro;
+    document.getElementById('btn-mensual').href = `/register?pais=${pais}`;
+    document.getElementById('btn-anual').href   = `/register?pais=${pais}`;
+
+    const activo   = 'border:2px solid #34D399;background:rgba(16,185,129,0.15);color:#34D399';
+    const inactivo = 'border:2px solid #475569;background:transparent;color:#94A3B8';
+    document.getElementById('btn-ec').style.cssText = `padding:0.45rem 1.1rem;border-radius:999px;font-weight:700;font-size:0.85rem;cursor:pointer;${pais==='ecuador'?activo:inactivo}`;
+    document.getElementById('btn-co').style.cssText = `padding:0.45rem 1.1rem;border-radius:999px;font-weight:700;font-size:0.85rem;cursor:pointer;${pais==='colombia'?activo:inactivo}`;
+  }
+</script>
 
 <div class="faq-mini">
   <h3>Preguntas frecuentes sobre planes</h3>

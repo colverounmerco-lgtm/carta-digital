@@ -72,14 +72,14 @@
         <label>País *</label>
         <div class="cat-grid" style="grid-template-columns:1fr 1fr">
           <label class="cat-label">
-            <input type="radio" name="pais" value="ecuador" required>
+            <input type="radio" name="pais" value="ecuador" id="radio-ecuador" required>
             <div class="cat-inner">
               <span class="cat-emoji">🇪🇨</span>
               Ecuador
             </div>
           </label>
           <label class="cat-label">
-            <input type="radio" name="pais" value="colombia">
+            <input type="radio" name="pais" value="colombia" id="radio-colombia">
             <div class="cat-inner">
               <span class="cat-emoji">🇨🇴</span>
               Colombia
@@ -172,6 +172,15 @@
 </div>
 <script src="/static/js/main.js"></script>
 <script>
+  // Pre-seleccionar país desde URL ?pais=
+  const params = new URLSearchParams(window.location.search);
+  const paisParam = params.get('pais');
+  if (paisParam === 'colombia') {
+    document.getElementById('radio-colombia').checked = true;
+  } else {
+    document.getElementById('radio-ecuador').checked = true;
+  }
+
   const PAIS_DATA = {
     ecuador:  { whatsapp: '0991234567', ciudad: 'Quito',  descripcion: 'Ej: Cócteles artesanales, música en vivo, abierto de 5pm a 2am' },
     colombia: { whatsapp: '3001234567', ciudad: 'Bogotá', descripcion: 'Ej: Comida típica, abierto de 12pm a 10pm, servicio a domicilio' },
