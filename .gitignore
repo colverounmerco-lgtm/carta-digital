@@ -9,3 +9,4 @@ venv/
 instance/
 static/uploads/
 logs/
+.claude/
