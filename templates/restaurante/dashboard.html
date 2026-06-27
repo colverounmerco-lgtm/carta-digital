@@ -70,17 +70,16 @@
       <span class="stat-label">Solicitan la cuenta</span>
     </div>
     {% endif %}
-    {% if meseros_solicitados %}
-    <div class="stat-card" style="border-color:#BFDBFE;background:#EFF6FF">
+    <div class="stat-card" id="stat-meseros" style="border-color:#BFDBFE;background:#EFF6FF;{% if not meseros_solicitados %}display:none{% endif %}">
       <span class="stat-numero" style="color:#1D4ED8">{{ meseros_solicitados|length }}</span>
       <span class="stat-label">🔔 Llaman al mesero</span>
     </div>
     {% endif %}
-    {% endif %}
   </div>
 
-  {% if meseros_solicitados %}
-  <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:14px;padding:0.85rem 1.25rem;margin-bottom:1.25rem;display:flex;flex-direction:column;gap:0.5rem">
+  <div id="zona-meseros-poll"
+    style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:14px;padding:0.85rem 1.25rem;margin-bottom:1.25rem;display:{% if meseros_solicitados %}flex{% else %}none{% endif %};flex-direction:column;gap:0.5rem">
+    {% if meseros_solicitados %}
     <div style="font-size:0.85rem;font-weight:800;color:#1D4ED8;margin-bottom:0.25rem">🔔 Mesas que llaman al mesero</div>
     <div style="display:flex;flex-wrap:wrap;gap:0.5rem">
       {% for m in meseros_solicitados %}
@@ -94,8 +93,8 @@
       </form>
       {% endfor %}
     </div>
+    {% endif %}
   </div>
-  {% endif %}
 
   {% if restaurante.categoria == 'bar' and cuentas_abiertas %}
   <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:0.75rem">🍺 Cuentas abiertas</h2>
@@ -342,5 +341,80 @@
 
 <style>
 @keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:0.25} }
+@keyframes pulse-blue { 0%,100%{box-shadow:0 0 0 0 rgba(29,78,216,0.4)} 50%{box-shadow:0 0 0 8px rgba(29,78,216,0)} }
 </style>
+
+<script>
+(function() {
+  // ── Sonido de alerta (Web Audio API, sin archivo) ──
+  function sonarAlerta() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, 150, 300].forEach(delay => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.5, ctx.currentTime + delay / 1000);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay / 1000 + 0.3);
+        osc.start(ctx.currentTime + delay / 1000);
+        osc.stop(ctx.currentTime + delay / 1000 + 0.35);
+      });
+    } catch (e) {}
+  }
+
+  // ── Zona de notificación de meseros ──
+  var zonaId = 'zona-meseros-poll';
+  var prevIds = new Set({{ meseros_solicitados | map(attribute='id') | list | tojson }});
+
+  function renderZonaMeseros(mesas) {
+    var zona = document.getElementById(zonaId);
+    if (!zona) return;
+    if (mesas.length === 0) {
+      zona.innerHTML = '';
+      return;
+    }
+    var btns = mesas.map(function(m) {
+      return '<form method="POST" action="/dashboard/mesa/' + m.id + '/atiende-mesero" style="display:inline">' +
+        '<button type="submit" style="background:#1D4ED8;color:#fff;border:none;border-radius:999px;' +
+        'padding:0.35rem 1rem;font-size:0.82rem;font-weight:700;cursor:pointer;' +
+        'display:inline-flex;align-items:center;gap:0.35rem">' +
+        m.nombre + ' · <span style="font-weight:400;font-size:0.75rem">Atendido ✓</span>' +
+        '</button></form>';
+    }).join('');
+    zona.innerHTML =
+      '<div style="font-size:0.85rem;font-weight:800;color:#1D4ED8;margin-bottom:0.25rem">🔔 Mesas que llaman al mesero</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:0.5rem">' + btns + '</div>';
+    zona.style.display = '';
+    zona.style.animation = 'pulse-blue 0.6s ease';
+    setTimeout(function() { zona.style.animation = ''; }, 600);
+  }
+
+  // ── Polling cada 5 segundos ──
+  setInterval(function() {
+    fetch('/api/meseros-solicitados')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var nuevos = data.mesas.filter(function(m) { return !prevIds.has(m.id); });
+        if (nuevos.length > 0) sonarAlerta();
+        prevIds = new Set(data.mesas.map(function(m) { return m.id; }));
+        renderZonaMeseros(data.mesas);
+
+        // Actualizar stat card
+        var statMesero = document.getElementById('stat-meseros');
+        if (statMesero) {
+          if (data.count > 0) {
+            statMesero.querySelector('.stat-numero').textContent = data.count;
+            statMesero.style.display = '';
+          } else {
+            statMesero.style.display = 'none';
+          }
+        }
+      })
+      .catch(function() {});
+  }, 5000);
+})();
+</script>
 {% endblock %}

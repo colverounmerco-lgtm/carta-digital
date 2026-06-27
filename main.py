@@ -2042,6 +2042,18 @@ def demo_prueba():
         restaurante=r, carta_url=carta_url, dashboard_url=dashboard_url)
 
 
+@app.route("/api/meseros-solicitados")
+@login_required
+def api_meseros_solicitados():
+    from flask import jsonify
+    r = restaurante_session()
+    mesas = Mesa.query.filter_by(restaurante_id=r.id, mesero_solicitado=True).all()
+    return jsonify({
+        "count": len(mesas),
+        "mesas": [{"id": m.id, "nombre": m.nombre} for m in mesas],
+    })
+
+
 @app.route("/api/ordenes-activas")
 @login_required
 def api_ordenes_activas():
