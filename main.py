@@ -75,12 +75,12 @@ PLANES = {
 
 PRECIOS = {
     "ecuador": {
-        "mensual": {"base": 40.00,    "iva": 6.00,    "total": 46.00,    "simbolo": "$",    "moneda": "USD", "desc": "Facturado cada mes",          "desc_mes": "$35.41/mes"},
-        "anual":   {"base": 365.00,   "iva": 54.75,   "total": 419.75,   "simbolo": "$",    "moneda": "USD", "desc": "Pagas solo $35.41/mes",        "desc_mes": "$35.41/mes"},
+        "mensual": {"total": 32.48,    "simbolo": "$",   "moneda": "USD", "desc": "$32.48/mes · IVA incluido",         "desc_mes": "$32.48/mes"},
+        "anual":   {"total": 324.80,   "simbolo": "$",   "moneda": "USD", "desc": "$324.80/año · IVA incluido",        "desc_mes": "$27.07/mes"},
     },
     "colombia": {
-        "mensual": {"base": 160000,   "iva": 30400,   "total": 190400,   "simbolo": "COP",  "moneda": "COP", "desc": "Facturado cada mes",           "desc_mes": "COP 190.400/mes"},
-        "anual":   {"base": 1500000,  "iva": 285000,  "total": 1785000,  "simbolo": "COP",  "moneda": "COP", "desc": "Pagas solo COP 148.750/mes",   "desc_mes": "COP 148.750/mes"},
+        "mensual": {"total": 117810,   "simbolo": "COP", "moneda": "COP", "desc": "COP 117.810/mes · IVA incluido",    "desc_mes": "COP 117.810/mes"},
+        "anual":   {"total": 1178100,  "simbolo": "COP", "moneda": "COP", "desc": "COP 1.178.100/año · IVA incluido", "desc_mes": "COP 98.175/mes"},
     },
 }
 

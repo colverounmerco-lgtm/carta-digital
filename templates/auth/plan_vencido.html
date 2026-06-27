@@ -23,22 +23,18 @@
       <div style="border:2px solid #E5E7EB;border-radius:16px;padding:1.5rem;text-align:center">
         <div style="font-size:0.75rem;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.5rem">Mensual</div>
         <div style="font-size:1.5rem;font-weight:900;color:#1C1C1E">
-          {{ precios.mensual.simbolo }} {{ "{:,.0f}".format(precios.mensual.base).replace(",", ".") }}
+          {{ precios.mensual.simbolo }} {{ "{:,.2f}".format(precios.mensual.total).replace(",", ".") if precios.mensual.moneda == 'USD' else "{:,.0f}".format(precios.mensual.total).replace(",", ".") }}<span style="font-size:0.85rem;font-weight:500">/mes</span>
         </div>
-        <div style="font-size:0.75rem;color:#9CA3AF;margin-top:2px">
-          + IVA = <strong>{{ precios.mensual.simbolo }} {{ "{:,.0f}".format(precios.mensual.total).replace(",", ".") }}/mes</strong>
-        </div>
+        <div style="font-size:0.72rem;color:#9CA3AF;margin-top:4px">IVA incluido</div>
       </div>
 
       <div style="border:2px solid #F97316;border-radius:16px;padding:1.5rem;text-align:center;background:#FFF7ED;position:relative">
         <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#F97316;color:#fff;font-size:0.68rem;font-weight:800;padding:2px 10px;border-radius:999px;white-space:nowrap">MEJOR VALOR</div>
         <div style="font-size:0.75rem;font-weight:700;color:#EA580C;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.5rem">Anual</div>
         <div style="font-size:1.5rem;font-weight:900;color:#1C1C1E">
-          {{ precios.anual.simbolo }} {{ "{:,.0f}".format(precios.anual.base).replace(",", ".") }}
+          {{ precios.anual.simbolo }} {{ "{:,.2f}".format(precios.anual.total).replace(",", ".") if precios.anual.moneda == 'USD' else "{:,.0f}".format(precios.anual.total).replace(",", ".") }}<span style="font-size:0.85rem;font-weight:500">/año</span>
         </div>
-        <div style="font-size:0.75rem;color:#9CA3AF;margin-top:2px">
-          + IVA = <strong>{{ precios.anual.simbolo }} {{ "{:,.0f}".format(precios.anual.total).replace(",", ".") }}/año</strong>
-        </div>
+        <div style="font-size:0.72rem;color:#9CA3AF;margin-top:4px">IVA incluido · {{ precios.anual.desc_mes }}</div>
       </div>
 
     </div>
