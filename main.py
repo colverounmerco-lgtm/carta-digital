@@ -1680,9 +1680,15 @@ def estado_orden(token):
     metodos_pago = MetodoPago.query.filter_by(
         restaurante_id=orden.restaurante_id, activo=True
     ).order_by(MetodoPago.orden_display).all()
+    pedidos_adelante = Orden.query.filter(
+        Orden.restaurante_id == orden.restaurante_id,
+        Orden.estado == "pendiente",
+        Orden.id < orden.id,
+    ).count()
     return render_template("carta/orden.html", orden=orden,
                            restaurante=orden.restaurante, metodos_pago=metodos_pago,
-                           modo_cobro=orden.restaurante.modo_cobro)
+                           modo_cobro=orden.restaurante.modo_cobro,
+                           pedidos_adelante=pedidos_adelante)
 
 
 @app.route("/api/orden/<token>/estado")
@@ -1690,9 +1696,15 @@ def api_estado_orden(token):
     orden = Orden.query.filter_by(token=token).first_or_404()
     if not orden.restaurante.activo or not plan_vigente(orden.restaurante):
         return jsonify({"error": "no_disponible"}), 403
+    pedidos_adelante = Orden.query.filter(
+        Orden.restaurante_id == orden.restaurante_id,
+        Orden.estado == "pendiente",
+        Orden.id < orden.id,
+    ).count() if orden.estado == "pendiente" else 0
     return jsonify({
-        "estado":       orden.estado,
-        "mesa_abierta": orden.mesa.abierta if orden.mesa else False,
+        "estado":           orden.estado,
+        "mesa_abierta":     orden.mesa.abierta if orden.mesa else False,
+        "pedidos_adelante": pedidos_adelante,
     })
 
 

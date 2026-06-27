@@ -55,6 +55,17 @@
         <p style="font-size:0.83rem;color:#6B7280;margin-top:0.2rem">
           {% if restaurante.categoria == 'bar' %}La barra lo preparará en breve{% else %}El restaurante lo confirmará en breve{% endif %}
         </p>
+        <div id="cola-info" style="margin-top:0.6rem;display:inline-block;
+          background:#FFF7ED;border:1.5px solid #FED7AA;border-radius:10px;
+          padding:0.35rem 0.9rem;font-size:0.82rem;font-weight:700;color:#92400E">
+          {% if pedidos_adelante == 0 %}
+            🟢 Eres el siguiente en la fila
+          {% elif pedidos_adelante == 1 %}
+            🟡 Hay 1 pedido antes que el tuyo
+          {% else %}
+            🟠 Hay {{ pedidos_adelante }} pedidos antes que el tuyo
+          {% endif %}
+        </div>
         <div style="margin-top:0.5rem;font-size:0.78rem;color:#9CA3AF">
           <span class="refresh-dot"></span> actualizando cada 30s
         </div>
@@ -251,6 +262,18 @@
         if (cambioEstado || cuentaCerro) {
           clearInterval(intervalo);
           location.reload();
+        }
+        // Actualizar contador de cola sin recargar
+        if (data.estado === 'pendiente' && data.pedidos_adelante !== undefined) {
+          const cola = document.getElementById('cola-info');
+          if (cola) {
+            const n = data.pedidos_adelante;
+            cola.innerHTML = n === 0
+              ? '🟢 Eres el siguiente en la fila'
+              : n === 1
+                ? '🟡 Hay 1 pedido antes que el tuyo'
+                : `🟠 Hay ${n} pedidos antes que el tuyo`;
+          }
         }
       } catch(e) {}
     }, 8000);
