@@ -48,6 +48,26 @@ TRIAL_DIAS   = 8   # Ecuador
 
 TRIAL_DIAS_POR_PAIS = {"ecuador": 8, "colombia": 8}
 
+PAGO_ECUADOR = {
+    "whatsapp": "593968205068",
+    "bancos": [
+        {
+            "banco":   "Banco Pichincha",
+            "tipo":    "Ahorros",
+            "cuenta":  "2215942646",
+            "titular": "Santiago Medina",
+            "cedula":  "1753446341",
+        },
+        {
+            "banco":   "Banco Guayaquil",
+            "tipo":    "Ahorros",
+            "cuenta":  "0038528429",
+            "titular": "Santiago Medina",
+            "cedula":  "1753446341",
+        },
+    ],
+}
+
 PLANES = {
     "mensual": {"nombre": "Mensual", "dias": 30},
     "anual":   {"nombre": "Anual",   "dias": 365},
@@ -230,7 +250,8 @@ def plan_requerido(f):
             vencido_hace = (datetime.utcnow() - r.plan_vence).days if r.plan_vence else 0
             return render_template("auth/plan_vencido.html",
                                    restaurante=r, vencido_hace=vencido_hace,
-                                   precios=PRECIOS.get(r.pais or 'ecuador', PRECIOS['ecuador']))
+                                   precios=PRECIOS.get(r.pais or 'ecuador', PRECIOS['ecuador']),
+                                   pago_ecuador=PAGO_ECUADOR)
         return f(*args, **kwargs)
     return decorated
 

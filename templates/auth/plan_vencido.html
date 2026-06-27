@@ -43,17 +43,45 @@
 
     </div>
 
-    <a href="https://wa.me/{{ restaurante.whatsapp or '' }}"
+    {% if restaurante.pais == 'ecuador' %}
+    <!-- Datos bancarios Ecuador -->
+    <div style="background:#F9FAFB;border:1.5px solid #E5E7EB;border-radius:14px;padding:1.25rem;margin-bottom:1.25rem;text-align:left">
+      <p style="font-size:0.78rem;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.85rem">Cómo pagar</p>
+      {% for b in pago_ecuador.bancos %}
+      <div style="{% if not loop.first %}margin-top:0.85rem;padding-top:0.85rem;border-top:1px solid #E5E7EB{% endif %}">
+        <p style="font-size:0.88rem;font-weight:700;color:#1C1C1E;margin-bottom:0.3rem">{{ b.banco }}</p>
+        <div style="font-size:0.82rem;color:#374151;display:grid;grid-template-columns:auto 1fr;gap:0.15rem 0.75rem">
+          <span style="color:#9CA3AF">Tipo</span>      <span>Cuenta de {{ b.tipo }}</span>
+          <span style="color:#9CA3AF">N° cuenta</span> <span style="font-weight:700;letter-spacing:0.5px">{{ b.cuenta }}</span>
+          <span style="color:#9CA3AF">Titular</span>   <span>{{ b.titular }}</span>
+          <span style="color:#9CA3AF">Cédula</span>    <span>{{ b.cedula }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% set msg = "Hola, soy " ~ restaurante.nombre ~ ". Quiero renovar mi plan de Carta Digital. Adjunto el comprobante de transferencia." %}
+    <a href="https://wa.me/{{ pago_ecuador.whatsapp }}?text={{ msg | urlencode }}"
+       target="_blank"
+       style="display:block;width:100%;padding:0.9rem;background:#25D366;color:#fff;
+              border-radius:12px;font-weight:700;font-size:0.95rem;margin-bottom:0.75rem;
+              text-decoration:none;text-align:center">
+      📲 Enviar comprobante por WhatsApp
+    </a>
+    {% else %}
+    <a href="https://wa.me/{{ pago_ecuador.whatsapp }}?text={{ ('Hola, soy ' ~ restaurante.nombre ~ '. Quiero renovar mi plan de Carta Digital.') | urlencode }}"
+       target="_blank"
        style="display:block;width:100%;padding:0.9rem;background:#F97316;color:#fff;
               border-radius:12px;font-weight:700;font-size:0.95rem;margin-bottom:0.75rem;
-              text-decoration:none">
+              text-decoration:none;text-align:center">
       💬 Contactar para renovar
     </a>
+    {% endif %}
 
     <a href="/logout"
        style="display:block;width:100%;padding:0.75rem;background:#F9FAFB;color:#6B7280;
               border-radius:12px;font-weight:600;font-size:0.88rem;border:1.5px solid #E5E7EB;
-              text-decoration:none">
+              text-decoration:none;text-align:center">
       Cerrar sesión
     </a>
 
