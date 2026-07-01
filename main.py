@@ -301,20 +301,28 @@ def ec_time_filter(dt, fmt="%d/%m/%Y %H:%M"):
 
 # ── Migraciones runtime ──
 def run_migrations():
-    insp = sa_inspect(db.engine)
+    insp   = sa_inspect(db.engine)
     tables = insp.get_table_names()
 
+    # Cache de columnas por tabla para no hacer una query por cada add_col
+    _col_cache = {}
+    def cols_of(table):
+        if table not in _col_cache:
+            _col_cache[table] = {c["name"] for c in insp.get_columns(table)}
+        return _col_cache[table]
+
     def add_col(table, col, definition):
-        fresh = sa_inspect(db.engine)
-        cols = [c["name"] for c in fresh.get_columns(table)]
-        if col not in cols:
+        if col not in cols_of(table):
             db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {definition}"))
             db.session.commit()
+            _col_cache[table].add(col)  # actualizar cache local
 
+    # Solo ejecutar ALTER TYPE si la columna aún es VARCHAR corta
     if "metodos_pago" in tables:
-        # Ampliar icono para soportar URLs de imagen además de emojis
-        db.session.execute(text("ALTER TABLE metodos_pago ALTER COLUMN icono TYPE VARCHAR(300)"))
-        db.session.commit()
+        icono_col = next((c for c in insp.get_columns("metodos_pago") if c["name"] == "icono"), None)
+        if icono_col and getattr(icono_col["type"], "length", 300) < 300:
+            db.session.execute(text("ALTER TABLE metodos_pago ALTER COLUMN icono TYPE VARCHAR(300)"))
+            db.session.commit()
 
     if "ordenes" in tables:
         add_col("ordenes", "metodo_pago",      "VARCHAR(30)")
@@ -324,38 +332,44 @@ def run_migrations():
         add_col("ordenes", "fecha_pago",       "TIMESTAMP")
 
     if "mesas" in tables:
-        add_col("mesas", "abierta",           "BOOLEAN DEFAULT FALSE")
-        add_col("mesas", "es_para_llevar",   "BOOLEAN DEFAULT FALSE")
-        add_col("mesas", "tab_inicio",       "TIMESTAMP")
-        add_col("mesas", "mesero_solicitado","BOOLEAN DEFAULT FALSE")
-        # Cerrar todas las mesas sin orden activa (limpieza de estado inicial)
-        db.session.execute(text(
-            "UPDATE mesas SET abierta = FALSE "
-            "WHERE id NOT IN ("
-            "  SELECT DISTINCT mesa_id FROM ordenes "
-            "  WHERE estado IN ('pendiente','confirmada','lista')"
-            ")"
-        ))
-        db.session.commit()
+        nuevas_mesas = [
+            ("abierta",           "BOOLEAN DEFAULT FALSE"),
+            ("es_para_llevar",    "BOOLEAN DEFAULT FALSE"),
+            ("tab_inicio",        "TIMESTAMP"),
+            ("mesero_solicitado", "BOOLEAN DEFAULT FALSE"),
+        ]
+        agregadas = any(col not in cols_of("mesas") for col, _ in nuevas_mesas)
+        for col, defn in nuevas_mesas:
+            add_col("mesas", col, defn)
+        # Solo limpiar mesas en el primer despliegue donde se añadió la columna "abierta"
+        if agregadas:
+            db.session.execute(text(
+                "UPDATE mesas SET abierta = FALSE "
+                "WHERE id NOT IN ("
+                "  SELECT DISTINCT mesa_id FROM ordenes "
+                "  WHERE estado IN ('pendiente','confirmada','lista')"
+                ")"
+            ))
+            db.session.commit()
 
     if "productos" in tables:
-        add_col("productos", "orden_display",  "INTEGER DEFAULT 0")
-        add_col("productos", "terminos_asado", "BOOLEAN DEFAULT FALSE")
+        add_col("productos", "orden_display",     "INTEGER DEFAULT 0")
+        add_col("productos", "terminos_asado",    "BOOLEAN DEFAULT FALSE")
         add_col("productos", "salsas_activas",    "BOOLEAN DEFAULT FALSE")
         add_col("productos", "adiciones_activas", "BOOLEAN DEFAULT FALSE")
         add_col("productos", "bebidas_activas",   "BOOLEAN DEFAULT FALSE")
         add_col("productos", "sabores_activos",   "BOOLEAN DEFAULT FALSE")
 
     if "restaurantes" in tables:
-        add_col("restaurantes", "descripcion",      "TEXT")
-        add_col("restaurantes", "email_verificado", "BOOLEAN DEFAULT FALSE")
-        add_col("restaurantes", "plan",             "VARCHAR(20) DEFAULT 'trial'")
-        add_col("restaurantes", "plan_inicio",      "TIMESTAMP")
-        add_col("restaurantes", "plan_vence",       "TIMESTAMP")
-        add_col("restaurantes", "ip_red",           "VARCHAR(50)")
-        add_col("restaurantes", "restringir_red",   "BOOLEAN DEFAULT TRUE")
-        add_col("restaurantes", "dia_apertura",     "DATE")
-        add_col("restaurantes", "modo_cobro",       "BOOLEAN DEFAULT FALSE")
+        add_col("restaurantes", "descripcion",       "TEXT")
+        add_col("restaurantes", "email_verificado",  "BOOLEAN DEFAULT FALSE")
+        add_col("restaurantes", "plan",              "VARCHAR(20) DEFAULT 'trial'")
+        add_col("restaurantes", "plan_inicio",       "TIMESTAMP")
+        add_col("restaurantes", "plan_vence",        "TIMESTAMP")
+        add_col("restaurantes", "ip_red",            "VARCHAR(50)")
+        add_col("restaurantes", "restringir_red",    "BOOLEAN DEFAULT TRUE")
+        add_col("restaurantes", "dia_apertura",      "DATE")
+        add_col("restaurantes", "modo_cobro",        "BOOLEAN DEFAULT FALSE")
         add_col("restaurantes", "categoria",         "VARCHAR(20) DEFAULT 'restaurante'")
         add_col("restaurantes", "pais",              "VARCHAR(20) DEFAULT 'ecuador'")
         add_col("restaurantes", "fact_tipo_id",      "VARCHAR(20)")
@@ -363,25 +377,36 @@ def run_migrations():
         add_col("restaurantes", "fact_razon_social", "VARCHAR(150)")
         add_col("restaurantes", "fact_direccion",    "VARCHAR(200)")
 
-    # Crear métodos de pago por defecto para restaurantes existentes
-    for r in Restaurante.query.all():
-        if MetodoPago.query.filter_by(restaurante_id=r.id).count() == 0:
+    # ── Datos por defecto: una sola query por tabla ──
+    # IDs de restaurantes que ya tienen Deuna!
+    ids_con_deuna = {
+        row[0] for row in
+        db.session.execute(text("SELECT restaurante_id FROM metodos_pago WHERE nombre='Deuna!'")).fetchall()
+    }
+    # IDs de restaurantes que no tienen ningún método de pago
+    ids_sin_metodos = {
+        row[0] for row in
+        db.session.execute(text(
+            "SELECT r.id FROM restaurantes r "
+            "LEFT JOIN metodos_pago mp ON mp.restaurante_id = r.id "
+            "GROUP BY r.id HAVING COUNT(mp.id) = 0"
+        )).fetchall()
+    }
+
+    restaurantes = Restaurante.query.all()
+    for r in restaurantes:
+        if r.id in ids_sin_metodos:
             _crear_metodos_default(r.id)
-        # Añadir Deuna! si el restaurante no lo tiene aún
-        if not MetodoPago.query.filter_by(restaurante_id=r.id, nombre="Deuna!").first():
+        if r.id not in ids_con_deuna:
             ultimo = MetodoPago.query.filter_by(restaurante_id=r.id).count()
             db.session.add(MetodoPago(restaurante_id=r.id, nombre="Deuna!", icono="/static/img/deuna.svg", orden_display=ultimo))
-        # Asignar trial a restaurantes sin plan/vencimiento
         if not r.plan:
             r.plan = 'trial'
         dias_correctos = TRIAL_DIAS_POR_PAIS.get(r.pais or 'ecuador', TRIAL_DIAS)
         if not r.plan_vence:
-            base = r.fecha_registro or datetime.utcnow()
-            r.plan_vence = base + timedelta(days=dias_correctos)
+            r.plan_vence = (r.fecha_registro or datetime.utcnow()) + timedelta(days=dias_correctos)
         elif r.plan == 'trial' and r.plan_inicio:
-            # Corregir si el trial tiene días incorrectos para el país
-            dias_actuales = (r.plan_vence - r.plan_inicio).days
-            if dias_actuales != dias_correctos:
+            if (r.plan_vence - r.plan_inicio).days != dias_correctos:
                 r.plan_vence = r.plan_inicio + timedelta(days=dias_correctos)
     db.session.commit()
 
