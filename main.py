@@ -380,6 +380,12 @@ def run_migrations():
 
 with app.app_context():
     try:
+        # Guard: si falta db.init_app(app) este mensaje es claro
+        if "sqlalchemy" not in app.extensions:
+            raise RuntimeError(
+                "db.init_app(app) no fue llamado. "
+                "Asegúrate de que esté en main.py después de configurar SQLALCHEMY_DATABASE_URI."
+            )
         db.create_all()
         run_migrations()
     except Exception as _e:
