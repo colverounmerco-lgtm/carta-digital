@@ -399,32 +399,36 @@ def run_migrations():
 
 with app.app_context():
     try:
-        # Guard: si falta db.init_app(app) este mensaje es claro
         if "sqlalchemy" not in app.extensions:
             raise RuntimeError(
                 "db.init_app(app) no fue llamado. "
                 "Asegúrate de que esté en main.py después de configurar SQLALCHEMY_DATABASE_URI."
             )
+        print("[STARTUP] create_all...", flush=True)
         db.create_all()
+        print("[STARTUP] migrations...", flush=True)
         run_migrations()
+        print("[STARTUP] mesas para llevar...", flush=True)
+        # Bulk: evitar N+1 al verificar mesas para llevar
+        _ids_con_pl = {m.restaurante_id for m in Mesa.query.filter_by(es_para_llevar=True).all()}
+        for _r in Restaurante.query.all():
+            if _r.id not in _ids_con_pl:
+                db.session.add(Mesa(
+                    restaurante_id=_r.id,
+                    numero=0,
+                    nombre="Para llevar",
+                    token=Mesa.nuevo_token(),
+                    activa=True,
+                    abierta=True,
+                    es_para_llevar=True,
+                ))
+        db.session.commit()
+        print("[STARTUP] listo", flush=True)
     except Exception as _e:
         import traceback
         print("ERROR EN STARTUP:", flush=True)
         traceback.print_exc()
         raise
-    # Auto-create "Para llevar" mesa for every restaurant that doesn't have one
-    for _r in Restaurante.query.all():
-        if not Mesa.query.filter_by(restaurante_id=_r.id, es_para_llevar=True).first():
-            db.session.add(Mesa(
-                restaurante_id=_r.id,
-                numero=0,
-                nombre="Para llevar",
-                token=Mesa.nuevo_token(),
-                activa=True,
-                abierta=True,
-                es_para_llevar=True,
-            ))
-    db.session.commit()
 
 
 # ══════════════════════════════════════════════
