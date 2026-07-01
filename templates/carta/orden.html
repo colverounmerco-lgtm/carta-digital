@@ -240,6 +240,15 @@
 <script>
   sessionStorage.setItem('orden_url', window.location.href);
 
+  // Persistir en localStorage para recuperar el pedido si se cierra el tab
+  const _mesaToken = '{{ orden.mesa.token }}';
+  const _ordenToken = '{{ orden.token }}';
+  if (estadoActual === 'pagada' || estadoActual === 'cancelada') {
+    localStorage.removeItem('orden_' + _mesaToken);
+  } else {
+    localStorage.setItem('orden_' + _mesaToken, _ordenToken);
+  }
+
   // Bloquea el botón "atrás" del navegador
   history.pushState(null, null, location.href);
   window.addEventListener('popstate', function () { history.go(1); });

@@ -37,6 +37,26 @@
   {% endfor %}
 {% endwith %}
 
+<!-- Banner pedido activo (persiste si el cliente cierra el tab) -->
+<div id="banner-pedido-activo" style="display:none;background:#FFF7ED;border-bottom:2px solid #FED7AA;
+     padding:0.65rem 1.25rem;text-align:center">
+  <span style="font-size:0.88rem;color:#92400E;font-weight:600">⏳ Tienes un pedido activo</span>
+  <a id="link-pedido-activo" href="#"
+     style="margin-left:0.75rem;background:#F97316;color:#fff;padding:0.3rem 0.85rem;
+            border-radius:8px;font-size:0.82rem;font-weight:700;text-decoration:none">
+    Ver estado →
+  </a>
+</div>
+<script>
+  (function () {
+    const token = localStorage.getItem('orden_{{ mesa.token }}');
+    if (token) {
+      document.getElementById('link-pedido-activo').href = '/orden/' + token + '/estado';
+      document.getElementById('banner-pedido-activo').style.display = 'block';
+    }
+  })();
+</script>
+
 {% if not mesa_abierta %}
 <div style="background:#1C1C1E;color:#fff;text-align:center;padding:1rem 1.5rem;
             font-size:0.88rem;font-weight:600;position:sticky;top:64px;z-index:50">
