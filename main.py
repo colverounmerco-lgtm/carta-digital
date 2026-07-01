@@ -336,14 +336,6 @@ def run_migrations():
         add_col("mesas", "es_para_llevar",     "BOOLEAN DEFAULT FALSE")
         add_col("mesas", "tab_inicio",         "TIMESTAMP")
         add_col("mesas", "mesero_solicitado",  "BOOLEAN DEFAULT FALSE")
-        db.session.execute(text(
-            "UPDATE mesas SET abierta = FALSE "
-            "WHERE id NOT IN ("
-            "  SELECT DISTINCT mesa_id FROM ordenes "
-            "  WHERE estado IN ('pendiente','confirmada','lista')"
-            ")"
-        ))
-        db.session.commit()
 
     if "productos" in tables:
         add_col("productos", "orden_display",     "INTEGER DEFAULT 0")
