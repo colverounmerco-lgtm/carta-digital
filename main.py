@@ -319,7 +319,8 @@ def run_migrations():
     # Solo ejecutar ALTER TYPE si la columna aún es VARCHAR corta
     if "metodos_pago" in tables:
         icono_col = next((c for c in insp.get_columns("metodos_pago") if c["name"] == "icono"), None)
-        if icono_col and getattr(icono_col["type"], "length", 300) < 300:
+        col_length = getattr(icono_col["type"], "length", None) if icono_col else None
+        if col_length is not None and col_length < 300:
             db.session.execute(text("ALTER TABLE metodos_pago ALTER COLUMN icono TYPE VARCHAR(300)"))
             db.session.commit()
 
