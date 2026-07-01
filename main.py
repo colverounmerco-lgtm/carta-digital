@@ -32,6 +32,7 @@ elif _db_url.startswith("postgresql://") and "+pg8000" not in _db_url:
 
 app.config["SQLALCHEMY_DATABASE_URI"] = _db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db.init_app(app)
 
 # ── Cloudinary ──
 cloudinary.config(
