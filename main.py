@@ -300,29 +300,19 @@ def ec_time_filter(dt, fmt="%d/%m/%Y %H:%M"):
 
 # ── Migraciones runtime ──
 def run_migrations():
-    insp   = sa_inspect(db.engine)
+    insp = sa_inspect(db.engine)
     tables = insp.get_table_names()
 
-    # Cache de columnas por tabla para no hacer una query por cada add_col
-    _col_cache = {}
-    def cols_of(table):
-        if table not in _col_cache:
-            _col_cache[table] = {c["name"] for c in insp.get_columns(table)}
-        return _col_cache[table]
-
     def add_col(table, col, definition):
-        if col not in cols_of(table):
+        fresh = sa_inspect(db.engine)
+        cols = [c["name"] for c in fresh.get_columns(table)]
+        if col not in cols:
             db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {definition}"))
             db.session.commit()
-            _col_cache[table].add(col)  # actualizar cache local
 
-    # Solo ejecutar ALTER TYPE si la columna aún es VARCHAR corta
     if "metodos_pago" in tables:
-        icono_col = next((c for c in insp.get_columns("metodos_pago") if c["name"] == "icono"), None)
-        col_length = getattr(icono_col["type"], "length", None) if icono_col else None
-        if col_length is not None and col_length < 300:
-            db.session.execute(text("ALTER TABLE metodos_pago ALTER COLUMN icono TYPE VARCHAR(300)"))
-            db.session.commit()
+        db.session.execute(text("ALTER TABLE metodos_pago ALTER COLUMN icono TYPE VARCHAR(300)"))
+        db.session.commit()
 
     if "ordenes" in tables:
         add_col("ordenes", "metodo_pago",      "VARCHAR(30)")
@@ -332,25 +322,18 @@ def run_migrations():
         add_col("ordenes", "fecha_pago",       "TIMESTAMP")
 
     if "mesas" in tables:
-        nuevas_mesas = [
-            ("abierta",           "BOOLEAN DEFAULT FALSE"),
-            ("es_para_llevar",    "BOOLEAN DEFAULT FALSE"),
-            ("tab_inicio",        "TIMESTAMP"),
-            ("mesero_solicitado", "BOOLEAN DEFAULT FALSE"),
-        ]
-        agregadas = any(col not in cols_of("mesas") for col, _ in nuevas_mesas)
-        for col, defn in nuevas_mesas:
-            add_col("mesas", col, defn)
-        # Solo limpiar mesas en el primer despliegue donde se añadió la columna "abierta"
-        if agregadas:
-            db.session.execute(text(
-                "UPDATE mesas SET abierta = FALSE "
-                "WHERE id NOT IN ("
-                "  SELECT DISTINCT mesa_id FROM ordenes "
-                "  WHERE estado IN ('pendiente','confirmada','lista')"
-                ")"
-            ))
-            db.session.commit()
+        add_col("mesas", "abierta",            "BOOLEAN DEFAULT FALSE")
+        add_col("mesas", "es_para_llevar",     "BOOLEAN DEFAULT FALSE")
+        add_col("mesas", "tab_inicio",         "TIMESTAMP")
+        add_col("mesas", "mesero_solicitado",  "BOOLEAN DEFAULT FALSE")
+        db.session.execute(text(
+            "UPDATE mesas SET abierta = FALSE "
+            "WHERE id NOT IN ("
+            "  SELECT DISTINCT mesa_id FROM ordenes "
+            "  WHERE estado IN ('pendiente','confirmada','lista')"
+            ")"
+        ))
+        db.session.commit()
 
     if "productos" in tables:
         add_col("productos", "orden_display",     "INTEGER DEFAULT 0")
@@ -377,27 +360,10 @@ def run_migrations():
         add_col("restaurantes", "fact_razon_social", "VARCHAR(150)")
         add_col("restaurantes", "fact_direccion",    "VARCHAR(200)")
 
-    # ── Datos por defecto: una sola query por tabla ──
-    # IDs de restaurantes que ya tienen Deuna!
-    ids_con_deuna = {
-        row[0] for row in
-        db.session.execute(text("SELECT restaurante_id FROM metodos_pago WHERE nombre='Deuna!'")).fetchall()
-    }
-    # IDs de restaurantes que no tienen ningún método de pago
-    ids_sin_metodos = {
-        row[0] for row in
-        db.session.execute(text(
-            "SELECT r.id FROM restaurantes r "
-            "LEFT JOIN metodos_pago mp ON mp.restaurante_id = r.id "
-            "GROUP BY r.id HAVING COUNT(mp.id) = 0"
-        )).fetchall()
-    }
-
-    restaurantes = Restaurante.query.all()
-    for r in restaurantes:
-        if r.id in ids_sin_metodos:
+    for r in Restaurante.query.all():
+        if MetodoPago.query.filter_by(restaurante_id=r.id).count() == 0:
             _crear_metodos_default(r.id)
-        if r.id not in ids_con_deuna:
+        if not MetodoPago.query.filter_by(restaurante_id=r.id, nombre="Deuna!").first():
             ultimo = MetodoPago.query.filter_by(restaurante_id=r.id).count()
             db.session.add(MetodoPago(restaurante_id=r.id, nombre="Deuna!", icono="/static/img/deuna.svg", orden_display=ultimo))
         if not r.plan:
