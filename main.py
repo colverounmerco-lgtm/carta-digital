@@ -378,8 +378,14 @@ def run_migrations():
 
 
 with app.app_context():
-    db.create_all()
-    run_migrations()
+    try:
+        db.create_all()
+        run_migrations()
+    except Exception as _e:
+        import traceback
+        print("ERROR EN STARTUP:", flush=True)
+        traceback.print_exc()
+        raise
     # Auto-create "Para llevar" mesa for every restaurant that doesn't have one
     for _r in Restaurante.query.all():
         if not Mesa.query.filter_by(restaurante_id=_r.id, es_para_llevar=True).first():
