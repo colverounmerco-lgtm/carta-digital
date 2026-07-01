@@ -304,16 +304,25 @@ def run_migrations():
     insp = sa_inspect(db.engine)
     tables = insp.get_table_names()
 
+    # Pre-carga columnas de todas las tablas relevantes de una sola vez
+    _cols = {}
+    for t in ["metodos_pago", "ordenes", "mesas", "productos", "restaurantes"]:
+        if t in tables:
+            _cols[t] = {c["name"]: c for c in insp.get_columns(t)}
+
     def add_col(table, col, definition):
-        fresh = sa_inspect(db.engine)
-        cols = [c["name"] for c in fresh.get_columns(table)]
-        if col not in cols:
+        if col not in _cols.get(table, {}):
             db.session.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {definition}"))
             db.session.commit()
+            _cols.setdefault(table, {})[col] = {"name": col}
 
     if "metodos_pago" in tables:
-        db.session.execute(text("ALTER TABLE metodos_pago ALTER COLUMN icono TYPE VARCHAR(300)"))
-        db.session.commit()
+        icono_info = _cols["metodos_pago"].get("icono")
+        if icono_info:
+            col_length = getattr(icono_info.get("type"), "length", None)
+            if col_length is not None and col_length < 300:
+                db.session.execute(text("ALTER TABLE metodos_pago ALTER COLUMN icono TYPE VARCHAR(300)"))
+                db.session.commit()
 
     if "ordenes" in tables:
         add_col("ordenes", "metodo_pago",      "VARCHAR(30)")
@@ -361,12 +370,22 @@ def run_migrations():
         add_col("restaurantes", "fact_razon_social", "VARCHAR(150)")
         add_col("restaurantes", "fact_direccion",    "VARCHAR(200)")
 
-    for r in Restaurante.query.all():
-        if MetodoPago.query.filter_by(restaurante_id=r.id).count() == 0:
+    # Bulk: carga todos los restaurantes y métodos de pago en 2 queries
+    todos_restaurantes = Restaurante.query.all()
+    todos_metodos = MetodoPago.query.all()
+    metodos_por_rest = {}
+    for m in todos_metodos:
+        metodos_por_rest.setdefault(m.restaurante_id, []).append(m)
+
+    for r in todos_restaurantes:
+        metodos = metodos_por_rest.get(r.id, [])
+        if not metodos:
             _crear_metodos_default(r.id)
-        if not MetodoPago.query.filter_by(restaurante_id=r.id, nombre="Deuna!").first():
-            ultimo = MetodoPago.query.filter_by(restaurante_id=r.id).count()
-            db.session.add(MetodoPago(restaurante_id=r.id, nombre="Deuna!", icono="/static/img/deuna.svg", orden_display=ultimo))
+        elif not any(m.nombre == "Deuna!" for m in metodos):
+            db.session.add(MetodoPago(
+                restaurante_id=r.id, nombre="Deuna!",
+                icono="/static/img/deuna.svg", orden_display=len(metodos)
+            ))
         if not r.plan:
             r.plan = 'trial'
         dias_correctos = TRIAL_DIAS_POR_PAIS.get(r.pais or 'ecuador', TRIAL_DIAS)
