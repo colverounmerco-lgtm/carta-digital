@@ -2233,6 +2233,148 @@ def admin_logout():
     return redirect(url_for("admin_login"))
 
 
+@app.route("/admin/reporte-mensual")
+@admin_required
+def admin_reporte_mensual():
+    mes_str = request.args.get("mes", "")
+    try:
+        año, mes = int(mes_str[:4]), int(mes_str[5:7])
+    except Exception:
+        now_ec = datetime.utcnow() + EC_OFFSET
+        año, mes = now_ec.year, now_ec.month
+
+    inicio = datetime(año, mes, 1)
+    fin    = datetime(año + 1, 1, 1) if mes == 12 else datetime(año, mes + 1, 1)
+    nombre_mes = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][mes - 1]
+
+    restaurantes = Restaurante.query.order_by(Restaurante.pais, Restaurante.nombre).all()
+
+    # Traer datos de órdenes del mes en bulk
+    filas_ordenes = db.session.query(
+        Orden.restaurante_id,
+        func.count(Orden.id).label("total"),
+        func.sum(Orden.total).label("ingresos"),
+    ).filter(
+        Orden.fecha >= inicio,
+        Orden.fecha < fin,
+        Orden.estado == "pagada",
+    ).group_by(Orden.restaurante_id).all()
+
+    datos = {row.restaurante_id: {"total": row.total, "ingresos": float(row.ingresos or 0)}
+             for row in filas_ordenes}
+
+    # ── Excel ──
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"{nombre_mes} {año}"
+
+    # Estilos
+    naranja  = PatternFill("solid", fgColor="F97316")
+    gris     = PatternFill("solid", fgColor="1E293B")
+    verde    = PatternFill("solid", fgColor="064E3B")
+    amarillo = PatternFill("solid", fgColor="78350F")
+    blanco   = Font(color="FFFFFF", bold=True)
+    bold     = Font(bold=True)
+    center   = Alignment(horizontal="center", vertical="center")
+    thin     = Side(style="thin", color="CBD5E1")
+    borde    = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    def celda(ws, fila, col, valor, fuente=None, fondo=None, alin=None, brd=None):
+        c = ws.cell(row=fila, column=col, value=valor)
+        if fuente: c.font    = fuente
+        if fondo:  c.fill   = fondo
+        if alin:   c.alignment = alin
+        if brd:    c.border = brd
+        return c
+
+    # Título
+    ws.merge_cells("A1:H1")
+    c = ws["A1"]
+    c.value     = f"Reporte Mensual — {nombre_mes} {año}"
+    c.font      = Font(color="FFFFFF", bold=True, size=14)
+    c.fill      = naranja
+    c.alignment = center
+    ws.row_dimensions[1].height = 30
+
+    ws.merge_cells("A2:H2")
+    c = ws["A2"]
+    c.value     = f"Generado el {(datetime.utcnow() + EC_OFFSET).strftime('%d/%m/%Y %H:%M')} (hora Ecuador)"
+    c.font      = Font(color="94A3B8", italic=True, size=9)
+    c.alignment = center
+    ws.row_dimensions[2].height = 16
+
+    # Encabezados
+    COLS = ["Restaurante", "País", "Categoría", "Plan", "Estado",
+            "Órdenes pagadas", "Ingresos", "Ticket promedio"]
+    for i, h in enumerate(COLS, 1):
+        celda(ws, 4, i, h, fuente=blanco, fondo=gris, alin=center, brd=borde)
+    ws.row_dimensions[4].height = 22
+
+    # Filas de datos
+    fila = 5
+    totales = {"ec_ord": 0, "ec_ing": 0.0, "co_ord": 0, "co_ing": 0.0}
+
+    for r in restaurantes:
+        d       = datos.get(r.id, {"total": 0, "ingresos": 0.0})
+        ordenes = d["total"]
+        ingresos = d["ingresos"]
+        ticket  = round(ingresos / ordenes, 2) if ordenes else 0.0
+        pais_label = "🇪🇨 Ecuador" if (r.pais or "ecuador") == "ecuador" else "🇨🇴 Colombia"
+        moneda  = f"${ingresos:,.2f}" if (r.pais or "ecuador") == "ecuador" \
+                  else f"COP {ingresos:,.0f}".replace(",", ".")
+        ticket_fmt = f"${ticket:,.2f}" if (r.pais or "ecuador") == "ecuador" \
+                     else f"COP {ticket:,.0f}".replace(",", ".")
+
+        fondo_fila = PatternFill("solid", fgColor="F8FAFC") if fila % 2 == 0 else None
+
+        vals = [r.nombre, pais_label, (r.categoria or "restaurante").capitalize(),
+                (r.plan or "trial").capitalize(), "Activo" if r.activo else "Inactivo",
+                ordenes, moneda, ticket_fmt]
+        for i, v in enumerate(vals, 1):
+            celda(ws, fila, i, v, fondo=fondo_fila, brd=borde,
+                  alin=Alignment(horizontal="center" if i > 1 else "left", vertical="center"))
+
+        if (r.pais or "ecuador") == "ecuador":
+            totales["ec_ord"] += ordenes; totales["ec_ing"] += ingresos
+        else:
+            totales["co_ord"] += ordenes; totales["co_ing"] += ingresos
+        fila += 1
+
+    # Totales Ecuador
+    fila += 1
+    ws.merge_cells(f"A{fila}:E{fila}")
+    celda(ws, fila, 1, "🇪🇨 TOTAL ECUADOR", fuente=blanco, fondo=verde, alin=center, brd=borde)
+    celda(ws, fila, 6, totales["ec_ord"],  fuente=blanco, fondo=verde, alin=center, brd=borde)
+    celda(ws, fila, 7, f"${totales['ec_ing']:,.2f}", fuente=blanco, fondo=verde, alin=center, brd=borde)
+    ec_ticket = totales["ec_ing"] / totales["ec_ord"] if totales["ec_ord"] else 0
+    celda(ws, fila, 8, f"${ec_ticket:,.2f}", fuente=blanco, fondo=verde, alin=center, brd=borde)
+
+    # Totales Colombia
+    fila += 1
+    ws.merge_cells(f"A{fila}:E{fila}")
+    celda(ws, fila, 1, "🇨🇴 TOTAL COLOMBIA", fuente=blanco, fondo=amarillo, alin=center, brd=borde)
+    celda(ws, fila, 6, totales["co_ord"],  fuente=blanco, fondo=amarillo, alin=center, brd=borde)
+    celda(ws, fila, 7, f"COP {totales['co_ing']:,.0f}".replace(",", "."),
+          fuente=blanco, fondo=amarillo, alin=center, brd=borde)
+    co_ticket = totales["co_ing"] / totales["co_ord"] if totales["co_ord"] else 0
+    celda(ws, fila, 8, f"COP {co_ticket:,.0f}".replace(",", "."),
+          fuente=blanco, fondo=amarillo, alin=center, brd=borde)
+
+    # Anchos de columna
+    for col, ancho in zip("ABCDEFGH", [32, 14, 14, 12, 10, 16, 18, 16]):
+        ws.column_dimensions[col].width = ancho
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    filename = f"reporte_{año}_{mes:02d}.xlsx"
+    resp = make_response(output.read())
+    resp.headers["Content-Type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    resp.headers["Content-Disposition"] = f"attachment; filename={filename}"
+    return resp
+
+
 @app.route("/admin")
 @admin_required
 def admin_panel():
