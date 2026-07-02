@@ -228,10 +228,17 @@
   </div>
 
   <!-- Stats globales -->
-  {% set total_activos   = restaurantes | selectattr('activo') | list | length %}
-  {% set total_inactivos = restaurantes | rejectattr('activo') | list | length %}
-  {% set total_ordenes   = stats.values() | sum(attribute='total_ordenes') %}
-  {% set total_ingresos  = stats.values() | sum(attribute='ingresos_total') %}
+  {% set total_activos = restaurantes | selectattr('activo') | list | length %}
+  {% set ns = namespace(ec_ord=0, co_ord=0, ec_ing=0.0, co_ing=0.0) %}
+  {% for r in restaurantes %}
+    {% if r.pais == 'colombia' %}
+      {% set ns.co_ord = ns.co_ord + stats[r.id].total_ordenes %}
+      {% set ns.co_ing = ns.co_ing + stats[r.id].ingresos_total %}
+    {% else %}
+      {% set ns.ec_ord = ns.ec_ord + stats[r.id].total_ordenes %}
+      {% set ns.ec_ing = ns.ec_ing + stats[r.id].ingresos_total %}
+    {% endif %}
+  {% endfor %}
 
   <div class="stats">
     <div class="stat">
@@ -242,13 +249,19 @@
       <div class="stat-n">{{ total_activos }}</div>
       <div class="stat-l">Activos</div>
     </div>
-    <div class="stat">
-      <div class="stat-n">{{ total_ordenes }}</div>
-      <div class="stat-l">Órdenes totales</div>
+    <div class="stat" style="border-color:#1d4ed850">
+      <div style="font-size:0.72rem;font-weight:700;color:#6EE7B7;margin-bottom:0.35rem">🇪🇨 Ecuador</div>
+      <div class="stat-n">{{ ns.ec_ord }}</div>
+      <div class="stat-l">Órdenes</div>
+      <div style="font-size:1rem;font-weight:800;color:#F97316;margin-top:0.4rem">${{ "%.2f"|format(ns.ec_ing) }}</div>
+      <div class="stat-l">Ingresos procesados</div>
     </div>
-    <div class="stat">
-      <div class="stat-n">${{ "%.2f"|format(total_ingresos) }}</div>
-      <div class="stat-l">Ingresos totales procesados</div>
+    <div class="stat" style="border-color:#92400e50">
+      <div style="font-size:0.72rem;font-weight:700;color:#FCD34D;margin-bottom:0.35rem">🇨🇴 Colombia</div>
+      <div class="stat-n">{{ ns.co_ord }}</div>
+      <div class="stat-l">Órdenes</div>
+      <div style="font-size:1rem;font-weight:800;color:#F97316;margin-top:0.4rem">COP {{ "{:,.0f}".format(ns.co_ing).replace(",", ".") }}</div>
+      <div class="stat-l">Ingresos procesados</div>
     </div>
   </div>
 
