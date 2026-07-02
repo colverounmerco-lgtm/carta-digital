@@ -2291,8 +2291,29 @@ def admin_toggle_restaurante(rid):
 @admin_required
 def admin_eliminar_restaurante(rid):
     r = Restaurante.query.get_or_404(rid)
+
+    # Borrar en orden para respetar foreign keys
+    orden_ids  = db.session.query(Orden.id).filter_by(restaurante_id=rid).subquery()
+    prod_ids   = db.session.query(Producto.id).filter_by(restaurante_id=rid).subquery()
+    secc_ids   = db.session.query(SeccionBebida.id).filter_by(restaurante_id=rid).subquery()
+
+    ItemOrden.query.filter(ItemOrden.orden_id.in_(orden_ids)).delete(synchronize_session=False)
+    SaborProducto.query.filter(SaborProducto.producto_id.in_(prod_ids)).delete(synchronize_session=False)
+    VarianteBebida.query.filter(VarianteBebida.seccion_id.in_(secc_ids)).delete(synchronize_session=False)
+
+    Orden.query.filter_by(restaurante_id=rid).delete()
+    Mesa.query.filter_by(restaurante_id=rid).delete()
+    Producto.query.filter_by(restaurante_id=rid).delete()
+    SeccionBebida.query.filter_by(restaurante_id=rid).delete()
+    Salsa.query.filter_by(restaurante_id=rid).delete()
+    Adicion.query.filter_by(restaurante_id=rid).delete()
+    MetodoPago.query.filter_by(restaurante_id=rid).delete()
+    SubUsuario.query.filter_by(restaurante_id=rid).delete()
+
+    nombre = r.nombre
     db.session.delete(r)
     db.session.commit()
+    flash(f"Restaurante '{nombre}' eliminado.", "success")
     return redirect(url_for("admin_panel"))
 
 
