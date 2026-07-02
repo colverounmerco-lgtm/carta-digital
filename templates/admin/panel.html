@@ -193,12 +193,27 @@
   </div>
   <div style="display:flex;align-items:center;gap:0.75rem">
     <!-- Reporte mensual -->
-    <form method="GET" action="/admin/reporte-mensual" style="margin:0;display:flex;gap:0.4rem;align-items:center">
-      <input type="month" name="mes"
-             value="{{ now().strftime('%Y-%m') }}"
-             style="background:#0F172A;border:1px solid #334155;color:#F1F5F9;
-                    border-radius:8px;padding:0.35rem 0.6rem;font-size:0.8rem;
-                    font-family:inherit;outline:none;cursor:pointer">
+    <form method="GET" action="/admin/reporte-mensual" style="margin:0;display:flex;gap:0.4rem;align-items:center" onsubmit="armarMes(event)">
+      <input type="hidden" name="mes" id="input-mes-hidden">
+      <select id="sel-mes"
+              style="background:#0F172A;border:1px solid #334155;color:#F1F5F9;
+                     border-radius:8px;padding:0.35rem 0.5rem;font-size:0.8rem;
+                     font-family:inherit;outline:none;cursor:pointer">
+        <option value="01">Enero</option><option value="02">Febrero</option>
+        <option value="03">Marzo</option><option value="04">Abril</option>
+        <option value="05">Mayo</option><option value="06">Junio</option>
+        <option value="07">Julio</option><option value="08">Agosto</option>
+        <option value="09">Septiembre</option><option value="10">Octubre</option>
+        <option value="11">Noviembre</option><option value="12">Diciembre</option>
+      </select>
+      <select id="sel-año"
+              style="background:#0F172A;border:1px solid #334155;color:#F1F5F9;
+                     border-radius:8px;padding:0.35rem 0.5rem;font-size:0.8rem;
+                     font-family:inherit;outline:none;cursor:pointer">
+        {% for y in range(now().year, 2024, -1) %}
+          <option value="{{ y }}">{{ y }}</option>
+        {% endfor %}
+      </select>
       <button type="submit"
               style="font-size:0.82rem;color:#F1F5F9;background:#F97316;border:none;
                      padding:0.4rem 0.9rem;border-radius:8px;cursor:pointer;font-family:inherit;
@@ -206,6 +221,21 @@
         📊 Reporte
       </button>
     </form>
+    <script>
+      // Pre-seleccionar mes y año actuales
+      (function() {
+        const hoy = new Date();
+        document.getElementById('sel-mes').value = String(hoy.getMonth() + 1).padStart(2, '0');
+        document.getElementById('sel-año').value = hoy.getFullYear();
+      })();
+      function armarMes(e) {
+        e.preventDefault();
+        const mes = document.getElementById('sel-mes').value;
+        const año = document.getElementById('sel-año').value;
+        document.getElementById('input-mes-hidden').value = `${año}-${mes}`;
+        e.target.submit();
+      }
+    </script>
 
     <a href="/admin/mensajes" style="position:relative;text-decoration:none;
        background:#1E293B;border:1px solid #334155;color:#94A3B8;
