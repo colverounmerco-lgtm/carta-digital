@@ -2287,6 +2287,18 @@ def admin_toggle_restaurante(rid):
     return redirect(url_for("admin_panel"))
 
 
+@app.route("/admin/restaurante/<int:rid>/limpiar-pedidos", methods=["POST"])
+@admin_required
+def admin_limpiar_pedidos(rid):
+    r = Restaurante.query.get_or_404(rid)
+    orden_ids = db.session.query(Orden.id).filter_by(restaurante_id=rid).subquery()
+    ItemOrden.query.filter(ItemOrden.orden_id.in_(orden_ids)).delete(synchronize_session=False)
+    Orden.query.filter_by(restaurante_id=rid).delete()
+    db.session.commit()
+    flash(f"Historial de pedidos de '{r.nombre}' limpiado.", "success")
+    return redirect(url_for("admin_panel"))
+
+
 @app.route("/admin/restaurante/<int:rid>/eliminar", methods=["POST"])
 @admin_required
 def admin_eliminar_restaurante(rid):

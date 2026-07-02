@@ -410,6 +410,15 @@
                 {% endif %}
               </form>
 
+              <!-- Limpiar pedidos -->
+              <form method="POST" action="/admin/restaurante/{{ r.id }}/limpiar-pedidos" style="margin:0">
+                <button class="btn-sm" type="submit"
+                        style="background:#FEF3C7;color:#92400E"
+                        onclick="return confirm('¿Limpiar todo el historial de pedidos de {{ r.nombre }}? Los contadores volverán a 0.')">
+                  🗑 Pedidos
+                </button>
+              </form>
+
               <!-- Eliminar -->
               <form method="POST" action="/admin/restaurante/{{ r.id }}/eliminar" style="margin:0">
                 <button class="btn-sm btn-del" type="submit"
